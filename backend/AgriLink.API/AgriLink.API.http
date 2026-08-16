@@ -1,0 +1,6 @@
+@AgriLink.API_HostAddress = http://localhost:5266
+
+GET {{AgriLink.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
