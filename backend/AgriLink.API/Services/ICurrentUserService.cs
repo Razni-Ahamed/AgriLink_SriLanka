@@ -7,4 +7,5 @@ public interface ICurrentUserService
     int GetUserId(ClaimsPrincipal principal);
     bool IsAdmin(ClaimsPrincipal principal);
     Task<int?> GetFarmerProfileIdAsync(ClaimsPrincipal principal);
+    Task<int?> GetOfficerProfileIdAsync(ClaimsPrincipal principal);
 }
