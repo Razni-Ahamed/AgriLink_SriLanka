@@ -18,6 +18,10 @@ public class AgriLinkDbContext : IdentityDbContext<ApplicationUser, IdentityRole
     public DbSet<Field> Fields => Set<Field>();
     public DbSet<Crop> Crops => Set<Crop>();
     public DbSet<CropActivity> CropActivities => Set<CropActivity>();
+    public DbSet<CropIssue> CropIssues => Set<CropIssue>();
+    public DbSet<AIAdvisory> AIAdvisories => Set<AIAdvisory>();
+    public DbSet<AgentWorkflow> AgentWorkflows => Set<AgentWorkflow>();
+    public DbSet<AgentExecution> AgentExecutions => Set<AgentExecution>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -98,6 +102,60 @@ public class AgriLinkDbContext : IdentityDbContext<ApplicationUser, IdentityRole
             entity.HasOne(a => a.Crop)
                 .WithMany(c => c.Activities)
                 .HasForeignKey(a => a.CropId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        builder.Entity<CropIssue>(entity =>
+        {
+            entity.Property(i => i.Title).HasMaxLength(150).IsRequired();
+            entity.Property(i => i.Description).IsRequired();
+            entity.Property(i => i.Severity).HasConversion<string>().HasMaxLength(20);
+            entity.Property(i => i.Status).HasConversion<string>().HasMaxLength(20);
+            entity.HasIndex(i => i.Status);
+            entity.HasOne(i => i.Crop)
+                .WithMany()
+                .HasForeignKey(i => i.CropId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(i => i.FarmerProfile)
+                .WithMany()
+                .HasForeignKey(i => i.FarmerProfileId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        builder.Entity<AIAdvisory>(entity =>
+        {
+            entity.Property(a => a.Status).HasConversion<string>().HasMaxLength(20);
+            entity.Property(a => a.RiskLevel).HasConversion<string>().HasMaxLength(20);
+            entity.Property(a => a.Recommendation).IsRequired();
+            entity.HasIndex(a => a.Status);
+            entity.HasOne(a => a.Issue)
+                .WithMany(i => i.Advisories)
+                .HasForeignKey(a => a.IssueId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(a => a.ReviewedByUser)
+                .WithMany()
+                .HasForeignKey(a => a.ReviewedByFK)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        builder.Entity<AgentWorkflow>(entity =>
+        {
+            entity.Property(w => w.Objective).HasMaxLength(200).IsRequired();
+            entity.Property(w => w.CurrentStep).HasMaxLength(100);
+            entity.Property(w => w.Status).HasConversion<string>().HasMaxLength(20);
+            entity.HasOne(w => w.Advisory)
+                .WithMany(a => a.Workflows)
+                .HasForeignKey(w => w.AdvisoryId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        builder.Entity<AgentExecution>(entity =>
+        {
+            entity.Property(e => e.AgentName).HasMaxLength(50).IsRequired();
+            entity.Property(e => e.Status).HasConversion<string>().HasMaxLength(20);
+            entity.HasOne(e => e.Workflow)
+                .WithMany(w => w.Executions)
+                .HasForeignKey(e => e.WorkflowId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
     }
