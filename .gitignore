@@ -34,3 +34,6 @@ ai_agents/.pytest_cache/
 .idea/
 .DS_Store
 Thumbs.db
+
+# ===== Graphify (local codebase knowledge graph) =====
+graphify-out/
