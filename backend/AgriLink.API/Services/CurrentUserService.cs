@@ -33,4 +33,13 @@ public class CurrentUserService : ICurrentUserService
             .Select(f => (int?)f.FarmerProfileId)
             .FirstOrDefaultAsync();
     }
+
+    public async Task<int?> GetOfficerProfileIdAsync(ClaimsPrincipal principal)
+    {
+        var userId = GetUserId(principal);
+        return await _db.OfficerProfiles
+            .Where(o => o.UserId == userId)
+            .Select(o => (int?)o.OfficerProfileId)
+            .FirstOrDefaultAsync();
+    }
 }
