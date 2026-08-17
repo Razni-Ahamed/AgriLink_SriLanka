@@ -63,6 +63,7 @@ builder.Services.AddAuthorization();
 // ----- App services -----
 builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
+builder.Services.AddScoped<INotificationService, NotificationService>();
 
 // ----- CORS (dev-only placeholder; tighten to real frontend origins before deploy) -----
 builder.Services.AddCors(options =>
