@@ -4,6 +4,7 @@ using AgriLink.API.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 namespace AgriLink.API.Controllers;
 
 [ApiController]
@@ -79,6 +80,34 @@ public class AdminController : ControllerBase
             FullName = user.FullName,
             Email = user.Email!,
             Role = role,
+        });
+    }
+
+    [HttpGet("metrics")]
+    public async Task<ActionResult<AdminMetricsResponse>> Metrics()
+    {
+        var now = DateTime.UtcNow;
+
+        var totalUsers = await _db.Users.CountAsync();
+        var totalFarms = await _db.Farms.CountAsync();
+        var totalCrops = await _db.Crops.CountAsync();
+        var issuesReported = await _db.CropIssues.CountAsync();
+        var issuesResolved = await _db.CropIssues.CountAsync(i => i.Status == IssueStatus.Resolved);
+        var harvestVolumeSoldThisMonth = await _db.Orders
+            .Where(o => o.Status == OrderStatus.Completed
+                && o.CompletedAt.HasValue
+                && o.CompletedAt.Value.Year == now.Year
+                && o.CompletedAt.Value.Month == now.Month)
+            .SumAsync(o => (decimal?)o.TotalQuantity) ?? 0;
+
+        return Ok(new AdminMetricsResponse
+        {
+            TotalUsers = totalUsers,
+            TotalFarms = totalFarms,
+            TotalCrops = totalCrops,
+            IssuesReported = issuesReported,
+            IssuesResolved = issuesResolved,
+            HarvestVolumeSoldThisMonth = harvestVolumeSoldThisMonth,
         });
     }
 }
