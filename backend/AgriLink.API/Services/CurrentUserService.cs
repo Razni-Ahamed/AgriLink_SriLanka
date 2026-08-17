@@ -42,4 +42,13 @@ public class CurrentUserService : ICurrentUserService
             .Select(o => (int?)o.OfficerProfileId)
             .FirstOrDefaultAsync();
     }
+
+    public async Task<int?> GetBuyerProfileIdAsync(ClaimsPrincipal principal)
+    {
+        var userId = GetUserId(principal);
+        return await _db.BuyerProfiles
+            .Where(b => b.UserId == userId)
+            .Select(b => (int?)b.BuyerProfileId)
+            .FirstOrDefaultAsync();
+    }
 }

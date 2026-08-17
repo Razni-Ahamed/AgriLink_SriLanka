@@ -8,4 +8,5 @@ public interface ICurrentUserService
     bool IsAdmin(ClaimsPrincipal principal);
     Task<int?> GetFarmerProfileIdAsync(ClaimsPrincipal principal);
     Task<int?> GetOfficerProfileIdAsync(ClaimsPrincipal principal);
+    Task<int?> GetBuyerProfileIdAsync(ClaimsPrincipal principal);
 }
