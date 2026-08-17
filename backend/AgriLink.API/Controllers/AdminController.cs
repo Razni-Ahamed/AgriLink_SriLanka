@@ -4,7 +4,6 @@ using AgriLink.API.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-
 namespace AgriLink.API.Controllers;
 
 [ApiController]
