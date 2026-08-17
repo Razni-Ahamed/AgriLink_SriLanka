@@ -22,6 +22,9 @@ public class AgriLinkDbContext : IdentityDbContext<ApplicationUser, IdentityRole
     public DbSet<AIAdvisory> AIAdvisories => Set<AIAdvisory>();
     public DbSet<AgentWorkflow> AgentWorkflows => Set<AgentWorkflow>();
     public DbSet<AgentExecution> AgentExecutions => Set<AgentExecution>();
+    public DbSet<HarvestListing> HarvestListings => Set<HarvestListing>();
+    public DbSet<PurchaseRequest> PurchaseRequests => Set<PurchaseRequest>();
+    public DbSet<Order> Orders => Set<Order>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -157,6 +160,60 @@ public class AgriLinkDbContext : IdentityDbContext<ApplicationUser, IdentityRole
                 .WithMany(w => w.Executions)
                 .HasForeignKey(e => e.WorkflowId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        builder.Entity<HarvestListing>(entity =>
+        {
+            entity.Property(h => h.Quantity).HasColumnType("decimal(10,2)");
+            entity.Property(h => h.AvailableQuantity).HasColumnType("decimal(10,2)");
+            entity.Property(h => h.PricePerUnit).HasColumnType("decimal(10,2)");
+            entity.Property(h => h.Location).HasMaxLength(150).IsRequired();
+            entity.Property(h => h.Status).HasConversion<string>().HasMaxLength(20);
+            entity.HasIndex(h => h.Status);
+            entity.HasOne(h => h.FarmerProfile)
+                .WithMany()
+                .HasForeignKey(h => h.FarmerProfileId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(h => h.Crop)
+                .WithMany()
+                .HasForeignKey(h => h.CropId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        builder.Entity<PurchaseRequest>(entity =>
+        {
+            entity.Property(r => r.RequestedQuantity).HasColumnType("decimal(10,2)");
+            entity.Property(r => r.Message).HasMaxLength(500);
+            entity.Property(r => r.Status).HasConversion<string>().HasMaxLength(20);
+            entity.HasIndex(r => r.Status);
+            entity.HasOne(r => r.Harvest)
+                .WithMany(h => h.PurchaseRequests)
+                .HasForeignKey(r => r.HarvestId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(r => r.BuyerProfile)
+                .WithMany()
+                .HasForeignKey(r => r.BuyerProfileId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        builder.Entity<Order>(entity =>
+        {
+            entity.Property(o => o.TotalQuantity).HasColumnType("decimal(10,2)");
+            entity.Property(o => o.TotalAmount).HasColumnType("decimal(10,2)");
+            entity.Property(o => o.Status).HasConversion<string>().HasMaxLength(20);
+            entity.HasIndex(o => o.Status);
+            entity.HasOne(o => o.Request)
+                .WithOne(r => r.Order)
+                .HasForeignKey<Order>(o => o.RequestId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(o => o.FarmerProfile)
+                .WithMany()
+                .HasForeignKey(o => o.FarmerProfileId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(o => o.BuyerProfile)
+                .WithMany()
+                .HasForeignKey(o => o.BuyerProfileId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
     }
 }
