@@ -1,0 +1,36 @@
+@import 'tailwindcss';
+
+/*
+ * Design tokens — placeholder wiring so the app renders with the "Organic Bento" palette.
+ * Amalki owns the actual authoring of this file; treat these as provisional values only.
+ */
+@theme {
+  --color-brand-forest: #1f4d36;
+  --color-brand-forest-light: #4a7c59;
+  --color-brand-harvest: #d9a441;
+  --color-brand-terracotta: #c4623b;
+  --color-bg-canvas: #faf7f0;
+  --color-bg-surface: #fffdf9;
+  --color-text-primary: #26201a;
+  --color-text-secondary: #6b6259;
+  --color-state-success: #3e7a4f;
+  --color-state-danger: #b84c3c;
+  --color-state-info: #3e7a82;
+
+  --font-display: 'Fraunces', serif;
+  --font-body: 'Plus Jakarta Sans', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-bg-canvas: #121814;
+    --color-bg-surface: #1a231c;
+  }
+}
+
+body {
+  background-color: var(--color-bg-canvas);
+  color: var(--color-text-primary);
+  font-family: var(--font-body);
+}
