@@ -1,8 +1,8 @@
-using System.Text.Json;
 using AgriLink.API.Data;
 using AgriLink.API.DTOs.Issues;
 using AgriLink.API.Models;
 using AgriLink.API.Services;
+using AgriLink.API.Services.Agents;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -16,11 +16,13 @@ public class IssuesController : ControllerBase
 {
     private readonly AgriLinkDbContext _db;
     private readonly ICurrentUserService _currentUser;
+    private readonly IAgentOrchestrator _orchestrator;
 
-    public IssuesController(AgriLinkDbContext db, ICurrentUserService currentUser)
+    public IssuesController(AgriLinkDbContext db, ICurrentUserService currentUser, IAgentOrchestrator orchestrator)
     {
         _db = db;
         _currentUser = currentUser;
+        _orchestrator = orchestrator;
     }
 
     [HttpPost]
@@ -48,6 +50,11 @@ public class IssuesController : ControllerBase
             return Forbid();
         }
 
+        var since = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-30));
+        var recentActivities = await _db.CropActivities
+            .Where(a => a.CropId == request.CropId && a.ActivityDate >= since)
+            .ToListAsync();
+
         var issue = new CropIssue
         {
             CropId = request.CropId,
@@ -58,9 +65,7 @@ public class IssuesController : ControllerBase
             Status = IssueStatus.AwaitingReview,
         };
 
-        // Week 5: stub AI response (hard-coded). Replace with the real
-        // Planner/Crop/Weather/Validation agent pipeline in Week 6.
-        var advisory = BuildStubAdvisory(issue);
+        var advisory = await _orchestrator.RunPipelineAsync(issue, crop, recentActivities, HttpContext.RequestAborted);
         issue.Advisories.Add(advisory);
 
         _db.CropIssues.Add(issue);
@@ -97,55 +102,6 @@ public class IssuesController : ControllerBase
             .ToListAsync();
 
         return Ok(issues.Select(ToResponse));
-    }
-
-    private static AIAdvisory BuildStubAdvisory(CropIssue issue)
-    {
-        var now = DateTime.UtcNow;
-
-        var riskLevel = issue.Severity switch
-        {
-            IssueSeverity.High => RiskLevel.High,
-            IssueSeverity.Medium => RiskLevel.Medium,
-            _ => RiskLevel.Low,
-        };
-
-        var advisory = new AIAdvisory
-        {
-            Status = AdvisoryStatus.Draft,
-            RiskLevel = riskLevel,
-            Recommendation = $"Preliminary review of '{issue.Title}': monitor the crop closely and consult " +
-                              "an agricultural officer before taking action. This is a stub recommendation " +
-                              "pending the Planner/Crop/Weather/Validation agent pipeline.",
-            ConfidenceScore = 0.5f,
-            RequiresApproval = true,
-        };
-
-        var workflow = new AgentWorkflow
-        {
-            Advisory = advisory,
-            Objective = $"Analyze crop issue: {issue.Title}",
-            CurrentStep = "StubAnalysis",
-            Status = WorkflowStatus.Completed,
-            RequiresHumanApproval = true,
-            StartedAt = now,
-            CompletedAt = now,
-        };
-
-        var execution = new AgentExecution
-        {
-            Workflow = workflow,
-            AgentName = "StubAgent",
-            InputData = JsonSerializer.Serialize(new { issue.Title, issue.Description, Severity = issue.Severity.ToString() }),
-            OutputData = JsonSerializer.Serialize(new { RiskLevel = riskLevel.ToString(), advisory.Recommendation, advisory.ConfidenceScore }),
-            Status = ExecutionStatus.Completed,
-            StartedAt = now,
-            CompletedAt = now,
-        };
-
-        workflow.Executions.Add(execution);
-        advisory.Workflows.Add(workflow);
-        return advisory;
     }
 
     private static CropIssueResponse ToResponse(CropIssue issue) => new()
