@@ -1,8 +1,10 @@
 import type { ButtonHTMLAttributes, ReactNode } from 'react'
 import { motion } from 'motion/react'
 import { cn } from '@/lib/utils'
+import { Spinner } from './Spinner'
 
 type Variant = 'primary' | 'secondary' | 'ghost' | 'danger'
+type Size = 'sm' | 'md' | 'lg'
 
 type NativeButtonProps = Omit<
   ButtonHTMLAttributes<HTMLButtonElement>,
@@ -11,6 +13,8 @@ type NativeButtonProps = Omit<
 
 interface ButtonProps extends NativeButtonProps {
   variant?: Variant
+  size?: Size
+  isLoading?: boolean
   children: ReactNode
 }
 
@@ -21,17 +25,34 @@ const variantClasses: Record<Variant, string> = {
   danger: 'bg-state-danger text-bg-surface hover:brightness-95',
 }
 
-export function Button({ variant = 'primary', className, children, ...props }: ButtonProps) {
+const sizeClasses: Record<Size, string> = {
+  sm: 'px-3 py-1.5 text-xs',
+  md: 'px-4 py-2 text-sm',
+  lg: 'px-5 py-2.5 text-base',
+}
+
+export function Button({
+  variant = 'primary',
+  size = 'md',
+  isLoading = false,
+  className,
+  children,
+  disabled,
+  ...props
+}: ButtonProps) {
   return (
     <motion.button
       whileTap={{ scale: 0.96 }}
+      disabled={disabled || isLoading}
       className={cn(
-        'inline-flex items-center justify-center gap-2 rounded-2xl px-4 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50',
+        'inline-flex items-center justify-center gap-2 rounded-2xl font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50',
         variantClasses[variant],
+        sizeClasses[size],
         className,
       )}
       {...props}
     >
+      {isLoading && <Spinner size="sm" />}
       {children}
     </motion.button>
   )
