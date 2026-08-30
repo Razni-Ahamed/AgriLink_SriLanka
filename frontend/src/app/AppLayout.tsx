@@ -3,6 +3,7 @@ import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/auth/authStore'
 import { getNavItemsForRole } from './navConfig'
 import { cn } from '@/lib/utils'
+import { ToastViewport } from '@/components/ui/Toast'
 
 export function AppLayout() {
   const location = useLocation()
@@ -19,6 +20,7 @@ export function AppLayout() {
 
   return (
     <div className="min-h-screen bg-bg-canvas">
+      <ToastViewport />
       <header className="sticky top-0 z-40 flex items-center justify-between border-b border-brand-forest/10 bg-bg-surface/80 px-6 py-3 backdrop-blur-md">
         <span className="font-display text-xl text-brand-forest">AgriLink</span>
 

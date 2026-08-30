@@ -1,8 +1,11 @@
 @import 'tailwindcss';
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 /*
- * Design tokens — placeholder wiring so the app renders with the "Organic Bento" palette.
- * Amalki owns the actual authoring of this file; treat these as provisional values only.
+ * Design tokens for the "Organic Bento" theme. Dark mode is class-based
+ * (toggled via useUiStore, persisted to localStorage) rather than following
+ * only OS preference, so it can be switched from within the app.
  */
 @theme {
   --color-brand-forest: #1f4d36;
@@ -22,11 +25,10 @@
   --font-mono: 'JetBrains Mono', monospace;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --color-bg-canvas: #121814;
-    --color-bg-surface: #1a231c;
-  }
+.dark {
+  --color-bg-canvas: #121814;
+  --color-bg-surface: #1a231c;
+  /* brand-harvest / brand-terracotta stay unchanged in dark mode */
 }
 
 body {
