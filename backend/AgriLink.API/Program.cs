@@ -3,9 +3,11 @@ using System.Text.Json.Serialization;
 using AgriLink.API.Data;
 using AgriLink.API.Models;
 using AgriLink.API.Services;
+using AgriLink.API.Services.Agents;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 
@@ -64,6 +66,19 @@ builder.Services.AddAuthorization();
 builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
+
+builder.Services.Configure<WeatherOptions>(builder.Configuration.GetSection("Weather"));
+
+builder.Services.AddScoped<IPlannerAgent, PlannerAgent>();
+builder.Services.AddScoped<ICropAnalysisAgent, CropAnalysisAgent>();
+builder.Services.AddScoped<IValidationAgent, ValidationAgent>();
+builder.Services.AddScoped<IAgentOrchestrator, AgentOrchestrator>();
+
+builder.Services.AddHttpClient<IWeatherAgent, WeatherAgent>((sp, client) =>
+{
+    var options = sp.GetRequiredService<IOptions<WeatherOptions>>().Value;
+    client.Timeout = TimeSpan.FromSeconds(options.TimeoutSeconds);
+});
 
 // ----- CORS (dev-only placeholder; tighten to real frontend origins before deploy) -----
 builder.Services.AddCors(options =>
