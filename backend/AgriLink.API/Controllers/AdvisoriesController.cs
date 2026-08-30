@@ -41,6 +41,11 @@ public class AdvisoriesController : ControllerBase
             {
                 return Forbid();
             }
+
+            if (advisory.Status == AdvisoryStatus.Draft)
+            {
+                return NotFound();
+            }
         }
 
         return Ok(ToResponse(advisory));

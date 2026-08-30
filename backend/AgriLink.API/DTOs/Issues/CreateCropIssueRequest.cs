@@ -11,7 +11,7 @@ public class CreateCropIssueRequest
     [Required, MaxLength(150)]
     public string Title { get; set; } = string.Empty;
 
-    [Required]
+    [Required, MaxLength(2000)]
     public string Description { get; set; } = string.Empty;
 
     [Required]

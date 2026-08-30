@@ -22,13 +22,6 @@ mobile/.pub/
 **/ios/Pods/
 **/android/.gradle/
 
-# ===== Python (ai_agents) =====
-ai_agents/__pycache__/
-ai_agents/*.pyc
-ai_agents/.venv/
-ai_agents/venv/
-ai_agents/.pytest_cache/
-
 # ===== Editors / OS =====
 .vscode/
 .idea/
@@ -37,3 +30,5 @@ Thumbs.db
 
 # ===== Graphify (local codebase knowledge graph) =====
 graphify-out/
+
+frontend-agent-prompts/
