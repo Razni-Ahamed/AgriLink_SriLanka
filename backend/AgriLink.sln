@@ -5,6 +5,8 @@ VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AgriLink.API", "AgriLink.API\AgriLink.API.csproj", "{1B5D01D5-9657-4922-900F-78EB8F711D26}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AgriLink.API.Tests", "AgriLink.API.Tests\AgriLink.API.Tests.csproj", "{B05EB169-39DD-44AD-8362-F9836B977C96}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -18,5 +20,9 @@ Global
 		{1B5D01D5-9657-4922-900F-78EB8F711D26}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1B5D01D5-9657-4922-900F-78EB8F711D26}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1B5D01D5-9657-4922-900F-78EB8F711D26}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B05EB169-39DD-44AD-8362-F9836B977C96}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B05EB169-39DD-44AD-8362-F9836B977C96}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B05EB169-39DD-44AD-8362-F9836B977C96}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B05EB169-39DD-44AD-8362-F9836B977C96}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
