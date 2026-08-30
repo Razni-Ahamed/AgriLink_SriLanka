@@ -112,6 +112,7 @@ public class AgriLinkDbContext : IdentityDbContext<ApplicationUser, IdentityRole
 
         builder.Entity<CropIssue>(entity =>
         {
+            entity.HasKey(i => i.IssueId);
             entity.Property(i => i.Title).HasMaxLength(150).IsRequired();
             entity.Property(i => i.Description).IsRequired();
             entity.Property(i => i.Severity).HasConversion<string>().HasMaxLength(20);
@@ -129,6 +130,7 @@ public class AgriLinkDbContext : IdentityDbContext<ApplicationUser, IdentityRole
 
         builder.Entity<AIAdvisory>(entity =>
         {
+            entity.HasKey(a => a.AdvisoryId);
             entity.Property(a => a.Status).HasConversion<string>().HasMaxLength(20);
             entity.Property(a => a.RiskLevel).HasConversion<string>().HasMaxLength(20);
             entity.Property(a => a.Recommendation).IsRequired();
@@ -145,6 +147,7 @@ public class AgriLinkDbContext : IdentityDbContext<ApplicationUser, IdentityRole
 
         builder.Entity<AgentWorkflow>(entity =>
         {
+            entity.HasKey(w => w.WorkflowId);
             entity.Property(w => w.Objective).HasMaxLength(200).IsRequired();
             entity.Property(w => w.CurrentStep).HasMaxLength(100);
             entity.Property(w => w.Status).HasConversion<string>().HasMaxLength(20);
@@ -156,6 +159,7 @@ public class AgriLinkDbContext : IdentityDbContext<ApplicationUser, IdentityRole
 
         builder.Entity<AgentExecution>(entity =>
         {
+            entity.HasKey(e => e.ExecutionId);
             entity.Property(e => e.AgentName).HasMaxLength(50).IsRequired();
             entity.Property(e => e.Status).HasConversion<string>().HasMaxLength(20);
             entity.HasOne(e => e.Workflow)
@@ -166,6 +170,7 @@ public class AgriLinkDbContext : IdentityDbContext<ApplicationUser, IdentityRole
 
         builder.Entity<HarvestListing>(entity =>
         {
+            entity.HasKey(h => h.HarvestId);
             entity.Property(h => h.Quantity).HasColumnType("decimal(10,2)");
             entity.Property(h => h.AvailableQuantity).HasColumnType("decimal(10,2)");
             entity.Property(h => h.PricePerUnit).HasColumnType("decimal(10,2)");
@@ -184,6 +189,7 @@ public class AgriLinkDbContext : IdentityDbContext<ApplicationUser, IdentityRole
 
         builder.Entity<PurchaseRequest>(entity =>
         {
+            entity.HasKey(r => r.RequestId);
             entity.Property(r => r.RequestedQuantity).HasColumnType("decimal(10,2)");
             entity.Property(r => r.Message).HasMaxLength(500);
             entity.Property(r => r.Status).HasConversion<string>().HasMaxLength(20);
@@ -231,6 +237,7 @@ public class AgriLinkDbContext : IdentityDbContext<ApplicationUser, IdentityRole
 
         builder.Entity<AuditLog>(entity =>
         {
+            entity.HasKey(a => a.AuditId);
             entity.Property(a => a.Action).HasMaxLength(100).IsRequired();
             entity.Property(a => a.EntityName).HasMaxLength(100).IsRequired();
             entity.HasIndex(a => a.UserId);
