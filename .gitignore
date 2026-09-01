@@ -32,3 +32,7 @@ Thumbs.db
 graphify-out/
 
 frontend-agent-prompts/
+01_PLANNER_AGENT_PROMPT.md
+02_CROP_ANALYSIS_AGENT_PROMPT.md
+03_WEATHER_AGENT_PROMPT.md
+04_VALIDATION_AGENT_PROMPT.md
