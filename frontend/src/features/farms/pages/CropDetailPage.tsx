@@ -1,5 +1,5 @@
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, Warning } from '@phosphor-icons/react'
+import { ArrowLeft, Basket, Warning } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/Button'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { Select } from '@/components/ui/Select'
@@ -76,18 +76,30 @@ export function CropDetailPage() {
         </Select>
       </div>
 
-      <Button
-        variant="secondary"
-        className="w-fit"
-        onClick={() =>
-          navigate(
-            `/issues/new?cropId=${crop.cropId}&cropType=${encodeURIComponent(crop.cropType)}`,
-          )
-        }
-      >
-        <Warning size={16} weight="duotone" />
-        Report an Issue
-      </Button>
+      <div className="flex gap-2">
+        <Button
+          variant="secondary"
+          onClick={() =>
+            navigate(
+              `/issues/new?cropId=${crop.cropId}&cropType=${encodeURIComponent(crop.cropType)}`,
+            )
+          }
+        >
+          <Warning size={16} weight="duotone" />
+          Report an Issue
+        </Button>
+        <Button
+          variant="secondary"
+          onClick={() =>
+            navigate(
+              `/marketplace/mine?cropId=${crop.cropId}&cropType=${encodeURIComponent(crop.cropType)}`,
+            )
+          }
+        >
+          <Basket size={16} weight="duotone" />
+          List for Sale
+        </Button>
+      </div>
     </div>
   )
 }
