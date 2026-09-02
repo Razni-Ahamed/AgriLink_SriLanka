@@ -85,6 +85,7 @@ public class IssuesController : ControllerBase
         }
 
         var issues = await _db.CropIssues
+            .Include(i => i.Advisories)
             .Where(i => i.FarmerProfileId == farmerProfileId)
             .OrderByDescending(i => i.CreatedAt)
             .ToListAsync();
@@ -97,6 +98,7 @@ public class IssuesController : ControllerBase
     public async Task<ActionResult<List<CropIssueResponse>>> Pending()
     {
         var issues = await _db.CropIssues
+            .Include(i => i.Advisories)
             .Where(i => i.Advisories.Any(a => a.Status == AdvisoryStatus.Draft))
             .OrderBy(i => i.CreatedAt)
             .ToListAsync();
@@ -113,5 +115,9 @@ public class IssuesController : ControllerBase
         Severity = issue.Severity.ToString(),
         Status = issue.Status.ToString(),
         CreatedAt = issue.CreatedAt,
+        AdvisoryId = issue.Advisories
+            .OrderByDescending(a => a.AdvisoryId)
+            .Select(a => (int?)a.AdvisoryId)
+            .FirstOrDefault(),
     };
 }
