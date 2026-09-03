@@ -1,0 +1,37 @@
+# Normalize all text files to LF in the repository, regardless of which OS/editor
+# checks them out or commits them (this repo is edited from both Windows and WSL).
+* text=auto eol=lf
+
+# Explicit, in case autodetection ever misses one of these
+*.cs text eol=lf
+*.csproj text eol=lf
+*.sln text eol=lf
+*.json text eol=lf
+*.ts text eol=lf
+*.tsx text eol=lf
+*.js text eol=lf
+*.jsx text eol=lf
+*.dart text eol=lf
+*.md text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.css text eol=lf
+*.html text eol=lf
+
+# Windows-only scripts should keep CRLF
+*.bat text eol=crlf
+*.ps1 text eol=crlf
+
+# Never touch binary files
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.eot binary
+*.pdf binary
+*.zip binary
+*.apk binary
