@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { ArrowLeft, Leaf, Plus } from '@phosphor-icons/react'
+import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { IconBadge } from '@/components/ui/IconBadge'
@@ -8,12 +9,15 @@ import { Modal } from '@/components/ui/Modal'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { CardHover } from '@/components/ui/motion/CardHover'
 import { StaggerList } from '@/components/ui/motion/StaggerList'
-import { formatArea } from '@/lib/utils'
+import { formatQuantity } from '@/lib/utils'
+import { useStatusLabel } from '@/lib/useStatusLabel'
 import { CropForm } from '../components/CropForm'
 import { useField } from '../hooks/useFarms'
 import { useFieldCrops, usePlantCrop } from '../hooks/useCrops'
 
 export function FieldDetailPage() {
+  const { t } = useTranslation(['farms', 'common'])
+  const statusLabel = useStatusLabel()
   const { farmId, fieldId } = useParams<{ farmId: string; fieldId: string }>()
   const farmIdNum = Number(farmId)
   const fieldIdNum = Number(fieldId)
@@ -29,7 +33,7 @@ export function FieldDetailPage() {
   }
 
   if (!field) {
-    return <p className="text-sm text-text-secondary">Field not found.</p>
+    return <p className="text-sm text-text-secondary">{t('farms:field.notFound')}</p>
   }
 
   return (
@@ -39,27 +43,26 @@ export function FieldDetailPage() {
         className="flex w-fit items-center gap-1 text-sm text-text-secondary hover:text-brand-forest"
       >
         <ArrowLeft size={14} />
-        Back to farm
+        {t('farms:field.back')}
       </Link>
 
       <div>
         <h1 className="font-display text-2xl text-text-primary">{field.name}</h1>
-        <p className="font-mono text-sm text-brand-forest">{formatArea(field.area)}</p>
+        <p className="font-mono text-sm text-brand-forest">
+          {t('common:units.acres', { value: formatQuantity(field.area) })}
+        </p>
       </div>
 
       <div className="flex items-center justify-between">
-        <h2 className="font-display text-lg text-text-primary">Crops</h2>
+        <h2 className="font-display text-lg text-text-primary">{t('farms:field.crops')}</h2>
         <Button onClick={() => setModalOpen(true)}>
           <Plus size={16} weight="bold" />
-          Plant a Crop
+          {t('farms:field.plantCrop')}
         </Button>
       </div>
 
       {crops.length === 0 ? (
-        <p className="text-sm text-text-secondary">
-          No crops planted this session yet. Newly planted crops appear here — the backend has no
-          endpoint to list a field's crops after a page refresh (flagged to the team).
-        </p>
+        <p className="text-sm text-text-secondary">{t('farms:field.empty')}</p>
       ) : (
         <StaggerList className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {crops.map((crop) => (
@@ -72,9 +75,11 @@ export function FieldDetailPage() {
                     </IconBadge>
                     <h3 className="font-display text-lg text-text-primary">{crop.cropType}</h3>
                     <p className="text-sm text-text-secondary">
-                      {crop.variety || 'No variety noted'}
+                      {crop.variety || t('farms:crop.noVariety')}
                     </p>
-                    <p className="font-mono text-xs text-brand-forest">{crop.status}</p>
+                    <p className="font-mono text-xs text-brand-forest">
+                      {statusLabel('crop', crop.status)}
+                    </p>
                   </Card>
                 </Link>
               </CardHover>
@@ -83,9 +88,13 @@ export function FieldDetailPage() {
         </StaggerList>
       )}
 
-      <Modal open={isModalOpen} onClose={() => setModalOpen(false)} title="Plant a Crop">
+      <Modal
+        open={isModalOpen}
+        onClose={() => setModalOpen(false)}
+        title={t('farms:field.plantCrop')}
+      >
         <CropForm
-          submitLabel="Plant Crop"
+          submitLabel={t('farms:field.plantCropSubmit')}
           isSubmitting={plantCrop.isPending}
           onSubmit={(values) => plantCrop.mutate(values, { onSuccess: () => setModalOpen(false) })}
         />

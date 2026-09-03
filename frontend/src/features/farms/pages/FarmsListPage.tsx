@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Plus } from '@phosphor-icons/react'
+import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/Button'
 import { Modal } from '@/components/ui/Modal'
 import { Skeleton } from '@/components/ui/Skeleton'
@@ -9,6 +10,7 @@ import { FarmForm } from '../components/FarmForm'
 import { useCreateFarm, useFarms } from '../hooks/useFarms'
 
 export function FarmsListPage() {
+  const { t } = useTranslation('farms')
   const { data: farms, isLoading } = useFarms()
   const createFarm = useCreateFarm()
   const [isModalOpen, setModalOpen] = useState(false)
@@ -16,10 +18,10 @@ export function FarmsListPage() {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
-        <h1 className="font-display text-2xl text-text-primary">Your Farms</h1>
+        <h1 className="font-display text-2xl text-text-primary">{t('list.title')}</h1>
         <Button onClick={() => setModalOpen(true)}>
           <Plus size={16} weight="bold" />
-          New Farm
+          {t('list.newFarm')}
         </Button>
       </div>
 
@@ -32,9 +34,7 @@ export function FarmsListPage() {
       )}
 
       {!isLoading && farms && farms.length === 0 && (
-        <p className="text-sm text-text-secondary">
-          You don't have any farms yet. Create one to start tracking fields and crops.
-        </p>
+        <p className="text-sm text-text-secondary">{t('list.empty')}</p>
       )}
 
       {!isLoading && farms && farms.length > 0 && (
@@ -47,9 +47,9 @@ export function FarmsListPage() {
         </StaggerList>
       )}
 
-      <Modal open={isModalOpen} onClose={() => setModalOpen(false)} title="New Farm">
+      <Modal open={isModalOpen} onClose={() => setModalOpen(false)} title={t('list.newFarm')}>
         <FarmForm
-          submitLabel="Create Farm"
+          submitLabel={t('list.createFarm')}
           isSubmitting={createFarm.isPending}
           onSubmit={(values) => createFarm.mutate(values, { onSuccess: () => setModalOpen(false) })}
         />

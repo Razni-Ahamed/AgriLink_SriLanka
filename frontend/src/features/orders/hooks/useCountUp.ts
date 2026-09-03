@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 /** Animates from 0 to `target` once, on mount / whenever `target` changes. */
 export function useCountUp(target: number, durationMs = 800): number {
   const [value, setValue] = useState(0)
-  const frameRef = useRef<number>()
+  const frameRef = useRef<number | undefined>(undefined)
 
   useEffect(() => {
     const start = performance.now()

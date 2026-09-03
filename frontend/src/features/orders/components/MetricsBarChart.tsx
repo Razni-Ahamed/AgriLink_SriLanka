@@ -7,7 +7,9 @@ import {
   Tooltip,
   XAxis,
 } from 'recharts'
+import { useTranslation } from 'react-i18next'
 import { Card } from '@/components/ui/Card'
+import { formatQuantity } from '@/lib/utils'
 import { chartColors } from '../lib/chartColors'
 
 interface MetricsBarChartProps {
@@ -18,9 +20,11 @@ interface MetricsBarChartProps {
 // comparison, not series identity — so this is a single sequential hue with
 // no legend, per the dataviz skill's job->color mapping.
 export function MetricsBarChart({ data }: MetricsBarChartProps) {
+  const { t } = useTranslation('orders')
+
   return (
     <Card className="flex flex-col gap-4">
-      <h3 className="font-display text-lg text-text-primary">Platform totals</h3>
+      <h3 className="font-display text-lg text-text-primary">{t('admin.platformTotals')}</h3>
       <div className="h-64">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={data} margin={{ top: 24, right: 8, left: 8, bottom: 0 }}>
@@ -40,7 +44,7 @@ export function MetricsBarChart({ data }: MetricsBarChartProps) {
                 return (
                   <div className="rounded-xl border border-brand-forest/10 bg-bg-surface px-3 py-2 text-sm shadow-lg">
                     <span className="font-mono text-text-primary">
-                      {Number(payload[0].value).toLocaleString('en-LK')}
+                      {formatQuantity(Number(payload[0].value))}
                     </span>
                   </div>
                 )

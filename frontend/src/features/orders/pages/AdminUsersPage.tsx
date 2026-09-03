@@ -1,17 +1,19 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Card } from '@/components/ui/Card'
 import { useCreateUser } from '../hooks/useAdminMetrics'
 import { UserCreateForm } from '../components/UserCreateForm'
 
 export function AdminUsersPage() {
+  const { t } = useTranslation(['orders', 'common'])
   const createUser = useCreateUser()
   const [created, setCreated] = useState<string | null>(null)
 
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="font-display text-2xl text-text-primary">Manage Users</h1>
-        <p className="text-sm text-text-secondary">Create Officer or Buyer accounts.</p>
+        <h1 className="font-display text-2xl text-text-primary">{t('orders:admin.usersTitle')}</h1>
+        <p className="text-sm text-text-secondary">{t('orders:admin.usersSubtitle')}</p>
       </div>
 
       {/*
@@ -27,7 +29,10 @@ export function AdminUsersPage() {
           isSubmitting={createUser.isPending}
           onSubmit={(values) =>
             createUser.mutate(values, {
-              onSuccess: (user) => setCreated(`${user.fullName} (${user.role}) created.`),
+              onSuccess: (user) =>
+                setCreated(
+                  t('orders:admin.userCreated', { name: user.fullName, role: user.role }),
+                ),
             })
           }
         />
@@ -35,7 +40,7 @@ export function AdminUsersPage() {
 
       {created && <p className="text-sm text-state-success">{created}</p>}
       {createUser.isError && (
-        <p className="text-sm text-state-danger">Could not create the user. Check the details and try again.</p>
+        <p className="text-sm text-state-danger">{t('orders:admin.createUserError')}</p>
       )}
     </div>
   )

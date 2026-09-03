@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { cn } from '@/lib/utils'
 
 type SpinnerSize = 'sm' | 'md' | 'lg'
@@ -14,10 +15,12 @@ const sizeClasses: Record<SpinnerSize, string> = {
 }
 
 export function Spinner({ size = 'md', className }: SpinnerProps) {
+  const { t } = useTranslation()
+
   return (
     <span
       role="status"
-      aria-label="Loading"
+      aria-label={t('actions.loading')}
       className={cn(
         'inline-block animate-spin rounded-full border-current border-t-transparent opacity-80',
         sizeClasses[size],

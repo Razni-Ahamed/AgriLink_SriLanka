@@ -1,11 +1,14 @@
 import { AnimatePresence, motion } from 'motion/react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { useAuthStore } from '@/auth/authStore'
 import { getNavItemsForRole } from './navConfig'
 import { cn } from '@/lib/utils'
+import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher'
 import { ToastViewport } from '@/components/ui/Toast'
 
 export function AppLayout() {
+  const { t } = useTranslation()
   const location = useLocation()
   const navigate = useNavigate()
   const role = useAuthStore((state) => state.role)
@@ -22,9 +25,10 @@ export function AppLayout() {
     <div className="min-h-screen bg-bg-canvas">
       <ToastViewport />
       <header className="sticky top-0 z-40 flex items-center justify-between border-b border-brand-forest/10 bg-bg-surface/80 px-6 py-3 backdrop-blur-md">
-        <span className="font-display text-xl text-brand-forest">AgriLink</span>
+        <span className="font-display text-xl text-brand-forest">{t('appName')}</span>
 
         <div className="flex items-center gap-4">
+          <LanguageSwitcher variant="compact" />
           {/* NotificationBell slot — Jinathi wires this in */}
           {user && (
             <div className="flex items-center gap-3 text-sm">
@@ -34,7 +38,7 @@ export function AppLayout() {
                 onClick={handleLogout}
                 className="rounded-xl px-3 py-1.5 text-brand-forest hover:bg-brand-forest/10"
               >
-                Log out
+                {t('actions.logOut')}
               </button>
             </div>
           )}
@@ -56,7 +60,7 @@ export function AppLayout() {
               }
             >
               {item.icon}
-              {item.label}
+              {t(item.labelKey)}
             </NavLink>
           ))}
         </aside>

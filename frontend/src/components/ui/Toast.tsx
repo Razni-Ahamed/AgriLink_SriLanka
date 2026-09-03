@@ -1,5 +1,6 @@
 import { AnimatePresence, motion } from 'motion/react'
 import { CheckCircle, Info, WarningCircle, X } from '@phosphor-icons/react'
+import { useTranslation } from 'react-i18next'
 import { useUiStore, type Toast as ToastData, type ToastType } from '@/lib/useUiStore'
 import { cn } from '@/lib/utils'
 
@@ -16,6 +17,8 @@ const toneIcons: Record<ToastType, React.ReactNode> = {
 }
 
 function ToastItem({ toast, onDismiss }: { toast: ToastData; onDismiss: () => void }) {
+  const { t } = useTranslation()
+
   return (
     <motion.div
       layout
@@ -34,7 +37,7 @@ function ToastItem({ toast, onDismiss }: { toast: ToastData; onDismiss: () => vo
         <button
           type="button"
           onClick={onDismiss}
-          aria-label="Dismiss"
+          aria-label={t('actions.dismiss')}
           className="text-text-secondary hover:text-text-primary"
         >
           <X size={14} />

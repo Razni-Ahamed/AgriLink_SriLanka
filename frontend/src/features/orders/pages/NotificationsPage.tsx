@@ -1,4 +1,5 @@
 import { AnimatePresence, motion } from 'motion/react'
+import { useTranslation } from 'react-i18next'
 import { Card } from '@/components/ui/Card'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { cn, formatDate } from '@/lib/utils'
@@ -6,6 +7,7 @@ import { useMarkNotificationRead, useNotifications } from '../hooks/useNotificat
 import type { NotificationResponse } from '@/types/dto/notifications'
 
 function NotificationRow({ notification }: { notification: NotificationResponse }) {
+  const { t } = useTranslation('common')
   const markRead = useMarkNotificationRead()
 
   return (
@@ -27,6 +29,8 @@ function NotificationRow({ notification }: { notification: NotificationResponse 
             )}
           </AnimatePresence>
           <div>
+            {/* Title and body come from the backend, so they stay in the
+                language the server generated them in. */}
             <p className="font-medium text-text-primary">{notification.title}</p>
             <p className="text-sm text-text-secondary">{notification.message}</p>
             <p className="mt-1 text-xs text-text-secondary/70">
@@ -42,7 +46,7 @@ function NotificationRow({ notification }: { notification: NotificationResponse 
             disabled={markRead.isPending}
             className="shrink-0 text-xs font-medium text-brand-forest hover:underline disabled:opacity-50"
           >
-            Mark read
+            {t('actions.markRead')}
           </button>
         )}
       </Card>
@@ -51,11 +55,12 @@ function NotificationRow({ notification }: { notification: NotificationResponse 
 }
 
 export function NotificationsPage() {
+  const { t } = useTranslation('orders')
   const { data: notifications, isLoading } = useNotifications()
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="font-display text-2xl text-text-primary">Notifications</h1>
+      <h1 className="font-display text-2xl text-text-primary">{t('notifications.title')}</h1>
 
       {isLoading && (
         <div className="flex flex-col gap-3">
@@ -66,7 +71,7 @@ export function NotificationsPage() {
       )}
 
       {!isLoading && notifications && notifications.length === 0 && (
-        <p className="text-sm text-text-secondary">You don't have any notifications yet.</p>
+        <p className="text-sm text-text-secondary">{t('notifications.empty')}</p>
       )}
 
       {!isLoading && notifications && notifications.length > 0 && (

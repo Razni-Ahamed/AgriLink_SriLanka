@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { Card } from '@/components/ui/Card'
 import { IconBadge } from '@/components/ui/IconBadge'
+import { formatQuantity } from '@/lib/utils'
 import { useCountUp } from '../hooks/useCountUp'
 
 interface MetricsCardProps {
@@ -20,7 +21,7 @@ export function MetricsCard({ label, value, icon, tone = 'forest', suffix }: Met
       <div>
         <p className="text-sm text-text-secondary">{label}</p>
         <p className="font-mono text-2xl text-text-primary">
-          {animated.toLocaleString('en-LK')}
+          {formatQuantity(animated)}
           {suffix}
         </p>
       </div>

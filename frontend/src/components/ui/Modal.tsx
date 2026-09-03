@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
+import { useTranslation } from 'react-i18next'
 
 interface ModalProps {
   open: boolean
@@ -9,6 +10,8 @@ interface ModalProps {
 }
 
 export function Modal({ open, onClose, title, children }: ModalProps) {
+  const { t } = useTranslation()
+
   return (
     <AnimatePresence>
       {open && (
@@ -34,7 +37,7 @@ export function Modal({ open, onClose, title, children }: ModalProps) {
               <button
                 type="button"
                 onClick={onClose}
-                aria-label="Close"
+                aria-label={t('actions.close')}
                 className="text-text-secondary hover:text-text-primary"
               >
                 ×

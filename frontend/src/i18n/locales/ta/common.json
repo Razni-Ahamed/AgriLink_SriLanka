@@ -1,0 +1,105 @@
+{
+  "appName": "AgriLink",
+  "nav": {
+    "farms": "பண்ணைகள்",
+    "marketplace": "சந்தை",
+    "myListings": "எனது பட்டியல்கள்",
+    "myRequests": "எனது கோரிக்கைகள்",
+    "orders": "ஆர்டர்கள்",
+    "notifications": "அறிவிப்புகள்",
+    "adminDashboard": "நிர்வாக டாஷ்போர்டு",
+    "manageUsers": "பயனர்களை நிர்வகித்தல்"
+  },
+  "actions": {
+    "saving": "சேமிக்கிறது…",
+    "edit": "திருத்து",
+    "delete": "நீக்கு",
+    "close": "மூடு",
+    "search": "தேடு",
+    "logOut": "வெளியேறு",
+    "accept": "ஏற்கவும்",
+    "decline": "நிராகரி",
+    "viewAll": "அனைத்தையும் காண்க",
+    "markRead": "படித்ததாகக் குறி",
+    "markAllRead": "அனைத்தையும் படித்ததாகக் குறி",
+    "loading": "ஏற்றுகிறது",
+    "dismiss": "நிராகரி"
+  },
+  "language": {
+    "label": "மொழி",
+    "en": "English",
+    "si": "සිංහල",
+    "ta": "தமிழ்"
+  },
+  "units": {
+    "acres": "{{value}} ஏக்கர்",
+    "kg": "{{value}} கி.கி.",
+    "rupees": "ரூ. {{value}}",
+    "rupeesPerUnit": "ரூ. {{value}}/அலகு",
+    "availableShort": "{{value}} உள்ளது"
+  },
+  "fields": {
+    "email": "மின்னஞ்சல்",
+    "password": "கடவுச்சொல்",
+    "fullName": "முழுப் பெயர்",
+    "district": "மாவட்டம்",
+    "nic": "தேசிய அடையாள அட்டை இலக்கம்",
+    "role": "பங்கு",
+    "department": "துறை",
+    "businessName": "வணிகப் பெயர்",
+    "status": "நிலை",
+    "location": "இடம்",
+    "quantity": "அளவு",
+    "messageOptional": "செய்தி (விருப்பத்தேர்வு)"
+  },
+  "status": {
+    "crop": {
+      "Seeded": "விதைக்கப்பட்டது",
+      "Growing": "வளர்கிறது",
+      "Harvested": "அறுவடை செய்யப்பட்டது"
+    },
+    "harvest": {
+      "Active": "செயலில்",
+      "Sold": "விற்கப்பட்டது",
+      "Cancelled": "ரத்து செய்யப்பட்டது"
+    },
+    "request": {
+      "Pending": "நிலுவையில்",
+      "Accepted": "ஏற்கப்பட்டது",
+      "Declined": "நிராகரிக்கப்பட்டது",
+      "Cancelled": "ரத்து செய்யப்பட்டது"
+    },
+    "order": {
+      "Confirmed": "உறுதிப்படுத்தப்பட்டது",
+      "Completed": "நிறைவடைந்தது",
+      "Cancelled": "ரத்து செய்யப்பட்டது"
+    }
+  },
+  "roles": {
+    "Farmer": "விவசாயி",
+    "Officer": "அலுவலர்",
+    "Buyer": "வாங்குபவர்",
+    "Admin": "நிர்வாகி"
+  },
+  "validation": {
+    "nameRequired": "பெயர் தேவை",
+    "fullNameRequired": "முழுப் பெயர் தேவை",
+    "emailInvalid": "சரியான மின்னஞ்சல் முகவரியை உள்ளிடவும்",
+    "passwordRequired": "கடவுச்சொல் தேவை",
+    "passwordMin": "கடவுச்சொல் குறைந்தது 8 எழுத்துகள் இருக்க வேண்டும்",
+    "districtRequired": "மாவட்டம் தேவை",
+    "nicRequired": "தேசிய அடையாள அட்டை இலக்கம் தேவை",
+    "areaMin": "பரப்பளவு 0 ஐ விட அதிகமாக இருக்க வேண்டும்",
+    "quantityMin": "அளவு 0 ஐ விட அதிகமாக இருக்க வேண்டும்",
+    "priceMin": "விலை 0 ஐ விட அதிகமாக இருக்க வேண்டும்",
+    "cropTypeRequired": "பயிர் வகை தேவை",
+    "cropIdRequired": "பயிர் இலக்கம் தேவை",
+    "plantingDateRequired": "நடவு செய்த திகதி தேவை",
+    "expectedHarvestDateRequired": "எதிர்பார்க்கப்படும் அறுவடை திகதி தேவை",
+    "harvestDateRequired": "அறுவடை திகதி தேவை",
+    "locationRequired": "இடம் தேவை",
+    "onlyAvailable": "{{max}} மட்டுமே உள்ளது",
+    "departmentRequiredOfficer": "அலுவலர் கணக்குகளுக்குத் துறை தேவை",
+    "businessNameRequiredBuyer": "வாங்குபவர் கணக்குகளுக்கு வணிகப் பெயர் தேவை"
+  }
+}
