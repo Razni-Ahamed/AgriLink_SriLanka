@@ -1,4 +1,5 @@
 import { createBrowserRouter } from 'react-router-dom'
+import { AdminLoginPage } from '@/auth/AdminLoginPage'
 import { LoginPage } from '@/auth/LoginPage'
 import { RegisterPage } from '@/auth/RegisterPage'
 import { farmsRoutes } from '@/features/farms/routes'
@@ -13,6 +14,7 @@ import { UnauthorizedPage } from './UnauthorizedPage'
 
 export const router = createBrowserRouter([
   { path: '/login', element: <LoginPage /> },
+  { path: '/admin/login', element: <AdminLoginPage /> },
   { path: '/register', element: <RegisterPage /> },
   {
     // AppLayout wraps RequireAuth (not the reverse) so a public route — like the

@@ -71,4 +71,32 @@ public class AuthController : ControllerBase
         var token = _tokenService.GenerateToken(user, roles);
         return Ok(new AuthResponse { Token = token, Role = roles.FirstOrDefault() ?? string.Empty });
     }
+
+    /// <summary>
+    /// Separate entry point for the admin console. Issues a token only for
+    /// accounts that actually hold the Admin role, so a non-admin credential
+    /// can never open the admin UI even if it is valid elsewhere.
+    /// </summary>
+    [HttpPost("admin/login")]
+    public async Task<ActionResult<AuthResponse>> AdminLogin(LoginRequest request)
+    {
+        var user = await _userManager.FindByEmailAsync(request.Email);
+        if (user is null || !user.IsActive || !await _userManager.CheckPasswordAsync(user, request.Password))
+        {
+            return Unauthorized(new { message = "Invalid email or password." });
+        }
+
+        var roles = await _userManager.GetRolesAsync(user);
+        if (!roles.Contains(AdminSeeder.AdminRole))
+        {
+            // The caller proved ownership of this account, so naming the reason
+            // leaks nothing they don't already know — and avoids a confusing
+            // "wrong password" on a password that was in fact correct.
+            return StatusCode(StatusCodes.Status403Forbidden,
+                new { message = "This account does not have administrator access." });
+        }
+
+        var token = _tokenService.GenerateToken(user, roles);
+        return Ok(new AuthResponse { Token = token, Role = AdminSeeder.AdminRole });
+    }
 }

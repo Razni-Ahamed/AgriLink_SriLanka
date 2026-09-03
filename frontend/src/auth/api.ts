@@ -33,6 +33,15 @@ export async function login(request: LoginRequest): Promise<AuthResponse> {
   return data
 }
 
+/**
+ * Admin console entry point. The backend rejects non-Admin accounts here with
+ * a 403, so a valid Farmer/Buyer credential can never open the admin UI.
+ */
+export async function adminLogin(request: LoginRequest): Promise<AuthResponse> {
+  const { data } = await apiClient.post<AuthResponse>('/api/auth/admin/login', request)
+  return data
+}
+
 export async function register(request: RegisterRequest): Promise<AuthResponse> {
   const { data } = await apiClient.post<AuthResponse>('/api/auth/register', request)
   return data
