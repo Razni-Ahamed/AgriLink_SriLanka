@@ -24,9 +24,11 @@ builder.Services.AddDbContext<AgriLinkDbContext>(options => options.UseNpgsql(co
 // ----- Identity -----
 builder.Services.AddIdentityCore<ApplicationUser>(options =>
     {
-        options.Password.RequiredLength = 8;
-        options.Password.RequireNonAlphanumeric = false;
-        options.Password.RequireUppercase = false;
+        options.Password.RequiredLength = 12;
+        options.Password.RequireNonAlphanumeric = true;
+        options.Password.RequireUppercase = true;
+        options.Password.RequireLowercase = true;
+        options.Password.RequireDigit = true;
         options.User.RequireUniqueEmail = true;
     })
     .AddRoles<IdentityRole<int>>()
