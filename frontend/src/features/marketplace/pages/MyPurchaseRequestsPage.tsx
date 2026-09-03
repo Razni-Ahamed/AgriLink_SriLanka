@@ -1,17 +1,22 @@
+import { useTranslation } from 'react-i18next'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { StaggerList } from '@/components/ui/motion/StaggerList'
 import { useUiStore } from '@/lib/useUiStore'
 import { PurchaseRequestCard } from '../components/PurchaseRequestCard'
-import { useIncomingPurchaseRequests, useRespondToPurchaseRequest } from '../hooks/usePurchaseRequests'
+import {
+  useIncomingPurchaseRequests,
+  useRespondToPurchaseRequest,
+} from '../hooks/usePurchaseRequests'
 
 export function MyPurchaseRequestsPage() {
+  const { t } = useTranslation('marketplace')
   const { data: requests, isLoading } = useIncomingPurchaseRequests()
   const respond = useRespondToPurchaseRequest()
   const addToast = useUiStore((state) => state.addToast)
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="font-display text-2xl text-text-primary">Purchase Requests</h1>
+      <h1 className="font-display text-2xl text-text-primary">{t('requests.title')}</h1>
 
       {isLoading && (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -22,9 +27,7 @@ export function MyPurchaseRequestsPage() {
       )}
 
       {!isLoading && requests && requests.length === 0 && (
-        <p className="text-sm text-text-secondary">
-          No one has requested to buy your listings yet.
-        </p>
+        <p className="text-sm text-text-secondary">{t('requests.empty')}</p>
       )}
 
       {!isLoading && requests && requests.length > 0 && (
@@ -39,9 +42,9 @@ export function MyPurchaseRequestsPage() {
                     { requestId: request.requestId, action: 'accept' },
                     {
                       onSuccess: () =>
-                        addToast({ type: 'success', message: 'Request accepted — order created.' }),
+                        addToast({ type: 'success', message: t('requests.accepted') }),
                       onError: () =>
-                        addToast({ type: 'error', message: 'Could not accept the request.' }),
+                        addToast({ type: 'error', message: t('requests.acceptError') }),
                     },
                   )
                 }
@@ -50,7 +53,7 @@ export function MyPurchaseRequestsPage() {
                     { requestId: request.requestId, action: 'decline' },
                     {
                       onError: () =>
-                        addToast({ type: 'error', message: 'Could not decline the request.' }),
+                        addToast({ type: 'error', message: t('requests.declineError') }),
                     },
                   )
                 }

@@ -24,25 +24,25 @@ export const ordersRoutes: RouteObject[] = [
 
 export const ordersNavItems: NavItem[] = [
   {
-    label: 'Orders',
+    labelKey: 'nav.orders',
     path: '/orders/mine',
     icon: <OrderTruckIcon size={18} />,
     allowedRoles: ['Farmer', 'Buyer'],
   },
   {
-    label: 'Notifications',
+    labelKey: 'nav.notifications',
     path: '/notifications',
     icon: <Bell size={18} weight="duotone" />,
     allowedRoles: ['Farmer', 'Officer', 'Buyer', 'Admin'],
   },
   {
-    label: 'Admin Dashboard',
+    labelKey: 'nav.adminDashboard',
     path: '/admin',
     icon: <Gear size={18} weight="duotone" />,
     allowedRoles: ['Admin'],
   },
   {
-    label: 'Manage Users',
+    labelKey: 'nav.manageUsers',
     path: '/admin/users',
     icon: <UserCircle size={18} weight="duotone" />,
     allowedRoles: ['Admin'],

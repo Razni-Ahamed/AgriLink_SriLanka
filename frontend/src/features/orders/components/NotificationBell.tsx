@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { Bell } from '@/components/ui/icons'
 import { Spinner } from '@/components/ui/Spinner'
 import { formatDate } from '@/lib/utils'
@@ -14,6 +15,7 @@ const POLL_INTERVAL_MS = 30_000
 const MAX_VISIBLE = 6
 
 export function NotificationBell() {
+  const { t } = useTranslation(['orders', 'common'])
   const [isOpen, setOpen] = useState(false)
   const { data: notifications, isLoading } = useNotifications({
     refetchInterval: POLL_INTERVAL_MS,
@@ -29,7 +31,7 @@ export function NotificationBell() {
       <button
         type="button"
         onClick={() => setOpen((open) => !open)}
-        aria-label="Notifications"
+        aria-label={t('orders:notifications.title')}
         className="relative flex h-9 w-9 items-center justify-center rounded-xl text-brand-forest hover:bg-brand-forest/10"
       >
         <Bell size={20} weight="duotone" />
@@ -52,7 +54,9 @@ export function NotificationBell() {
               className="absolute right-0 z-50 mt-2 w-80 overflow-hidden rounded-2xl border border-brand-forest/10 bg-bg-surface/90 shadow-lg backdrop-blur-md"
             >
               <div className="flex items-center justify-between border-b border-brand-forest/10 px-4 py-3">
-                <h3 className="font-display text-sm text-text-primary">Notifications</h3>
+                <h3 className="font-display text-sm text-text-primary">
+                  {t('orders:notifications.title')}
+                </h3>
                 {unread.length > 0 && (
                   <button
                     type="button"
@@ -60,7 +64,7 @@ export function NotificationBell() {
                     disabled={markAllRead.isPending}
                     className="text-xs font-medium text-brand-forest hover:underline disabled:opacity-50"
                   >
-                    Mark all read
+                    {t('common:actions.markAllRead')}
                   </button>
                 )}
               </div>
@@ -74,7 +78,7 @@ export function NotificationBell() {
 
                 {!isLoading && recent.length === 0 && (
                   <p className="px-4 py-6 text-center text-sm text-text-secondary">
-                    You're all caught up.
+                    {t('orders:notifications.allCaughtUp')}
                   </p>
                 )}
 
@@ -110,7 +114,7 @@ export function NotificationBell() {
                 onClick={() => setOpen(false)}
                 className="block border-t border-brand-forest/10 px-4 py-2.5 text-center text-xs font-medium text-brand-forest hover:bg-brand-forest/5"
               >
-                View all
+                {t('common:actions.viewAll')}
               </Link>
             </motion.div>
           </>

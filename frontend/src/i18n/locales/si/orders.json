@@ -1,0 +1,45 @@
+{
+  "list": {
+    "title": "ඔබගේ ඇණවුම්",
+    "empty": "ඔබට තවම ඇණවුම් නොමැත."
+  },
+  "card": {
+    "orderNumber": "ඇණවුම #{{id}}",
+    "farmerCounterpart": "ගොවියා #{{id}}",
+    "buyerCounterpart": "ගැනුම්කරු #{{id}}"
+  },
+  "detail": {
+    "back": "ඇණවුම් වෙත ආපසු",
+    "notFound": "ඇණවුම හමු නොවීය.",
+    "placedOn": "තැබූ දිනය {{date}}",
+    "quantity": "ප්‍රමාණය",
+    "totalAmount": "මුළු මුදල",
+    "farmer": "ගොවියා",
+    "buyer": "ගැනුම්කරු",
+    "completedOn": "සම්පූර්ණ කළ දිනය {{date}}"
+  },
+  "notifications": {
+    "title": "දැනුම්දීම්",
+    "empty": "ඔබට තවම දැනුම්දීම් නොමැත.",
+    "allCaughtUp": "සියල්ල කියවා අවසන්."
+  },
+  "admin": {
+    "dashboardTitle": "පරිපාලක උපකරණ පුවරුව",
+    "totalUsers": "මුළු පරිශීලකයන්",
+    "totalFarms": "මුළු ගොවිපොළවල්",
+    "totalCrops": "මුළු බෝග",
+    "issuesReported": "වාර්තා කළ ගැටලු",
+    "issuesResolved": "විසඳූ ගැටලු",
+    "harvestVolume": "මෙම මාසයේ විකුණූ අස්වනු ප්‍රමාණය",
+    "platformTotals": "වේදිකාවේ එකතුව",
+    "chartUsers": "පරිශීලකයන්",
+    "chartFarms": "ගොවිපොළවල්",
+    "chartCrops": "බෝග",
+    "usersTitle": "පරිශීලකයන් කළමනාකරණය",
+    "usersSubtitle": "නිලධාරී හෝ ගැනුම්කරු ගිණුම් සාදන්න.",
+    "userCreated": "{{name}} ({{role}}) සාදන ලදී.",
+    "createUserError": "පරිශීලකයා සෑදිය නොහැකි විය. විස්තර පරීක්ෂා කර නැවත උත්සාහ කරන්න.",
+    "createUser": "පරිශීලකයා සාදන්න",
+    "creating": "සාදමින්…"
+  }
+}

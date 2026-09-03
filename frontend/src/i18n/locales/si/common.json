@@ -1,0 +1,105 @@
+{
+  "appName": "AgriLink",
+  "nav": {
+    "farms": "ගොවිපොළවල්",
+    "marketplace": "වෙළඳපොළ",
+    "myListings": "මගේ ලැයිස්තුගත කිරීම්",
+    "myRequests": "මගේ ඉල්ලීම්",
+    "orders": "ඇණවුම්",
+    "notifications": "දැනුම්දීම්",
+    "adminDashboard": "පරිපාලක උපකරණ පුවරුව",
+    "manageUsers": "පරිශීලකයන් කළමනාකරණය"
+  },
+  "actions": {
+    "saving": "සුරකිමින්…",
+    "edit": "සංස්කරණය",
+    "delete": "මකන්න",
+    "close": "වසන්න",
+    "search": "සොයන්න",
+    "logOut": "ඉවත් වන්න",
+    "accept": "පිළිගන්න",
+    "decline": "ප්‍රතික්ෂේප කරන්න",
+    "viewAll": "සියල්ල බලන්න",
+    "markRead": "කියවූ ලෙස සලකුණු කරන්න",
+    "markAllRead": "සියල්ල කියවූ ලෙස සලකුණු කරන්න",
+    "loading": "පූරණය වෙමින්",
+    "dismiss": "ඉවත් කරන්න"
+  },
+  "language": {
+    "label": "භාෂාව",
+    "en": "English",
+    "si": "සිංහල",
+    "ta": "தமிழ்"
+  },
+  "units": {
+    "acres": "අක්කර {{value}}",
+    "kg": "{{value}} කි.ග්‍රෑ.",
+    "rupees": "රු. {{value}}",
+    "rupeesPerUnit": "රු. {{value}}/ඒකකය",
+    "availableShort": "{{value}} ඇත"
+  },
+  "fields": {
+    "email": "විද්‍යුත් තැපෑල",
+    "password": "මුරපදය",
+    "fullName": "සම්පූර්ණ නම",
+    "district": "දිස්ත්‍රික්කය",
+    "nic": "ජාතික හැඳුනුම්පත් අංකය",
+    "role": "භූමිකාව",
+    "department": "දෙපාර්තමේන්තුව",
+    "businessName": "ව්‍යාපාරයේ නම",
+    "status": "තත්ත්වය",
+    "location": "ස්ථානය",
+    "quantity": "ප්‍රමාණය",
+    "messageOptional": "පණිවිඩය (විකල්ප)"
+  },
+  "status": {
+    "crop": {
+      "Seeded": "බීජ වපුරා ඇත",
+      "Growing": "වැඩෙමින්",
+      "Harvested": "අස්වනු නෙළා ඇත"
+    },
+    "harvest": {
+      "Active": "සක්‍රියයි",
+      "Sold": "විකුණා ඇත",
+      "Cancelled": "අවලංගු කර ඇත"
+    },
+    "request": {
+      "Pending": "අපේක්ෂිතයි",
+      "Accepted": "පිළිගෙන ඇත",
+      "Declined": "ප්‍රතික්ෂේප කර ඇත",
+      "Cancelled": "අවලංගු කර ඇත"
+    },
+    "order": {
+      "Confirmed": "තහවුරු කර ඇත",
+      "Completed": "සම්පූර්ණයි",
+      "Cancelled": "අවලංගු කර ඇත"
+    }
+  },
+  "roles": {
+    "Farmer": "ගොවියා",
+    "Officer": "නිලධාරී",
+    "Buyer": "ගැනුම්කරු",
+    "Admin": "පරිපාලක"
+  },
+  "validation": {
+    "nameRequired": "නම අවශ්‍යයි",
+    "fullNameRequired": "සම්පූර්ණ නම අවශ්‍යයි",
+    "emailInvalid": "වලංගු විද්‍යුත් තැපැල් ලිපිනයක් ඇතුළත් කරන්න",
+    "passwordRequired": "මුරපදය අවශ්‍යයි",
+    "passwordMin": "මුරපදය අවම වශයෙන් අක්ෂර 8ක් විය යුතුය",
+    "districtRequired": "දිස්ත්‍රික්කය අවශ්‍යයි",
+    "nicRequired": "ජාතික හැඳුනුම්පත් අංකය අවශ්‍යයි",
+    "areaMin": "වර්ග ප්‍රමාණය 0ට වඩා වැඩි විය යුතුය",
+    "quantityMin": "ප්‍රමාණය 0ට වඩා වැඩි විය යුතුය",
+    "priceMin": "මිල 0ට වඩා වැඩි විය යුතුය",
+    "cropTypeRequired": "බෝග වර්ගය අවශ්‍යයි",
+    "cropIdRequired": "බෝග අංකය අවශ්‍යයි",
+    "plantingDateRequired": "වගා කළ දිනය අවශ්‍යයි",
+    "expectedHarvestDateRequired": "අපේක්ෂිත අස්වනු දිනය අවශ්‍යයි",
+    "harvestDateRequired": "අස්වනු දිනය අවශ්‍යයි",
+    "locationRequired": "ස්ථානය අවශ්‍යයි",
+    "onlyAvailable": "තිබෙන්නේ {{max}}ක් පමණි",
+    "departmentRequiredOfficer": "නිලධාරී ගිණුම් සඳහා දෙපාර්තමේන්තුව අවශ්‍යයි",
+    "businessNameRequiredBuyer": "ගැනුම්කරු ගිණුම් සඳහා ව්‍යාපාරයේ නම අවශ්‍යයි"
+  }
+}

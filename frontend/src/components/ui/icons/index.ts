@@ -13,4 +13,5 @@ export {
   WarningCircle,
   UserCircle,
   Gear,
+  Translate,
 } from '@phosphor-icons/react'

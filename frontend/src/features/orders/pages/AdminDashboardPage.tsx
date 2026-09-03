@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { Basket, Farm, UserCircle, WarningCircle } from '@/components/ui/icons'
 import { CropGenericIcon, HarvestScaleIcon } from '@/components/ui/icons/custom'
 import { Skeleton } from '@/components/ui/Skeleton'
@@ -6,6 +7,7 @@ import { MetricsCard } from '../components/MetricsCard'
 import { useAdminMetrics } from '../hooks/useAdminMetrics'
 
 export function AdminDashboardPage() {
+  const { t } = useTranslation('orders')
   const { data: metrics, isLoading } = useAdminMetrics()
 
   if (isLoading || !metrics) {
@@ -19,50 +21,50 @@ export function AdminDashboardPage() {
   }
 
   const chartData = [
-    { label: 'Users', value: metrics.totalUsers },
-    { label: 'Farms', value: metrics.totalFarms },
-    { label: 'Crops', value: metrics.totalCrops },
-    { label: 'Issues reported', value: metrics.issuesReported },
-    { label: 'Issues resolved', value: metrics.issuesResolved },
+    { label: t('admin.chartUsers'), value: metrics.totalUsers },
+    { label: t('admin.chartFarms'), value: metrics.totalFarms },
+    { label: t('admin.chartCrops'), value: metrics.totalCrops },
+    { label: t('admin.issuesReported'), value: metrics.issuesReported },
+    { label: t('admin.issuesResolved'), value: metrics.issuesResolved },
   ]
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="font-display text-2xl text-text-primary">Admin Dashboard</h1>
+      <h1 className="font-display text-2xl text-text-primary">{t('admin.dashboardTitle')}</h1>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <MetricsCard
-          label="Total users"
+          label={t('admin.totalUsers')}
           value={metrics.totalUsers}
           icon={<UserCircle size={20} weight="duotone" />}
           tone="forest"
         />
         <MetricsCard
-          label="Total farms"
+          label={t('admin.totalFarms')}
           value={metrics.totalFarms}
           icon={<Farm size={20} weight="duotone" />}
           tone="forest"
         />
         <MetricsCard
-          label="Total crops"
+          label={t('admin.totalCrops')}
           value={metrics.totalCrops}
           icon={<CropGenericIcon size={20} />}
           tone="forest"
         />
         <MetricsCard
-          label="Issues reported"
+          label={t('admin.issuesReported')}
           value={metrics.issuesReported}
           icon={<WarningCircle size={20} weight="duotone" />}
           tone="terracotta"
         />
         <MetricsCard
-          label="Issues resolved"
+          label={t('admin.issuesResolved')}
           value={metrics.issuesResolved}
           icon={<Basket size={20} weight="duotone" />}
           tone="harvest"
         />
         <MetricsCard
-          label="Harvest volume sold this month"
+          label={t('admin.harvestVolume')}
           value={metrics.harvestVolumeSoldThisMonth}
           icon={<HarvestScaleIcon size={20} />}
           tone="harvest"

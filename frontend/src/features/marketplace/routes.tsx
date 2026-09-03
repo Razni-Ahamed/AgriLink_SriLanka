@@ -20,19 +20,19 @@ export const marketplaceRoutes: RouteObject[] = [
 
 export const marketplaceNavItems: NavItem[] = [
   {
-    label: 'Marketplace',
+    labelKey: 'nav.marketplace',
     path: '/marketplace/browse',
     icon: <Storefront size={18} weight="duotone" />,
     allowedRoles: ['Farmer', 'Buyer', 'Admin'],
   },
   {
-    label: 'My Listings',
+    labelKey: 'nav.myListings',
     path: '/marketplace/mine',
     icon: <Basket size={18} weight="duotone" />,
     allowedRoles: ['Farmer', 'Admin'],
   },
   {
-    label: 'My Requests',
+    labelKey: 'nav.myRequests',
     path: '/marketplace/requests',
     icon: <ClipboardText size={18} weight="duotone" />,
     allowedRoles: ['Farmer', 'Admin'],

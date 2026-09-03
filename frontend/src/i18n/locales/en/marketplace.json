@@ -1,0 +1,66 @@
+{
+  "browse": {
+    "title": "Harvest Marketplace",
+    "subtitle": "Fresh produce straight from Sri Lankan farms — browse active listings below.",
+    "empty": "No listings match your filters right now."
+  },
+  "filters": {
+    "cropType": "Crop type",
+    "cropTypePlaceholder": "e.g. Tea",
+    "district": "District",
+    "districtPlaceholder": "e.g. Nuwara Eliya",
+    "minPrice": "Min price/unit",
+    "maxPrice": "Max price/unit"
+  },
+  "detail": {
+    "back": "Back to marketplace",
+    "notFound": "Listing not found.",
+    "noVariety": "No variety noted",
+    "district": "District",
+    "harvestDate": "Harvest date",
+    "location": "Location",
+    "availableQuantity": "Available quantity",
+    "pricePerUnit": "Price per unit",
+    "requestPurchase": "Request Purchase",
+    "requestSent": "Your request has been sent — the farmer will respond soon; you'll see it in Orders once accepted."
+  },
+  "listings": {
+    "title": "My Listings",
+    "newListing": "New Listing",
+    "empty": "No listings found in your district yet.",
+    "districtNotice": "Approximate — showing active listings in your district ({{district}}). The backend doesn't yet expose your farmer profile ID on listings, so this can't be filtered exactly to listings you created.",
+    "unknownDistrict": "unknown",
+    "availableOf": "{{available}} of {{total}} available",
+    "harvestedOn": "Harvested {{date}}",
+    "updated": "Listing updated.",
+    "updateError": "Could not update the listing.",
+    "published": "Listing published.",
+    "publishError": "Could not publish the listing."
+  },
+  "listingForm": {
+    "cropId": "Crop ID",
+    "quantity": "Quantity",
+    "harvestDate": "Harvest date",
+    "pricePerUnit": "Price per unit (Rs)",
+    "location": "Location",
+    "publish": "Publish Listing",
+    "publishing": "Publishing…",
+    "prefill": "Listing {{cropType}} (crop #{{cropId}})"
+  },
+  "requests": {
+    "title": "Purchase Requests",
+    "empty": "No one has requested to buy your listings yet.",
+    "requestNumber": "Request #{{id}}",
+    "unitsRequested": "{{quantity}} units requested",
+    "accepted": "Request accepted — order created.",
+    "acceptError": "Could not accept the request.",
+    "declineError": "Could not decline the request.",
+    "sent": "Purchase request sent.",
+    "sendError": "Could not send the request. Try again."
+  },
+  "requestForm": {
+    "quantityLabel": "Quantity (up to {{max}})",
+    "send": "Send Request",
+    "sending": "Sending…"
+  }
+}
