@@ -1,5 +1,29 @@
 import type { RouteObject } from 'react-router-dom'
+import { FirstAidKit, ListChecks } from '@phosphor-icons/react'
 import type { NavItem } from '@/types/common'
+import { AdvisoryDetailPage } from './pages/AdvisoryDetailPage'
+import { MyIssuesPage } from './pages/MyIssuesPage'
+import { NewIssuePage } from './pages/NewIssuePage'
+import { PendingIssuesPage } from './pages/PendingIssuesPage'
 
-export const issuesRoutes: RouteObject[] = []
-export const issuesNavItems: NavItem[] = []
+export const issuesRoutes: RouteObject[] = [
+  { path: '/issues/mine', element: <MyIssuesPage /> },
+  { path: '/issues/new', element: <NewIssuePage /> },
+  { path: '/issues/pending', element: <PendingIssuesPage /> },
+  { path: '/advisories/:advisoryId', element: <AdvisoryDetailPage /> },
+]
+
+export const issuesNavItems: NavItem[] = [
+  {
+    label: 'My Issues',
+    path: '/issues/mine',
+    icon: <FirstAidKit size={18} weight="duotone" />,
+    allowedRoles: ['Farmer', 'Admin'],
+  },
+  {
+    label: 'Pending Issues',
+    path: '/issues/pending',
+    icon: <ListChecks size={18} weight="duotone" />,
+    allowedRoles: ['Officer', 'Admin'],
+  },
+]

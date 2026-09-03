@@ -9,4 +9,5 @@ public class CropIssueResponse
     public string Severity { get; set; } = string.Empty;
     public string Status { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; }
+    public int? AdvisoryId { get; set; }
 }
