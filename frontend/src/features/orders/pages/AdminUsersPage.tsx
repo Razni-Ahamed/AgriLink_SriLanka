@@ -1,0 +1,42 @@
+import { useState } from 'react'
+import { Card } from '@/components/ui/Card'
+import { useCreateUser } from '../hooks/useAdminMetrics'
+import { UserCreateForm } from '../components/UserCreateForm'
+
+export function AdminUsersPage() {
+  const createUser = useCreateUser()
+  const [created, setCreated] = useState<string | null>(null)
+
+  return (
+    <div className="flex flex-col gap-6">
+      <div>
+        <h1 className="font-display text-2xl text-text-primary">Manage Users</h1>
+        <p className="text-sm text-text-secondary">Create Officer or Buyer accounts.</p>
+      </div>
+
+      {/*
+        The product brief mentions PUT /api/admin/users/{userId}/role, but the
+        real AdminController only exposes POST /users and GET /metrics — no
+        role-change or user-list route exists yet, so there's no control for
+        it here. Flagging the gap rather than building a UI for a route that
+        isn't there.
+      */}
+
+      <Card className="max-w-md">
+        <UserCreateForm
+          isSubmitting={createUser.isPending}
+          onSubmit={(values) =>
+            createUser.mutate(values, {
+              onSuccess: (user) => setCreated(`${user.fullName} (${user.role}) created.`),
+            })
+          }
+        />
+      </Card>
+
+      {created && <p className="text-sm text-state-success">{created}</p>}
+      {createUser.isError && (
+        <p className="text-sm text-state-danger">Could not create the user. Check the details and try again.</p>
+      )}
+    </div>
+  )
+}
