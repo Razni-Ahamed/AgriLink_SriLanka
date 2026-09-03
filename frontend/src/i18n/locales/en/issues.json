@@ -1,0 +1,45 @@
+{
+  "mine": {
+    "title": "My Issues",
+    "empty": "You haven't reported any crop issues yet. Report one from a crop's detail page."
+  },
+  "new": {
+    "title": "Report an Issue",
+    "reportingFor": "Reporting an issue for {{cropType}} (crop #{{cropId}})",
+    "thisCrop": "this crop",
+    "noCrop": "An issue has to be tied to a specific crop. Go plant or select a crop first, then report the issue from that crop's page.",
+    "goToFarms": "Go to my farms",
+    "reported": "Issue reported.",
+    "reportError": "Could not report the issue. Try again."
+  },
+  "form": {
+    "title": "Title",
+    "description": "Description",
+    "severity": "Severity",
+    "submit": "Report Issue",
+    "submitting": "Reporting…",
+    "titleRequired": "Title is required",
+    "descriptionRequired": "Description is required"
+  },
+  "pending": {
+    "title": "Pending Issues",
+    "empty": "No issues are awaiting review right now.",
+    "cropAndDate": "Crop #{{cropId}} · Reported {{date}}"
+  },
+  "advisory": {
+    "back": "Back",
+    "backToMyIssues": "Back to my issues",
+    "number": "Advisory #{{id}}",
+    "unavailable": "This advisory isn't available yet — it may still be awaiting officer review.",
+    "ready": "Your advisory is ready",
+    "recommendation": "Recommendation",
+    "riskPrefix": "Risk: {{level}}",
+    "confidence": "{{value}}% confidence",
+    "approve": "Approve",
+    "reject": "Reject",
+    "approved": "Advisory approved.",
+    "approveError": "Could not approve the advisory.",
+    "rejected": "Advisory rejected.",
+    "rejectError": "Could not reject the advisory."
+  }
+}

@@ -28,6 +28,27 @@ const STATUS_KEYS = {
     Completed: 'status.order.Completed',
     Cancelled: 'status.order.Cancelled',
   },
+  issue: {
+    Pending: 'status.issue.Pending',
+    AwaitingReview: 'status.issue.AwaitingReview',
+    Resolved: 'status.issue.Resolved',
+    Rejected: 'status.issue.Rejected',
+  },
+  advisory: {
+    Draft: 'status.advisory.Draft',
+    Approved: 'status.advisory.Approved',
+    Rejected: 'status.advisory.Rejected',
+  },
+  severity: {
+    Low: 'severity.Low',
+    Medium: 'severity.Medium',
+    High: 'severity.High',
+  },
+  risk: {
+    Low: 'risk.Low',
+    Medium: 'risk.Medium',
+    High: 'risk.High',
+  },
 } as const
 
 type ValueOf<T> = T[keyof T]

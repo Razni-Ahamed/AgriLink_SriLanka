@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter } from 'react-router-dom'
 import '@/i18n/config'
-import i18n from '@/i18n/config'
+import i18n, { resources } from '@/i18n/config'
 import { LoginPage } from '@/auth/LoginPage'
 import { hydrateLanguage, useLanguageStore } from '@/lib/useLanguageStore'
 import { readStoredLanguage } from '@/i18n/languageStorage'
@@ -84,7 +84,10 @@ describe('language switching', () => {
   })
 
   it('has a translation for every English key in all three languages', () => {
-    const namespaces = ['common', 'auth', 'farms', 'marketplace', 'orders'] as const
+    // Derived from the config rather than hardcoded, so a namespace added
+    // later is covered without anyone remembering to update this list.
+    const namespaces = Object.keys(resources.en) as (keyof typeof resources.en)[]
+    expect(namespaces.length).toBeGreaterThan(0)
 
     function leafKeys(value: unknown, prefix = ''): string[] {
       if (typeof value !== 'object' || value === null) return [prefix]

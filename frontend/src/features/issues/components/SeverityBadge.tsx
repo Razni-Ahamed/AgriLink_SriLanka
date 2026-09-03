@@ -1,4 +1,5 @@
 import { Badge } from '@/components/ui/Badge'
+import { useStatusLabel } from '@/lib/useStatusLabel'
 import type { IssueSeverity } from '@/types/dto/issues'
 
 const severityVariant = {
@@ -8,5 +9,7 @@ const severityVariant = {
 } as const
 
 export function SeverityBadge({ severity }: { severity: IssueSeverity }) {
-  return <Badge variant={severityVariant[severity]}>{severity}</Badge>
+  const statusLabel = useStatusLabel()
+
+  return <Badge variant={severityVariant[severity]}>{statusLabel('severity', severity)}</Badge>
 }

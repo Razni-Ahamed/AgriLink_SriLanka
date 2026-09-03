@@ -2,6 +2,8 @@
   "appName": "AgriLink",
   "nav": {
     "farms": "பண்ணைகள்",
+    "myIssues": "எனது சிக்கல்கள்",
+    "pendingIssues": "மறுஆய்வுக்கான சிக்கல்கள்",
     "marketplace": "சந்தை",
     "myListings": "எனது பட்டியல்கள்",
     "myRequests": "எனது கோரிக்கைகள்",
@@ -73,6 +75,17 @@
       "Confirmed": "உறுதிப்படுத்தப்பட்டது",
       "Completed": "நிறைவடைந்தது",
       "Cancelled": "ரத்து செய்யப்பட்டது"
+    },
+    "issue": {
+      "Pending": "நிலுவையில்",
+      "AwaitingReview": "மறுஆய்வுக்குக் காத்திருக்கிறது",
+      "Resolved": "தீர்க்கப்பட்டது",
+      "Rejected": "நிராகரிக்கப்பட்டது"
+    },
+    "advisory": {
+      "Draft": "வரைவு",
+      "Approved": "ஒப்புதல் பெற்றது",
+      "Rejected": "நிராகரிக்கப்பட்டது"
     }
   },
   "roles": {
@@ -101,5 +114,15 @@
     "onlyAvailable": "{{max}} மட்டுமே உள்ளது",
     "departmentRequiredOfficer": "அலுவலர் கணக்குகளுக்குத் துறை தேவை",
     "businessNameRequiredBuyer": "வாங்குபவர் கணக்குகளுக்கு வணிகப் பெயர் தேவை"
+  },
+  "severity": {
+    "Low": "குறைவு",
+    "Medium": "நடுத்தரம்",
+    "High": "அதிகம்"
+  },
+  "risk": {
+    "Low": "குறைவு",
+    "Medium": "நடுத்தரம்",
+    "High": "அதிகம்"
   }
 }

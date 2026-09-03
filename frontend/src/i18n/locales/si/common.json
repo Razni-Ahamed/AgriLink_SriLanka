@@ -2,6 +2,8 @@
   "appName": "AgriLink",
   "nav": {
     "farms": "ගොවිපොළවල්",
+    "myIssues": "මගේ ගැටලු",
+    "pendingIssues": "සමාලෝචනයට ඇති ගැටලු",
     "marketplace": "වෙළඳපොළ",
     "myListings": "මගේ ලැයිස්තුගත කිරීම්",
     "myRequests": "මගේ ඉල්ලීම්",
@@ -73,6 +75,17 @@
       "Confirmed": "තහවුරු කර ඇත",
       "Completed": "සම්පූර්ණයි",
       "Cancelled": "අවලංගු කර ඇත"
+    },
+    "issue": {
+      "Pending": "අපේක්ෂිතයි",
+      "AwaitingReview": "සමාලෝචනය අපේක්ෂාවෙන්",
+      "Resolved": "විසඳා ඇත",
+      "Rejected": "ප්‍රතික්ෂේප කර ඇත"
+    },
+    "advisory": {
+      "Draft": "කෙටුම්පත",
+      "Approved": "අනුමත කර ඇත",
+      "Rejected": "ප්‍රතික්ෂේප කර ඇත"
     }
   },
   "roles": {
@@ -101,5 +114,15 @@
     "onlyAvailable": "තිබෙන්නේ {{max}}ක් පමණි",
     "departmentRequiredOfficer": "නිලධාරී ගිණුම් සඳහා දෙපාර්තමේන්තුව අවශ්‍යයි",
     "businessNameRequiredBuyer": "ගැනුම්කරු ගිණුම් සඳහා ව්‍යාපාරයේ නම අවශ්‍යයි"
+  },
+  "severity": {
+    "Low": "අඩු",
+    "Medium": "මධ්‍යම",
+    "High": "ඉහළ"
+  },
+  "risk": {
+    "Low": "අඩු",
+    "Medium": "මධ්‍යම",
+    "High": "ඉහළ"
   }
 }

@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { Card } from '@/components/ui/Card'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { StaggerList } from '@/components/ui/motion/StaggerList'
@@ -7,11 +8,12 @@ import { SeverityBadge } from '../components/SeverityBadge'
 import { usePendingIssues } from '../hooks/useIssues'
 
 export function PendingIssuesPage() {
+  const { t } = useTranslation('issues')
   const { data: issues, isLoading } = usePendingIssues()
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="font-display text-2xl text-text-primary">Pending Issues</h1>
+      <h1 className="font-display text-2xl text-text-primary">{t('pending.title')}</h1>
 
       {isLoading && (
         <div className="flex flex-col gap-3">
@@ -22,7 +24,7 @@ export function PendingIssuesPage() {
       )}
 
       {!isLoading && issues && issues.length === 0 && (
-        <p className="text-sm text-text-secondary">No issues are awaiting review right now.</p>
+        <p className="text-sm text-text-secondary">{t('pending.empty')}</p>
       )}
 
       {!isLoading && issues && issues.length > 0 && (
@@ -34,7 +36,10 @@ export function PendingIssuesPage() {
                   <div>
                     <h3 className="font-display text-base text-text-primary">{issue.title}</h3>
                     <p className="text-xs text-text-secondary">
-                      Crop #{issue.cropId} · Reported {formatDate(issue.createdAt)}
+                      {t('pending.cropAndDate', {
+                        cropId: issue.cropId,
+                        date: formatDate(issue.createdAt),
+                      })}
                     </p>
                   </div>
                   <SeverityBadge severity={issue.severity} />

@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/Button'
 import { Shake } from '@/components/ui/motion/Shake'
 import { useUiStore } from '@/lib/useUiStore'
@@ -16,6 +17,7 @@ export function ApproveRejectControls({
   onApproved,
   onRejected,
 }: ApproveRejectControlsProps) {
+  const { t } = useTranslation('issues')
   const addToast = useUiStore((state) => state.addToast)
   const approve = useApproveAdvisory(advisoryId)
   const reject = useRejectAdvisory(advisoryId)
@@ -29,15 +31,14 @@ export function ApproveRejectControls({
           onClick={() =>
             approve.mutate(undefined, {
               onSuccess: () => {
-                addToast({ type: 'success', message: 'Advisory approved.' })
+                addToast({ type: 'success', message: t('advisory.approved') })
                 onApproved()
               },
-              onError: () =>
-                addToast({ type: 'error', message: 'Could not approve the advisory.' }),
+              onError: () => addToast({ type: 'error', message: t('advisory.approveError') }),
             })
           }
         >
-          Approve
+          {t('advisory.approve')}
         </Button>
         <Button
           variant="danger"
@@ -46,15 +47,14 @@ export function ApproveRejectControls({
           onClick={() =>
             reject.mutate(undefined, {
               onSuccess: () => {
-                addToast({ type: 'info', message: 'Advisory rejected.' })
+                addToast({ type: 'info', message: t('advisory.rejected') })
                 onRejected()
               },
-              onError: () =>
-                addToast({ type: 'error', message: 'Could not reject the advisory.' }),
+              onError: () => addToast({ type: 'error', message: t('advisory.rejectError') }),
             })
           }
         >
-          Reject
+          {t('advisory.reject')}
         </Button>
       </div>
     </Shake>

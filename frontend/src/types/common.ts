@@ -10,6 +10,8 @@ export interface ApiError {
 /** Keys under `common:nav` — listed so `t(item.labelKey)` stays type-checked. */
 export type NavLabelKey =
   | 'nav.farms'
+  | 'nav.myIssues'
+  | 'nav.pendingIssues'
   | 'nav.marketplace'
   | 'nav.myListings'
   | 'nav.myRequests'

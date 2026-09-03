@@ -1,9 +1,11 @@
 import { Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { Badge } from '@/components/ui/Badge'
 import { Card } from '@/components/ui/Card'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { StaggerList } from '@/components/ui/motion/StaggerList'
 import { formatDate } from '@/lib/utils'
+import { useStatusLabel } from '@/lib/useStatusLabel'
 import { SeverityBadge } from '../components/SeverityBadge'
 import { useMyIssues } from '../hooks/useIssues'
 import type { CropIssueResponse, IssueStatus } from '@/types/dto/issues'
@@ -16,6 +18,8 @@ const statusVariant: Record<IssueStatus, 'success' | 'warning' | 'danger' | 'inf
 }
 
 function IssueCard({ issue }: { issue: CropIssueResponse }) {
+  const statusLabel = useStatusLabel()
+
   // The AI advisory starts out Draft until an officer reviews it, and the backend
   // hides Draft advisories from the farmer who filed the issue (404s them) — so we
   // only link through once the issue has actually been decided.
@@ -30,7 +34,7 @@ function IssueCard({ issue }: { issue: CropIssueResponse }) {
       </div>
       <p className="line-clamp-2 text-sm text-text-secondary">{issue.description}</p>
       <div className="flex items-center justify-between">
-        <Badge variant={statusVariant[issue.status]}>{issue.status}</Badge>
+        <Badge variant={statusVariant[issue.status]}>{statusLabel('issue', issue.status)}</Badge>
         <span className="text-xs text-text-secondary">{formatDate(issue.createdAt)}</span>
       </div>
     </Card>
@@ -40,11 +44,12 @@ function IssueCard({ issue }: { issue: CropIssueResponse }) {
 }
 
 export function MyIssuesPage() {
+  const { t } = useTranslation('issues')
   const { data: issues, isLoading } = useMyIssues()
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="font-display text-2xl text-text-primary">My Issues</h1>
+      <h1 className="font-display text-2xl text-text-primary">{t('mine.title')}</h1>
 
       {isLoading && (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -55,9 +60,7 @@ export function MyIssuesPage() {
       )}
 
       {!isLoading && issues && issues.length === 0 && (
-        <p className="text-sm text-text-secondary">
-          You haven't reported any crop issues yet. Report one from a crop's detail page.
-        </p>
+        <p className="text-sm text-text-secondary">{t('mine.empty')}</p>
       )}
 
       {!isLoading && issues && issues.length > 0 && (
