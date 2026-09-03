@@ -70,6 +70,7 @@ builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 
 builder.Services.Configure<WeatherOptions>(builder.Configuration.GetSection("Weather"));
+builder.Services.Configure<AdminSeedOptions>(builder.Configuration.GetSection(AdminSeedOptions.SectionName));
 
 builder.Services.AddScoped<IPlannerAgent, PlannerAgent>();
 builder.Services.AddScoped<ICropAnalysisAgent, CropAnalysisAgent>();
@@ -117,11 +118,16 @@ builder.Services.AddSwaggerGen(options =>
 
 var app = builder.Build();
 
-// ----- Seed roles on startup -----
+// ----- Seed roles and the bootstrap admin on startup -----
 using (var scope = app.Services.CreateScope())
 {
     var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole<int>>>();
     await RoleSeeder.SeedAsync(roleManager);
+
+    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+    var adminSeed = scope.ServiceProvider.GetRequiredService<IOptions<AdminSeedOptions>>().Value;
+    var seedLogger = scope.ServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("AdminSeeder");
+    await AdminSeeder.SeedAsync(userManager, adminSeed, seedLogger);
 }
 
 // ----- Middleware pipeline -----
