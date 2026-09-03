@@ -1,0 +1,105 @@
+{
+  "appName": "AgriLink",
+  "nav": {
+    "farms": "Farms",
+    "marketplace": "Marketplace",
+    "myListings": "My Listings",
+    "myRequests": "My Requests",
+    "orders": "Orders",
+    "notifications": "Notifications",
+    "adminDashboard": "Admin Dashboard",
+    "manageUsers": "Manage Users"
+  },
+  "actions": {
+    "saving": "Saving…",
+    "edit": "Edit",
+    "delete": "Delete",
+    "close": "Close",
+    "search": "Search",
+    "logOut": "Log out",
+    "accept": "Accept",
+    "decline": "Decline",
+    "viewAll": "View all",
+    "markRead": "Mark read",
+    "markAllRead": "Mark all read",
+    "loading": "Loading",
+    "dismiss": "Dismiss"
+  },
+  "language": {
+    "label": "Language",
+    "en": "English",
+    "si": "සිංහල",
+    "ta": "தமிழ்"
+  },
+  "units": {
+    "acres": "{{value}} acres",
+    "kg": "{{value}} kg",
+    "rupees": "Rs {{value}}",
+    "rupeesPerUnit": "Rs {{value}}/unit",
+    "availableShort": "{{value}} avail."
+  },
+  "fields": {
+    "email": "Email",
+    "password": "Password",
+    "fullName": "Full name",
+    "district": "District",
+    "nic": "NIC",
+    "role": "Role",
+    "department": "Department",
+    "businessName": "Business name",
+    "status": "Status",
+    "location": "Location",
+    "quantity": "Quantity",
+    "messageOptional": "Message (optional)"
+  },
+  "status": {
+    "crop": {
+      "Seeded": "Seeded",
+      "Growing": "Growing",
+      "Harvested": "Harvested"
+    },
+    "harvest": {
+      "Active": "Active",
+      "Sold": "Sold",
+      "Cancelled": "Cancelled"
+    },
+    "request": {
+      "Pending": "Pending",
+      "Accepted": "Accepted",
+      "Declined": "Declined",
+      "Cancelled": "Cancelled"
+    },
+    "order": {
+      "Confirmed": "Confirmed",
+      "Completed": "Completed",
+      "Cancelled": "Cancelled"
+    }
+  },
+  "roles": {
+    "Farmer": "Farmer",
+    "Officer": "Officer",
+    "Buyer": "Buyer",
+    "Admin": "Admin"
+  },
+  "validation": {
+    "nameRequired": "Name is required",
+    "fullNameRequired": "Full name is required",
+    "emailInvalid": "Enter a valid email",
+    "passwordRequired": "Password is required",
+    "passwordMin": "Password must be at least 8 characters",
+    "districtRequired": "District is required",
+    "nicRequired": "NIC is required",
+    "areaMin": "Area must be greater than 0",
+    "quantityMin": "Quantity must be greater than 0",
+    "priceMin": "Price must be greater than 0",
+    "cropTypeRequired": "Crop type is required",
+    "cropIdRequired": "Crop ID is required",
+    "plantingDateRequired": "Planting date is required",
+    "expectedHarvestDateRequired": "Expected harvest date is required",
+    "harvestDateRequired": "Harvest date is required",
+    "locationRequired": "Location is required",
+    "onlyAvailable": "Only {{max}} available",
+    "departmentRequiredOfficer": "Department is required for Officer accounts",
+    "businessNameRequiredBuyer": "Business name is required for Buyer accounts"
+  }
+}

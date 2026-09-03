@@ -1,14 +1,15 @@
 import { Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 
 export function UnauthorizedPage() {
+  const { t } = useTranslation('auth')
+
   return (
     <div className="flex flex-col items-center gap-2 py-16 text-center">
-      <h1 className="font-display text-2xl text-brand-forest">
-        You don't have access to this page
-      </h1>
-      <p className="text-text-secondary">Your account role doesn't allow this section.</p>
+      <h1 className="font-display text-2xl text-brand-forest">{t('unauthorized.title')}</h1>
+      <p className="text-text-secondary">{t('unauthorized.description')}</p>
       <Link to="/" className="mt-4 text-brand-forest hover:underline">
-        Go back home
+        {t('unauthorized.backHome')}
       </Link>
     </div>
   )

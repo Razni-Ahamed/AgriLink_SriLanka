@@ -1,0 +1,47 @@
+{
+  "list": {
+    "title": "Your Farms",
+    "newFarm": "New Farm",
+    "createFarm": "Create Farm",
+    "empty": "You don't have any farms yet. Create one to start tracking fields and crops."
+  },
+  "detail": {
+    "back": "Back to farms",
+    "notFound": "Farm not found.",
+    "deleteConfirm": "Delete this farm? This cannot be undone.",
+    "deleteError": "Cannot delete a farm that has crops planted. Remove crops first.",
+    "fields": "Fields",
+    "addField": "Add Field",
+    "editFarm": "Edit Farm",
+    "saveChanges": "Save Changes",
+    "noFields": "No fields yet. Add one to get started."
+  },
+  "field": {
+    "back": "Back to farm",
+    "notFound": "Field not found.",
+    "crops": "Crops",
+    "plantCrop": "Plant a Crop",
+    "plantCropSubmit": "Plant Crop",
+    "empty": "No crops planted this session yet. Newly planted crops appear here — the backend has no endpoint to list a field's crops after a page refresh (flagged to the team)."
+  },
+  "crop": {
+    "back": "Back to field",
+    "notFound": "Crop not found.",
+    "noVariety": "No variety noted",
+    "plantingDate": "Planting date",
+    "expectedHarvest": "Expected harvest",
+    "expectedQuantity": "Expected quantity",
+    "reportIssue": "Report an Issue",
+    "listForSale": "List for Sale"
+  },
+  "form": {
+    "farmName": "Farm name",
+    "fieldName": "Field name",
+    "area": "Area (acres)",
+    "cropType": "Crop type",
+    "variety": "Variety",
+    "plantingDate": "Planting date",
+    "expectedHarvestDate": "Expected harvest date",
+    "expectedQuantity": "Expected quantity (kg)"
+  }
+}

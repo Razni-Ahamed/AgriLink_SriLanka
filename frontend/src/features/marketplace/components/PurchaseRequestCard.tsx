@@ -1,10 +1,12 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Card } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Shake } from '@/components/ui/motion/Shake'
 import { FlashOnSuccess } from '@/components/ui/motion/FlashOnSuccess'
 import { formatDate, formatQuantity } from '@/lib/utils'
+import { useStatusLabel } from '@/lib/useStatusLabel'
 import type { PurchaseRequestResponse } from '@/types/dto/purchaseRequests'
 
 const statusVariant = {
@@ -27,6 +29,8 @@ export function PurchaseRequestCard({
   onDecline,
   isResponding,
 }: PurchaseRequestCardProps) {
+  const { t } = useTranslation(['marketplace', 'common'])
+  const statusLabel = useStatusLabel()
   const [justAccepted, setJustAccepted] = useState(false)
   const [justDeclined, setJustDeclined] = useState(false)
 
@@ -46,13 +50,17 @@ export function PurchaseRequestCard({
         <Card className="flex flex-col gap-3">
           <div className="flex items-center justify-between">
             <span className="font-mono tabular-nums text-sm text-text-secondary">
-              Request #{request.requestId}
+              {t('marketplace:requests.requestNumber', { id: request.requestId })}
             </span>
-            <Badge variant={statusVariant[request.status]}>{request.status}</Badge>
+            <Badge variant={statusVariant[request.status]}>
+              {statusLabel('request', request.status)}
+            </Badge>
           </div>
 
           <p className="font-mono tabular-nums text-brand-forest">
-            {formatQuantity(request.requestedQuantity)} units requested
+            {t('marketplace:requests.unitsRequested', {
+              quantity: formatQuantity(request.requestedQuantity),
+            })}
           </p>
 
           {request.message && <p className="text-sm text-text-secondary">{request.message}</p>}
@@ -62,7 +70,7 @@ export function PurchaseRequestCard({
           {request.status === 'Pending' && (
             <div className="flex gap-2">
               <Button size="sm" onClick={handleAccept} isLoading={isResponding && justAccepted}>
-                Accept
+                {t('common:actions.accept')}
               </Button>
               <Button
                 size="sm"
@@ -70,7 +78,7 @@ export function PurchaseRequestCard({
                 onClick={handleDecline}
                 isLoading={isResponding && justDeclined}
               >
-                Decline
+                {t('common:actions.decline')}
               </Button>
             </div>
           )}

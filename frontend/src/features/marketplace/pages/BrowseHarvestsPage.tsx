@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { StaggerList } from '@/components/ui/motion/StaggerList'
 import { HarvestCard } from '../components/HarvestCard'
@@ -7,6 +8,7 @@ import { useHarvests } from '../hooks/useHarvests'
 import type { HarvestFilters } from '@/types/dto/harvests'
 
 export function BrowseHarvestsPage() {
+  const { t } = useTranslation('marketplace')
   const [filters, setFilters] = useState<HarvestFilters>({})
   const [priceRange, setPriceRange] = useState({ min: '', max: '' })
   const { data: harvests, isLoading } = useHarvests(filters)
@@ -25,10 +27,8 @@ export function BrowseHarvestsPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="font-display text-2xl text-text-primary">Harvest Marketplace</h1>
-        <p className="text-sm text-text-secondary">
-          Fresh produce straight from Sri Lankan farms — browse active listings below.
-        </p>
+        <h1 className="font-display text-2xl text-text-primary">{t('browse.title')}</h1>
+        <p className="text-sm text-text-secondary">{t('browse.subtitle')}</p>
       </div>
 
       <HarvestFilterBar
@@ -47,7 +47,7 @@ export function BrowseHarvestsPage() {
       )}
 
       {!isLoading && visibleHarvests && visibleHarvests.length === 0 && (
-        <p className="text-sm text-text-secondary">No listings match your filters right now.</p>
+        <p className="text-sm text-text-secondary">{t('browse.empty')}</p>
       )}
 
       {!isLoading && visibleHarvests && visibleHarvests.length > 0 && (

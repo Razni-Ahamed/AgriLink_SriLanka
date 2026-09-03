@@ -1,9 +1,11 @@
 import { Link } from 'react-router-dom'
 import { Basket, Calendar, MapPin } from '@phosphor-icons/react'
+import { useTranslation } from 'react-i18next'
 import { Card } from '@/components/ui/Card'
 import { IconBadge } from '@/components/ui/IconBadge'
 import { Badge } from '@/components/ui/Badge'
 import { formatDate, formatQuantity } from '@/lib/utils'
+import { useStatusLabel } from '@/lib/useStatusLabel'
 import type { HarvestListingResponse } from '@/types/dto/harvests'
 
 const statusVariant = {
@@ -13,6 +15,9 @@ const statusVariant = {
 } as const
 
 export function HarvestCard({ harvest }: { harvest: HarvestListingResponse }) {
+  const { t } = useTranslation()
+  const statusLabel = useStatusLabel()
+
   return (
     <Link to={`/marketplace/${harvest.harvestId}`}>
       <Card interactive className="flex flex-col gap-3">
@@ -20,7 +25,9 @@ export function HarvestCard({ harvest }: { harvest: HarvestListingResponse }) {
           <IconBadge tone="forest">
             <Basket size={20} weight="duotone" />
           </IconBadge>
-          <Badge variant={statusVariant[harvest.status]}>{harvest.status}</Badge>
+          <Badge variant={statusVariant[harvest.status]}>
+            {statusLabel('harvest', harvest.status)}
+          </Badge>
         </div>
 
         <div>
@@ -40,10 +47,10 @@ export function HarvestCard({ harvest }: { harvest: HarvestListingResponse }) {
 
         <div className="mt-1 flex items-baseline justify-between">
           <span className="font-mono tabular-nums text-brand-forest">
-            Rs {harvest.pricePerUnit.toLocaleString('en-LK', { maximumFractionDigits: 2 })}/unit
+            {t('units.rupeesPerUnit', { value: formatQuantity(harvest.pricePerUnit) })}
           </span>
           <span className="font-mono tabular-nums text-sm text-text-secondary">
-            {formatQuantity(harvest.availableQuantity)} avail.
+            {t('units.availableShort', { value: formatQuantity(harvest.availableQuantity) })}
           </span>
         </div>
       </Card>

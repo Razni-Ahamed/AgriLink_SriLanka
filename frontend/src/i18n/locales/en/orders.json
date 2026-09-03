@@ -1,0 +1,45 @@
+{
+  "list": {
+    "title": "Your Orders",
+    "empty": "You don't have any orders yet."
+  },
+  "card": {
+    "orderNumber": "Order #{{id}}",
+    "farmerCounterpart": "Farmer #{{id}}",
+    "buyerCounterpart": "Buyer #{{id}}"
+  },
+  "detail": {
+    "back": "Back to orders",
+    "notFound": "Order not found.",
+    "placedOn": "Placed {{date}}",
+    "quantity": "Quantity",
+    "totalAmount": "Total amount",
+    "farmer": "Farmer",
+    "buyer": "Buyer",
+    "completedOn": "Completed {{date}}"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "empty": "You don't have any notifications yet.",
+    "allCaughtUp": "You're all caught up."
+  },
+  "admin": {
+    "dashboardTitle": "Admin Dashboard",
+    "totalUsers": "Total users",
+    "totalFarms": "Total farms",
+    "totalCrops": "Total crops",
+    "issuesReported": "Issues reported",
+    "issuesResolved": "Issues resolved",
+    "harvestVolume": "Harvest volume sold this month",
+    "platformTotals": "Platform totals",
+    "chartUsers": "Users",
+    "chartFarms": "Farms",
+    "chartCrops": "Crops",
+    "usersTitle": "Manage Users",
+    "usersSubtitle": "Create Officer or Buyer accounts.",
+    "userCreated": "{{name}} ({{role}}) created.",
+    "createUserError": "Could not create the user. Check the details and try again.",
+    "createUser": "Create User",
+    "creating": "Creating…"
+  }
+}

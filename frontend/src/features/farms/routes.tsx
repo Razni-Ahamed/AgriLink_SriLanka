@@ -15,7 +15,7 @@ export const farmsRoutes: RouteObject[] = [
 
 export const farmsNavItems: NavItem[] = [
   {
-    label: 'Farms',
+    labelKey: 'nav.farms',
     path: '/farms',
     icon: <FarmIcon size={18} weight="duotone" />,
     allowedRoles: ['Farmer', 'Admin'],
