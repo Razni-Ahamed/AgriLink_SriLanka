@@ -15,13 +15,13 @@ export const issuesRoutes: RouteObject[] = [
 
 export const issuesNavItems: NavItem[] = [
   {
-    label: 'My Issues',
+    labelKey: 'nav.myIssues',
     path: '/issues/mine',
     icon: <FirstAidKit size={18} weight="duotone" />,
     allowedRoles: ['Farmer', 'Admin'],
   },
   {
-    label: 'Pending Issues',
+    labelKey: 'nav.pendingIssues',
     path: '/issues/pending',
     icon: <ListChecks size={18} weight="duotone" />,
     allowedRoles: ['Officer', 'Admin'],

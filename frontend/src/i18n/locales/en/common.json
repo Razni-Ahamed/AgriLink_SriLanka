@@ -2,6 +2,8 @@
   "appName": "AgriLink",
   "nav": {
     "farms": "Farms",
+    "myIssues": "My Issues",
+    "pendingIssues": "Pending Issues",
     "marketplace": "Marketplace",
     "myListings": "My Listings",
     "myRequests": "My Requests",
@@ -73,6 +75,17 @@
       "Confirmed": "Confirmed",
       "Completed": "Completed",
       "Cancelled": "Cancelled"
+    },
+    "issue": {
+      "Pending": "Pending",
+      "AwaitingReview": "Awaiting review",
+      "Resolved": "Resolved",
+      "Rejected": "Rejected"
+    },
+    "advisory": {
+      "Draft": "Draft",
+      "Approved": "Approved",
+      "Rejected": "Rejected"
     }
   },
   "roles": {
@@ -101,5 +114,15 @@
     "onlyAvailable": "Only {{max}} available",
     "departmentRequiredOfficer": "Department is required for Officer accounts",
     "businessNameRequiredBuyer": "Business name is required for Buyer accounts"
+  },
+  "severity": {
+    "Low": "Low",
+    "Medium": "Medium",
+    "High": "High"
+  },
+  "risk": {
+    "Low": "Low",
+    "Medium": "Medium",
+    "High": "High"
   }
 }

@@ -5,8 +5,8 @@ export interface AdvisoryResponse {
   advisoryId: number
   issueId: number
   issueTitle: string
-  status: string
-  riskLevel: string
+  status: AdvisoryStatus
+  riskLevel: RiskLevel
   recommendation: string
   confidenceScore: number
   requiresApproval: boolean

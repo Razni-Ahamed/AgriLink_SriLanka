@@ -13,7 +13,9 @@ export interface CropIssueResponse {
   cropId: number
   title: string
   description: string
-  severity: string
-  status: string
+  severity: IssueSeverity
+  status: IssueStatus
   createdAt: string
+  /** Latest advisory for this issue; null until the AI pipeline has produced one. */
+  advisoryId: number | null
 }
