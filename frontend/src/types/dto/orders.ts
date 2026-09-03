@@ -1,2 +1,13 @@
-// Owned by Jinathi — orders DTOs are defined here once finalized against the backend.
-export {}
+export type OrderStatus = 'Confirmed' | 'Completed' | 'Cancelled'
+
+export interface OrderResponse {
+  orderId: number
+  requestId: number
+  farmerProfileId: number
+  buyerProfileId: number
+  totalQuantity: number
+  totalAmount: number
+  status: OrderStatus
+  orderDate: string
+  completedAt?: string
+}
