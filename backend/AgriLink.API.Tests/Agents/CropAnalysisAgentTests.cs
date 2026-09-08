@@ -127,4 +127,87 @@ public class CropAnalysisAgentTests
         Assert.True(findings.Confidence < 0.75f);
         Assert.Contains("not conclusive", findings.Notes, StringComparison.OrdinalIgnoreCase);
     }
+
+    public static IEnumerable<object[]> EmptyInputCases()
+    {
+        yield return new object[] { string.Empty, string.Empty, "Rice" };
+        yield return new object[] { "   ", "   ", "Rice" };
+        yield return new object[] { "Yellow leaves", string.Empty, string.Empty };
+        yield return new object[] { string.Empty, "Leaves are turning yellow.", "   " };
+    }
+
+    [Theory]
+    [MemberData(nameof(EmptyInputCases))]
+    public async Task AnalyzeAsync_EmptyOrWhitespaceInput_ReturnsFindingsWithoutThrowing(
+        string title, string description, string cropType)
+    {
+        var agent = CreateAgent();
+        var context = BuildContext(title, description, cropType);
+
+        var findings = await agent.AnalyzeAsync(context, CancellationToken.None);
+
+        Assert.NotEmpty(findings.PossibleCauses);
+        Assert.NotEmpty(findings.RecommendedActions);
+        Assert.InRange(findings.Confidence, 0f, 1f);
+    }
+
+    [Fact]
+    public async Task AnalyzeAsync_EmptyRecentActivities_DoesNotThrowAndSkipsFertilizerCheck()
+    {
+        var agent = CreateAgent();
+        var context = BuildContext("Yellow leaves", "Leaves are turning yellow.", activities: Array.Empty<AgentActivitySnapshot>());
+
+        var findings = await agent.AnalyzeAsync(context, CancellationToken.None);
+
+        Assert.DoesNotContain("fertilizer was applied recently", findings.Notes, StringComparison.OrdinalIgnoreCase);
+        Assert.NotEmpty(findings.PossibleCauses);
+    }
+
+    [Fact]
+    public async Task AnalyzeAsync_ActivityWithNullDescription_DoesNotThrow()
+    {
+        var agent = CreateAgent();
+        var activities = new[] { new AgentActivitySnapshot("Watering", DateOnly.FromDateTime(DateTime.UtcNow), null) };
+        var context = BuildContext("Yellow leaves", "Leaves are turning yellow.", activities: activities);
+
+        var findings = await agent.AnalyzeAsync(context, CancellationToken.None);
+
+        Assert.NotEmpty(findings.PossibleCauses);
+        Assert.InRange(findings.Confidence, 0f, 1f);
+    }
+
+    [Fact]
+    public async Task AnalyzeAsync_LongAndUnusualText_DoesNotThrow()
+    {
+        var agent = CreateAgent();
+        var noisyText = new string('x', 5000) + " <script>alert(1)</script> ../../etc/passwd {0} %s ' OR 1=1 --";
+        var context = BuildContext(noisyText, noisyText, cropType: "Some Unknown Crop");
+
+        var findings = await agent.AnalyzeAsync(context, CancellationToken.None);
+
+        Assert.NotEmpty(findings.PossibleCauses);
+        Assert.InRange(findings.Confidence, 0f, 1f);
+    }
+
+    public static IEnumerable<object[]> ConfidenceRangeCases()
+    {
+        yield return new object[] { "Yellow leaves", "Leaves are turning yellow." };
+        yield return new object[] { "Nothing matches here", "The tractor needs servicing." };
+        yield return new object[] { "Many symptoms", "holes in leaves, white powder, waterlogged soil, stunted growth, curling leaves" };
+        yield return new object[] { "Wilting crop", "Plants are drooping and the field is flooded." };
+    }
+
+    [Theory]
+    [MemberData(nameof(ConfidenceRangeCases))]
+    public async Task AnalyzeAsync_ConfidenceIsAlwaysWithinValidRange(string title, string description)
+    {
+        var agent = CreateAgent();
+
+        var withoutActivities = await agent.AnalyzeAsync(BuildContext(title, description), CancellationToken.None);
+        var withActivities = await agent.AnalyzeAsync(
+            BuildContext(title, description, activities: new[] { Fertilizing(daysAgo: 1) }), CancellationToken.None);
+
+        Assert.InRange(withoutActivities.Confidence, 0f, 1f);
+        Assert.InRange(withActivities.Confidence, 0f, 1f);
+    }
 }
