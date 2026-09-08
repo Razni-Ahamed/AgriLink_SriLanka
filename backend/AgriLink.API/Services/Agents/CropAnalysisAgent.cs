@@ -9,6 +9,12 @@ public class CropAnalysisAgent : ICropAnalysisAgent
     private const float SingleCauseConfidence = 0.75f;
     private const float AmbiguousCauseConfidence = 0.55f;
     private const float FallbackConfidence = 0.2f;
+    private const float FertilizerConflictPenalty = 0.2f;
+    private const float MinimumConfidence = 0.1f;
+    private const int FertilizerLookbackDays = 14;
+
+    private static readonly string[] NutrientCauseKeywords = { "nitrogen", "nutrient deficiency" };
+    private static readonly string[] FertilizerKeywords = { "fertiliz", "fertilis" };
 
     private readonly ILogger<CropAnalysisAgent> _logger;
 
@@ -55,14 +61,76 @@ public class CropAnalysisAgent : ICropAnalysisAgent
         var causes = Distinct(matches.Select(m => m.PossibleCause));
         var actions = Distinct(matches.Select(m => m.RecommendedAction));
 
+        var confidence = causes.Count == 1 ? SingleCauseConfidence : AmbiguousCauseConfidence;
+        var notes = new List<string>();
+
+        if (causes.Count > 1)
+        {
+            notes.Add($"{causes.Count} different patterns matched this description, so the diagnosis is not conclusive.");
+        }
+
+        if (HasConflictingCauses(causes))
+        {
+            notes.Add("Some matched causes contradict each other (for example too much versus too little water) — field verification is needed before acting.");
+        }
+
+        if (matches.Any(m => m.WeatherRelated))
+        {
+            notes.Add("At least one likely cause is moisture or humidity driven, so recent rainfall is relevant context.");
+        }
+
+        // Consistency check called out in the design doc: a nutrient-deficiency diagnosis is
+        // suspect if the farmer already fertilised recently. Surface the signal only — the
+        // Validation agent makes the final call.
+        if (ContainsAny(causes, NutrientCauseKeywords) && HasRecentFertilizerActivity(context.RecentActivities))
+        {
+            notes.Add("Note: fertilizer was applied recently — deficiency diagnosis may be inconsistent with this.");
+            confidence -= FertilizerConflictPenalty;
+        }
+
         return new CropFindings
         {
             PossibleCauses = causes,
             RecommendedActions = actions,
-            Confidence = causes.Count == 1 ? SingleCauseConfidence : AmbiguousCauseConfidence,
-            Notes = string.Empty,
+            Confidence = Math.Clamp(confidence, MinimumConfidence, 1f),
+            Notes = notes.Count > 0 ? string.Join(" ", notes) : "Matched the knowledge base without any conflicting signals.",
         };
     }
+
+    private static bool HasConflictingCauses(IReadOnlyList<string> causes)
+    {
+        foreach (var (left, right) in CropKnowledgeBase.ConflictingCausePhrases)
+        {
+            var hasLeft = causes.Any(c => c.Contains(left, StringComparison.OrdinalIgnoreCase));
+            var hasRight = causes.Any(c => c.Contains(right, StringComparison.OrdinalIgnoreCase));
+            if (hasLeft && hasRight)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static bool HasRecentFertilizerActivity(IReadOnlyList<AgentActivitySnapshot>? activities)
+    {
+        if (activities is null || activities.Count == 0)
+        {
+            return false;
+        }
+
+        var cutoff = DateOnly.FromDateTime(DateTime.UtcNow).AddDays(-FertilizerLookbackDays);
+
+        return activities.Any(activity =>
+            activity is not null &&
+            activity.ActivityDate >= cutoff &&
+            ContainsAny(new[] { activity.ActivityType ?? string.Empty, activity.Description ?? string.Empty }, FertilizerKeywords));
+    }
+
+    private static bool ContainsAny(IReadOnlyList<string> values, IReadOnlyList<string> keywords) =>
+        values.Any(value =>
+            !string.IsNullOrEmpty(value) &&
+            keywords.Any(keyword => value.Contains(keyword, StringComparison.OrdinalIgnoreCase)));
 
     private static CropFindings BuildFallback() => new()
     {
