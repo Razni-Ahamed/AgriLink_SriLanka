@@ -45,16 +45,52 @@ public class WeatherAgent : IWeatherAgent
             };
         }
 
-        var url = BuildRequestUrl(coordinates.Value);
+        // A brief outage of a public weather API must never fail issue creation, so every failure
+        // below degrades to a fallback finding rather than propagating out of this agent.
+        try
+        {
+            var url = BuildRequestUrl(coordinates.Value);
 
-        // The typed-client registration in Program.cs already applies the configured timeout.
-        using var response = await _httpClient.GetAsync(url, cancellationToken);
-        response.EnsureSuccessStatusCode();
+            // The typed-client registration in Program.cs already applies the configured timeout.
+            using var response = await _httpClient.GetAsync(url, cancellationToken);
+            if (!response.IsSuccessStatusCode)
+            {
+                return Unavailable($"Weather provider returned HTTP {(int)response.StatusCode}.");
+            }
 
-        await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
-        var payload = await JsonSerializer.DeserializeAsync<OpenMeteoResponse>(stream, JsonOptions, cancellationToken);
+            await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
+            var payload = await JsonSerializer.DeserializeAsync<OpenMeteoResponse>(stream, JsonOptions, cancellationToken);
 
-        return BuildFindings(payload?.Daily);
+            return BuildFindings(payload?.Daily);
+        }
+        catch (HttpRequestException)
+        {
+            return Unavailable("Weather provider could not be reached.");
+        }
+        catch (TaskCanceledException)
+        {
+            return Unavailable("Weather provider request timed out.");
+        }
+        catch (JsonException)
+        {
+            return Unavailable("Weather provider returned an unreadable response.");
+        }
+        catch (Exception)
+        {
+            return Unavailable("Unexpected error during weather lookup.");
+        }
+    }
+
+    private WeatherFindings Unavailable(string reason)
+    {
+        // Message only — never the exception detail or the response body — to keep production logs small.
+        _logger.LogWarning("Weather lookup fell back: {Reason}", reason);
+        return new WeatherFindings
+        {
+            Summary = "Weather data temporarily unavailable.",
+            IsFallback = true,
+            Notes = reason,
+        };
     }
 
     // Built only from the numeric centroid taken from our own static table, never from the raw
