@@ -144,6 +144,36 @@ public class WeatherAgentTests
         Assert.Equal("Weather data temporarily unavailable.", findings.Summary);
     }
 
+    [Theory]
+    [InlineData("Nowhereland")]
+    [InlineData("")]
+    [InlineData("   ")]
+    [InlineData("Colombo; DROP TABLE Farms")]
+    public async Task GetWeatherFindingsAsync_UnrecognizedDistrict_FallsBackWithoutCallingTheNetwork(string district)
+    {
+        var handler = new FakeHttpMessageHandler(_ => throw new InvalidOperationException("The network must not be used."));
+        var agent = CreateAgent(handler);
+
+        var findings = await agent.GetWeatherFindingsAsync(ContextFor(district), CancellationToken.None);
+
+        Assert.True(findings.IsFallback);
+        Assert.Equal("Weather data unavailable (unrecognized district).", findings.Summary);
+        Assert.Empty(handler.Requests);
+    }
+
+    [Fact]
+    public async Task GetWeatherFindingsAsync_ResponseWithoutReadings_FallsBack()
+    {
+        var handler = new FakeHttpMessageHandler(_ => Json(HttpStatusCode.OK, """{"daily":{"precipitation_sum":[null,null]}}"""));
+        var agent = CreateAgent(handler);
+
+        var findings = await agent.GetWeatherFindingsAsync(ContextFor("Galle"), CancellationToken.None);
+
+        Assert.True(findings.IsFallback);
+        Assert.Null(findings.RecentRainfallMm);
+        Assert.Null(findings.AvgTemperatureC);
+    }
+
     private sealed class FakeHttpMessageHandler : HttpMessageHandler
     {
         private readonly Func<HttpRequestMessage, HttpResponseMessage> _responder;
