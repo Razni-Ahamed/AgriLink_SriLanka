@@ -90,6 +90,60 @@ public class WeatherAgentTests
         Assert.Single(handler.Requests);
     }
 
+    [Theory]
+    [InlineData(HttpStatusCode.InternalServerError)]
+    [InlineData(HttpStatusCode.TooManyRequests)]
+    [InlineData(HttpStatusCode.NotFound)]
+    public async Task GetWeatherFindingsAsync_NonSuccessStatus_FallsBackWithoutThrowing(HttpStatusCode status)
+    {
+        var handler = new FakeHttpMessageHandler(_ => Json(status, "{}"));
+        var agent = CreateAgent(handler);
+
+        var findings = await agent.GetWeatherFindingsAsync(ContextFor("Colombo"), CancellationToken.None);
+
+        Assert.True(findings.IsFallback);
+        Assert.Equal("Weather data temporarily unavailable.", findings.Summary);
+        Assert.Null(findings.RecentRainfallMm);
+        Assert.Null(findings.AvgTemperatureC);
+    }
+
+    [Fact]
+    public async Task GetWeatherFindingsAsync_RequestTimesOut_FallsBackWithoutThrowing()
+    {
+        var handler = new FakeHttpMessageHandler(_ => throw new TaskCanceledException("The request timed out."));
+        var agent = CreateAgent(handler);
+
+        var findings = await agent.GetWeatherFindingsAsync(ContextFor("Colombo"), CancellationToken.None);
+
+        Assert.True(findings.IsFallback);
+        Assert.Equal("Weather data temporarily unavailable.", findings.Summary);
+        Assert.Contains("timed out", findings.Notes);
+    }
+
+    [Fact]
+    public async Task GetWeatherFindingsAsync_ProviderUnreachable_FallsBackWithoutThrowing()
+    {
+        var handler = new FakeHttpMessageHandler(_ => throw new HttpRequestException("No such host is known."));
+        var agent = CreateAgent(handler);
+
+        var findings = await agent.GetWeatherFindingsAsync(ContextFor("Colombo"), CancellationToken.None);
+
+        Assert.True(findings.IsFallback);
+        Assert.Equal("Weather data temporarily unavailable.", findings.Summary);
+    }
+
+    [Fact]
+    public async Task GetWeatherFindingsAsync_UnparseableBody_FallsBackWithoutThrowing()
+    {
+        var handler = new FakeHttpMessageHandler(_ => Json(HttpStatusCode.OK, "<html>not json</html>"));
+        var agent = CreateAgent(handler);
+
+        var findings = await agent.GetWeatherFindingsAsync(ContextFor("Colombo"), CancellationToken.None);
+
+        Assert.True(findings.IsFallback);
+        Assert.Equal("Weather data temporarily unavailable.", findings.Summary);
+    }
+
     private sealed class FakeHttpMessageHandler : HttpMessageHandler
     {
         private readonly Func<HttpRequestMessage, HttpResponseMessage> _responder;
