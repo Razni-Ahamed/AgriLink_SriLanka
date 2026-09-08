@@ -110,10 +110,17 @@ public class WeatherAgent : IWeatherAgent
         return QueryHelpers.AddQueryString(_options.Value.BaseUrl, parameters);
     }
 
-    private static WeatherFindings BuildFindings(OpenMeteoDaily? daily)
+    private WeatherFindings BuildFindings(OpenMeteoDaily? daily)
     {
         var rainfall = Sum(daily?.PrecipitationSum);
         var temperature = Average(daily?.TemperatureMax, daily?.TemperatureMin);
+
+        // A well-formed response carrying no usable readings is still no weather context, and
+        // ValidationAgent reads IsFallback to decide whether to discount its confidence.
+        if (rainfall is null && temperature is null)
+        {
+            return Unavailable("Weather provider returned no usable readings.");
+        }
 
         return new WeatherFindings
         {
