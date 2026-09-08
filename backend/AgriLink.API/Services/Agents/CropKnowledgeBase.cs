@@ -71,4 +71,45 @@ public static partial class CropKnowledgeBase
             "Keep irrigation regular, mulch to reduce heat stress, and apply a potassium source if a soil test confirms the deficiency.",
             false),
     };
+
+    // --- Fungal and moisture-driven disease rules (apply to every crop) ---
+    private static readonly CropKnowledgeEntry[] DiseaseEntries =
+    {
+        new(
+            new[] { "*" },
+            new[] { "wilting", "wilted", "drooping", "wilt" },
+            "Root rot or a vascular wilt disease restricting water uptake",
+            "Lift one affected plant and inspect the roots; destroy plants with brown, mushy roots and do not replant the same crop in that spot this season.",
+            true),
+        new(
+            new[] { "*" },
+            new[] { "white powder", "powdery", "white coating", "whitish film", "flour like" },
+            "Powdery mildew, a fungal infection favoured by humid air and poor ventilation",
+            "Prune for better airflow, stop overhead watering, and apply an approved sulphur or fungicide spray only on officer advice.",
+            true),
+        new(
+            new[] { "*" },
+            new[] { "black spot", "dark spots", "lesion", "spots on leaves", "blight", "brown patches" },
+            "Fungal leaf blight or leaf spot disease spreading in wet foliage",
+            "Remove and destroy affected leaves, switch to drip or furrow irrigation, and confirm the fungicide choice with an officer before spraying.",
+            true),
+        new(
+            new[] { "*" },
+            new[] { "fruit rot", "soft spot", "rotting fruit", "mushy fruit", "fruit is rotting" },
+            "Fungal fruit rot developing under excess moisture",
+            "Remove and destroy affected fruit, keep developing fruit off wet soil, and harvest promptly during wet spells.",
+            true),
+        new(
+            new[] { "*" },
+            new[] { "mould", "mold", "grey fuzz", "fuzzy growth", "musty smell" },
+            "Grey mould / saprophytic fungal growth on damaged or over-humid tissue",
+            "Remove the affected tissue, increase spacing and ventilation, and clear crop debris from the beds.",
+            true),
+        new(
+            new[] { "*" },
+            new[] { "stem rot", "base of the stem", "collar rot", "damping off", "seedlings collapsing" },
+            "Collar or stem rot at the soil line caused by a soil-borne fungus in wet conditions",
+            "Improve drainage, avoid piling wet soil against the stems, and remove collapsed seedlings together with the surrounding soil.",
+            true),
+    };
 }
