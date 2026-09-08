@@ -112,4 +112,82 @@ public static partial class CropKnowledgeBase
             "Improve drainage, avoid piling wet soil against the stems, and remove collapsed seedlings together with the surrounding soil.",
             true),
     };
+
+    // --- Pest rules (apply to every crop) ---
+    private static readonly CropKnowledgeEntry[] PestEntries =
+    {
+        new(
+            new[] { "*" },
+            new[] { "holes", "chewed", "eaten leaves", "bite marks", "caterpillar", "worms on" },
+            "Chewing pest damage from caterpillars, armyworm or leaf-eating beetles",
+            "Inspect the undersides of leaves at dusk, hand-pick the caterpillars, and ask the officer about an approved biological control such as a Bt spray.",
+            false),
+        new(
+            new[] { "*" },
+            new[] { "curling", "curled leaves", "twisted leaves", "aphid", "sticky leaves", "whitefly" },
+            "Aphid or whitefly feeding, or a virus spread by those insects",
+            "Check the leaf undersides for aphids and whiteflies, remove severely infected plants, and control the insect vector before anything else.",
+            false),
+        new(
+            new[] { "*" },
+            new[] { "tunnel", "borer", "hole in the stem", "bored", "dead heart" },
+            "Stem borer larvae tunnelling inside the stem",
+            "Cut and destroy the affected shoots, clear crop residue after harvest, and ask the officer about pheromone traps for the next season.",
+            false),
+        new(
+            new[] { "*" },
+            new[] { "silvery", "thrips", "scratched leaves", "streaks on leaves" },
+            "Thrips feeding, which scrapes the leaf surface and can transmit viruses",
+            "Use blue or yellow sticky traps to confirm the infestation and keep the field free of weeds that host thrips.",
+            false),
+    };
+
+    // --- Crop-specific rules ---
+    private static readonly CropKnowledgeEntry[] CropSpecificEntries =
+    {
+        new(
+            new[] { "rice", "paddy" },
+            new[] { "hopper", "hopperburn", "hopper burn", "plants drying in patches" },
+            "Brown planthopper infestation causing hopperburn patches",
+            "Drain the field for a few days to disturb the hoppers, avoid excess nitrogen, and report the patch size to the officer for pest-control guidance.",
+            false),
+        new(
+            new[] { "rice", "paddy" },
+            new[] { "blast", "diamond shaped", "neck rot", "panicle turning white" },
+            "Rice blast (Pyricularia oryzae), a fungal disease favoured by high humidity and heavy dew",
+            "Avoid excess nitrogen top dressing, keep water levels steady, and confirm any fungicide with an officer before spraying.",
+            true),
+        new(
+            new[] { "tomato" },
+            new[] { "blossom end", "black bottom", "sunken end", "bottom of the fruit is black" },
+            "Blossom-end rot caused by poor calcium uptake from uneven soil moisture",
+            "Keep irrigation steady rather than heavy-then-dry, mulch the beds, and avoid over-applying nitrogen fertiliser.",
+            false),
+        new(
+            new[] { "tomato", "chilli", "brinjal" },
+            new[] { "fruit has holes", "fruit borer", "worm inside the fruit", "hole in the fruit" },
+            "Fruit borer larvae feeding inside the developing fruit",
+            "Pick and destroy affected fruit daily, install pheromone traps, and avoid leaving fallen fruit in the field.",
+            false),
+        new(
+            new[] { "banana" },
+            new[] { "older leaves yellow", "split pseudostem", "leaves collapsing around the stem" },
+            "Panama disease (Fusarium wilt), a soil-borne fungus affecting the vascular system",
+            "Do not move soil or tools from the affected plot, destroy infected plants in place, and consult the officer before replanting bananas there.",
+            true),
+        new(
+            new[] { "coconut" },
+            new[] { "frond", "crown", "beetle", "holes in the young leaves" },
+            "Rhinoceros beetle damage to the crown and young fronds",
+            "Clear decaying organic matter that beetles breed in, and ask the officer about hooking out beetles or using pheromone traps.",
+            false),
+    };
+
+    // The full rule set the Crop Analysis agent scans, in order.
+    public static readonly IReadOnlyList<CropKnowledgeEntry> Entries =
+        NutrientAndWaterEntries
+            .Concat(DiseaseEntries)
+            .Concat(PestEntries)
+            .Concat(CropSpecificEntries)
+            .ToArray();
 }
