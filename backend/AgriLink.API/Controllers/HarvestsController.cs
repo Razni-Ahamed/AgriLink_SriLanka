@@ -14,11 +14,13 @@ public class HarvestsController : ControllerBase
 {
     private readonly AgriLinkDbContext _db;
     private readonly ICurrentUserService _currentUser;
+    private readonly IAuditLogService _auditLog;
 
-    public HarvestsController(AgriLinkDbContext db, ICurrentUserService currentUser)
+    public HarvestsController(AgriLinkDbContext db, ICurrentUserService currentUser, IAuditLogService auditLog)
     {
         _db = db;
         _currentUser = currentUser;
+        _auditLog = auditLog;
     }
 
     [HttpGet]
@@ -103,15 +105,9 @@ public class HarvestsController : ControllerBase
     }
 
     [HttpPut("{id:int}")]
-    [Authorize(Roles = "Farmer")]
+    [Authorize(Roles = "Farmer,Admin")]
     public async Task<ActionResult<HarvestListingResponse>> Update(int id, UpdateHarvestListingRequest request)
     {
-        var farmerProfileId = await _currentUser.GetFarmerProfileIdAsync(User);
-        if (farmerProfileId is null)
-        {
-            return Forbid();
-        }
-
         var listing = await _db.HarvestListings
             .Include(h => h.Crop).ThenInclude(c => c.Field).ThenInclude(f => f.Farm)
             .FirstOrDefaultAsync(h => h.HarvestId == id);
@@ -121,10 +117,16 @@ public class HarvestsController : ControllerBase
             return NotFound();
         }
 
-        if (listing.FarmerProfileId != farmerProfileId)
+        if (!_currentUser.IsAdmin(User))
         {
-            return Forbid();
+            var farmerProfileId = await _currentUser.GetFarmerProfileIdAsync(User);
+            if (farmerProfileId is null || listing.FarmerProfileId != farmerProfileId)
+            {
+                return Forbid();
+            }
         }
+
+        var oldStatus = listing.Status;
 
         if (request.Status.HasValue)
         {
@@ -144,6 +146,19 @@ public class HarvestsController : ControllerBase
         if (request.HarvestDate.HasValue)
         {
             listing.HarvestDate = request.HarvestDate.Value;
+        }
+
+        // Only the admin-override path is audited here — a farmer editing their own listing
+        // is routine self-service, not the kind of cross-account action the log is for.
+        if (_currentUser.IsAdmin(User))
+        {
+            _auditLog.Record(
+                _currentUser.GetUserId(User),
+                "HarvestListingUpdatedByAdmin",
+                "HarvestListing",
+                listing.HarvestId,
+                oldStatus.ToString(),
+                listing.Status.ToString());
         }
 
         await _db.SaveChangesAsync();

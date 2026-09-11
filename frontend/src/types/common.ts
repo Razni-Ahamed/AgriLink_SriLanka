@@ -19,6 +19,7 @@ export type NavLabelKey =
   | 'nav.notifications'
   | 'nav.adminDashboard'
   | 'nav.manageUsers'
+  | 'nav.auditLog'
 
 export interface NavItem {
   labelKey: NavLabelKey

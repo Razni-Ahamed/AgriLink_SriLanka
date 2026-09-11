@@ -10,7 +10,8 @@
     "orders": "ඇණවුම්",
     "notifications": "දැනුම්දීම්",
     "adminDashboard": "පරිපාලක උපකරණ පුවරුව",
-    "manageUsers": "පරිශීලකයන් කළමනාකරණය"
+    "manageUsers": "පරිශීලකයන් කළමනාකරණය",
+    "auditLog": "විගණන සටහන"
   },
   "actions": {
     "saving": "සුරකිමින්…",

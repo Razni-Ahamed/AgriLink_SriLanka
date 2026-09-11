@@ -15,11 +15,13 @@ public class AdvisoriesController : ControllerBase
 {
     private readonly AgriLinkDbContext _db;
     private readonly ICurrentUserService _currentUser;
+    private readonly IAuditLogService _auditLog;
 
-    public AdvisoriesController(AgriLinkDbContext db, ICurrentUserService currentUser)
+    public AdvisoriesController(AgriLinkDbContext db, ICurrentUserService currentUser, IAuditLogService auditLog)
     {
         _db = db;
         _currentUser = currentUser;
+        _auditLog = auditLog;
     }
 
     [HttpGet("{id:int}")]
@@ -81,6 +83,14 @@ public class AdvisoriesController : ControllerBase
         advisory.ReviewedByFK = _currentUser.GetUserId(User);
         advisory.ReviewedAt = DateTime.UtcNow;
         advisory.Issue.Status = issueStatus;
+
+        _auditLog.Record(
+            advisory.ReviewedByFK.Value,
+            newStatus == AdvisoryStatus.Approved ? "AdvisoryApproved" : "AdvisoryRejected",
+            "AIAdvisory",
+            advisory.AdvisoryId,
+            AdvisoryStatus.Draft.ToString(),
+            newStatus.ToString());
 
         await _db.SaveChangesAsync();
         return Ok(ToResponse(advisory));

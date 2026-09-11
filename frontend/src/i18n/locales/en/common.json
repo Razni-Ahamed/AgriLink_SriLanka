@@ -10,7 +10,8 @@
     "orders": "Orders",
     "notifications": "Notifications",
     "adminDashboard": "Admin Dashboard",
-    "manageUsers": "Manage Users"
+    "manageUsers": "Manage Users",
+    "auditLog": "Audit Log"
   },
   "actions": {
     "saving": "Saving…",
