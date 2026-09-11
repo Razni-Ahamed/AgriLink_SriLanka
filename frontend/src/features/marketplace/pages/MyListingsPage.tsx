@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { Plus, Warning } from '@phosphor-icons/react'
+import { Plus } from '@phosphor-icons/react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/Button'
 import { Modal } from '@/components/ui/Modal'
@@ -9,12 +9,11 @@ import { Badge } from '@/components/ui/Badge'
 import { Select } from '@/components/ui/Select'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { StaggerList } from '@/components/ui/motion/StaggerList'
-import { useAuthStore } from '@/auth/authStore'
 import { useUiStore } from '@/lib/useUiStore'
 import { formatDate, formatQuantity } from '@/lib/utils'
 import { useStatusLabel } from '@/lib/useStatusLabel'
 import { HarvestListingForm } from '../components/HarvestListingForm'
-import { useCreateHarvest, useHarvests, useUpdateHarvest } from '../hooks/useHarvests'
+import { useCreateHarvest, useMyHarvests, useUpdateHarvest } from '../hooks/useHarvests'
 import type { HarvestListingResponse, HarvestStatus } from '@/types/dto/harvests'
 
 const statusVariant = {
@@ -85,10 +84,9 @@ function MyListingCard({ harvest }: { harvest: HarvestListingResponse }) {
 export function MyListingsPage() {
   const { t } = useTranslation(['marketplace', 'common'])
   const [searchParams, setSearchParams] = useSearchParams()
-  const user = useAuthStore((state) => state.user)
   const addToast = useUiStore((state) => state.addToast)
 
-  const { data: harvests, isLoading } = useHarvests()
+  const { data: myListings, isLoading } = useMyHarvests()
   const createHarvest = useCreateHarvest()
 
   const prefillCropId = searchParams.get('cropId')
@@ -104,10 +102,6 @@ export function MyListingsPage() {
     }
   }
 
-  const myListings = harvests?.filter(
-    (harvest) => user?.district && harvest.district === user.district,
-  )
-
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
@@ -119,13 +113,6 @@ export function MyListingsPage() {
           {t('marketplace:listings.newListing')}
         </Button>
       </div>
-
-      <p className="flex items-center gap-2 rounded-xl bg-brand-harvest/10 px-3 py-2 text-sm text-text-secondary">
-        <Warning size={16} weight="duotone" className="shrink-0 text-brand-harvest" />
-        {t('marketplace:listings.districtNotice', {
-          district: user?.district ?? t('marketplace:listings.unknownDistrict'),
-        })}
-      </p>
 
       {isLoading && (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">

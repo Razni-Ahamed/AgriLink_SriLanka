@@ -11,6 +11,7 @@
     "notifications": "Notifications",
     "adminDashboard": "Admin Dashboard",
     "manageUsers": "Manage Users",
+    "departments": "Departments",
     "auditLog": "Audit Log"
   },
   "actions": {
@@ -46,6 +47,7 @@
     "password": "Password",
     "fullName": "Full name",
     "district": "District",
+    "selectDistrict": "Select a district",
     "nic": "NIC",
     "role": "Role",
     "department": "Department",

@@ -11,6 +11,7 @@
     "notifications": "දැනුම්දීම්",
     "adminDashboard": "පරිපාලක උපකරණ පුවරුව",
     "manageUsers": "පරිශීලකයන් කළමනාකරණය",
+    "departments": "දෙපාර්තමේන්තු",
     "auditLog": "විගණන සටහන"
   },
   "actions": {
@@ -46,6 +47,7 @@
     "password": "මුරපදය",
     "fullName": "සම්පූර්ණ නම",
     "district": "දිස්ත්‍රික්කය",
+    "selectDistrict": "දිස්ත්‍රික්කයක් තෝරන්න",
     "nic": "ජාතික හැඳුනුම්පත් අංකය",
     "role": "භූමිකාව",
     "department": "දෙපාර්තමේන්තුව",

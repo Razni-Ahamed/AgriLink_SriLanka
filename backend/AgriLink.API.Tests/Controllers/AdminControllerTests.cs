@@ -42,12 +42,27 @@ public class AdminControllerTests
         return (controller, db, userManager, admin);
     }
 
+    private static async Task<int> EnsureDepartmentAsync(AgriLinkDbContext db, string name = "Extension")
+    {
+        var existing = await db.Departments.FirstOrDefaultAsync(d => d.Name == name);
+        if (existing is not null)
+        {
+            return existing.DepartmentId;
+        }
+
+        var department = new Department { Name = name };
+        db.Departments.Add(department);
+        await db.SaveChangesAsync();
+        return department.DepartmentId;
+    }
+
     private static async Task<ApplicationUser> CreateOfficerAsync(UserManager<ApplicationUser> users, AgriLinkDbContext db, string district = "Kandy", string department = "Extension")
     {
+        var departmentId = await EnsureDepartmentAsync(db, department);
         var user = new ApplicationUser { UserName = "officer@agrilink.lk", Email = "officer@agrilink.lk", FullName = "Test Officer" };
         await users.CreateAsync(user, "Officer@AgriLink.2026!");
         await users.AddToRoleAsync(user, "Officer");
-        db.OfficerProfiles.Add(new OfficerProfile { UserId = user.Id, Department = department, District = district });
+        db.OfficerProfiles.Add(new OfficerProfile { UserId = user.Id, DepartmentId = departmentId, District = district });
         await db.SaveChangesAsync();
         return user;
     }
@@ -66,6 +81,7 @@ public class AdminControllerTests
     public async Task CreateUser_Officer_CreatesProfileAndRecordsAudit()
     {
         var (controller, db, _, admin) = await CreateAsync();
+        var departmentId = await EnsureDepartmentAsync(db, "Crop Extension");
 
         var result = await controller.CreateUser(new CreateUserRequest
         {
@@ -74,7 +90,7 @@ public class AdminControllerTests
             Password = "Officer@AgriLink.2026!",
             Role = "Officer",
             District = "Matara",
-            Department = "Crop Extension",
+            DepartmentId = departmentId,
         });
 
         var created = Assert.IsType<CreateUserResponse>(Assert.IsType<ObjectResult>(result.Result).Value);
@@ -83,6 +99,7 @@ public class AdminControllerTests
         var profile = await db.OfficerProfiles.FirstOrDefaultAsync(o => o.UserId == created.UserId);
         Assert.NotNull(profile);
         Assert.Equal("Matara", profile!.District);
+        Assert.Equal(departmentId, profile.DepartmentId);
 
         var auditLog = await db.AuditLogs.FirstOrDefaultAsync(a => a.EntityId == created.UserId && a.Action == "UserCreated");
         Assert.NotNull(auditLog);
@@ -108,6 +125,60 @@ public class AdminControllerTests
     }
 
     [Fact]
+    public async Task CreateUser_InvalidDistrict_ReturnsBadRequest()
+    {
+        var (controller, db, _, _) = await CreateAsync();
+        var departmentId = await EnsureDepartmentAsync(db);
+
+        var result = await controller.CreateUser(new CreateUserRequest
+        {
+            FullName = "Someone",
+            Email = "someone@agrilink.lk",
+            Password = "Someone@AgriLink.2026!",
+            Role = "Officer",
+            District = "Notaplace",
+            DepartmentId = departmentId,
+        });
+
+        Assert.IsType<BadRequestObjectResult>(result.Result);
+    }
+
+    [Fact]
+    public async Task CreateUser_OfficerWithoutDepartmentId_ReturnsBadRequest()
+    {
+        var (controller, _, _, _) = await CreateAsync();
+
+        var result = await controller.CreateUser(new CreateUserRequest
+        {
+            FullName = "Someone",
+            Email = "someone@agrilink.lk",
+            Password = "Someone@AgriLink.2026!",
+            Role = "Officer",
+            District = "Kandy",
+        });
+
+        Assert.IsType<BadRequestObjectResult>(result.Result);
+    }
+
+    [Fact]
+    public async Task CreateUser_OfficerWithUnknownDepartmentId_ReturnsBadRequest()
+    {
+        var (controller, _, _, _) = await CreateAsync();
+
+        var result = await controller.CreateUser(new CreateUserRequest
+        {
+            FullName = "Someone",
+            Email = "someone@agrilink.lk",
+            Password = "Someone@AgriLink.2026!",
+            Role = "Officer",
+            District = "Kandy",
+            DepartmentId = 999,
+        });
+
+        Assert.IsType<BadRequestObjectResult>(result.Result);
+    }
+
+    [Fact]
     public async Task GetRoles_ReturnsAllFourSeededRoles()
     {
         var (controller, _, _, _) = await CreateAsync();
@@ -123,7 +194,7 @@ public class AdminControllerTests
     public async Task GetUsers_ReturnsDistrictFromTheMatchingProfileType()
     {
         var (controller, db, users, _) = await CreateAsync();
-        var officer = await CreateOfficerAsync(users, db, district: "Jaffna");
+        var officer = await CreateOfficerAsync(users, db, district: "Jaffna", department: "Extension Services");
         var farmer = await CreateFarmerAsync(users, db);
 
         var result = await controller.GetUsers();
@@ -134,6 +205,7 @@ public class AdminControllerTests
         var officerSummary = summaries!.Single(s => s.UserId == officer.Id);
         Assert.Equal("Officer", officerSummary.Role);
         Assert.Equal("Jaffna", officerSummary.District);
+        Assert.Equal("Extension Services", officerSummary.Department);
 
         var farmerSummary = summaries.Single(s => s.UserId == farmer.Id);
         Assert.Equal("Farmer", farmerSummary.Role);
@@ -197,7 +269,7 @@ public class AdminControllerTests
         var (controller, db, users, _) = await CreateAsync();
         var officer = await CreateOfficerAsync(users, db);
 
-        var result = await controller.UpdateUserRole(officer.Id, new UpdateUserRoleRequest { Role = "Officer", District = "Kandy", Department = "Extension" });
+        var result = await controller.UpdateUserRole(officer.Id, new UpdateUserRoleRequest { Role = "Officer", District = "Kandy" });
 
         Assert.IsType<BadRequestObjectResult>(result.Result);
     }

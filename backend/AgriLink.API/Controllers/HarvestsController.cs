@@ -45,6 +45,31 @@ public class HarvestsController : ControllerBase
         return Ok(listings.Select(ToResponse));
     }
 
+    /// <summary>
+    /// The logged-in farmer's own listings, every status included — unlike GetAll, which
+    /// only shows Active listings to the public marketplace. "mine" must be declared ahead of
+    /// {id:int} to be attempted first, though the int route constraint alone would already
+    /// stop "mine" from matching it.
+    /// </summary>
+    [HttpGet("mine")]
+    [Authorize(Roles = "Farmer")]
+    public async Task<ActionResult<List<HarvestListingResponse>>> Mine()
+    {
+        var farmerProfileId = await _currentUser.GetFarmerProfileIdAsync(User);
+        if (farmerProfileId is null)
+        {
+            return Forbid();
+        }
+
+        var listings = await _db.HarvestListings
+            .Include(h => h.Crop).ThenInclude(c => c.Field).ThenInclude(f => f.Farm)
+            .Where(h => h.FarmerProfileId == farmerProfileId)
+            .OrderByDescending(h => h.CreatedAt)
+            .ToListAsync();
+
+        return Ok(listings.Select(ToResponse));
+    }
+
     [HttpGet("{id:int}")]
     [Authorize]
     public async Task<ActionResult<HarvestListingResponse>> GetById(int id)

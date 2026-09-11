@@ -1,0 +1,22 @@
+namespace AgriLink.API.Data;
+
+/// <summary>
+/// Sri Lanka's 25 administrative districts, offered as a fixed dropdown wherever a user profile
+/// records a district (registration, admin user creation, role changes) instead of free text a
+/// typo could corrupt. Kept in sync by name with
+/// Services.Agents.SriLankaDistrictCoordinates — that list adds lat/lon centroids for the
+/// Weather Agent and lives in a different layer, so the two are not merged into one source.
+/// </summary>
+public static class SriLankaDistricts
+{
+    public static readonly IReadOnlyList<string> All = new[]
+    {
+        "Ampara", "Anuradhapura", "Badulla", "Batticaloa", "Colombo", "Galle", "Gampaha",
+        "Hambantota", "Jaffna", "Kalutara", "Kandy", "Kegalle", "Kilinochchi", "Kurunegala",
+        "Mannar", "Matale", "Matara", "Monaragala", "Mullaitivu", "Nuwara Eliya", "Polonnaruwa",
+        "Puttalam", "Ratnapura", "Trincomalee", "Vavuniya",
+    };
+
+    public static bool IsValid(string? district) =>
+        !string.IsNullOrWhiteSpace(district) && All.Contains(district.Trim(), StringComparer.OrdinalIgnoreCase);
+}

@@ -27,9 +27,7 @@
   "listings": {
     "title": "My Listings",
     "newListing": "New Listing",
-    "empty": "No listings found in your district yet.",
-    "districtNotice": "Approximate — showing active listings in your district ({{district}}). The backend doesn't yet expose your farmer profile ID on listings, so this can't be filtered exactly to listings you created.",
-    "unknownDistrict": "unknown",
+    "empty": "You haven't listed any harvests yet.",
     "availableOf": "{{available}} of {{total}} available",
     "harvestedOn": "Harvested {{date}}",
     "updated": "Listing updated.",

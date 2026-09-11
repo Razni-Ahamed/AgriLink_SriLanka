@@ -7,6 +7,8 @@ public class AdminUserSummary
     public string Email { get; set; } = string.Empty;
     public string Role { get; set; } = string.Empty;
     public string? District { get; set; }
+    /// <summary>Populated only for Officer accounts.</summary>
+    public string? Department { get; set; }
     public bool IsActive { get; set; }
     public DateTime CreatedAt { get; set; }
 }

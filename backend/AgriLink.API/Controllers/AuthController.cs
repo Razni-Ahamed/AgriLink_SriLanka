@@ -25,6 +25,11 @@ public class AuthController : ControllerBase
     [HttpPost("register")]
     public async Task<ActionResult<AuthResponse>> Register(RegisterRequest request)
     {
+        if (!SriLankaDistricts.IsValid(request.District))
+        {
+            return BadRequest(new { message = "District must be one of Sri Lanka's 25 administrative districts." });
+        }
+
         var existing = await _userManager.FindByEmailAsync(request.Email);
         if (existing is not null)
         {

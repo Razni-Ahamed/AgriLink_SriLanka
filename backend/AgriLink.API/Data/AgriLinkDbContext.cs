@@ -27,6 +27,7 @@ public class AgriLinkDbContext : IdentityDbContext<ApplicationUser, IdentityRole
     public DbSet<Order> Orders => Set<Order>();
     public DbSet<Notification> Notifications => Set<Notification>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
+    public DbSet<Department> Departments => Set<Department>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -61,8 +62,19 @@ public class AgriLinkDbContext : IdentityDbContext<ApplicationUser, IdentityRole
                 .WithOne(u => u.OfficerProfile)
                 .HasForeignKey<OfficerProfile>(o => o.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
-            entity.Property(o => o.Department).HasMaxLength(100).IsRequired();
             entity.Property(o => o.District).HasMaxLength(50).IsRequired();
+            entity.HasOne(o => o.Department)
+                .WithMany(d => d.OfficerProfiles)
+                .HasForeignKey(o => o.DepartmentId)
+                // Restrict, not Cascade: deleting a Department must not silently delete the
+                // officers assigned to it. DepartmentsController blocks the delete instead.
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        builder.Entity<Department>(entity =>
+        {
+            entity.Property(d => d.Name).HasMaxLength(100).IsRequired();
+            entity.HasIndex(d => d.Name).IsUnique();
         });
 
         builder.Entity<Farm>(entity =>

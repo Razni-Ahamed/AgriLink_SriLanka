@@ -1,5 +1,6 @@
 import type { RouteObject } from 'react-router-dom'
 import { Basket, ClipboardText, Storefront } from '@phosphor-icons/react'
+import { RequireRole } from '@/app/RequireRole'
 import type { NavItem } from '@/types/common'
 import { BrowseHarvestsPage } from './pages/BrowseHarvestsPage'
 import { HarvestDetailPage } from './pages/HarvestDetailPage'
@@ -11,11 +12,26 @@ export const marketplacePublicRoutes: RouteObject[] = [
   { path: '/marketplace/browse', element: <BrowseHarvestsPage /> },
 ]
 
-/** Everything else requires a logged-in user (GET /api/harvests/{id} has [Authorize]). */
+/**
+ * GET /api/harvests/mine and GET /api/purchase-requests/mine are both
+ * [Authorize(Roles = "Farmer")] — Admin was in this route group's nav (and Buyer in
+ * /marketplace/requests') without being authorized for either endpoint, so opening either page
+ * as anything but a Farmer 403'd straight from the API. Split so each sub-route's role check
+ * matches what its backend endpoint actually allows.
+ */
 export const marketplaceRoutes: RouteObject[] = [
-  { path: '/marketplace/mine', element: <MyListingsPage /> },
-  { path: '/marketplace/requests', element: <MyPurchaseRequestsPage /> },
-  { path: '/marketplace/:harvestId', element: <HarvestDetailPage /> },
+  {
+    element: <RequireRole allow={['Farmer']} />,
+    children: [
+      { path: '/marketplace/mine', element: <MyListingsPage /> },
+      { path: '/marketplace/requests', element: <MyPurchaseRequestsPage /> },
+    ],
+  },
+  {
+    // GET /api/harvests/{id} is [Authorize] only — any authenticated role may view a listing.
+    element: <RequireRole allow={['Farmer', 'Buyer', 'Admin']} />,
+    children: [{ path: '/marketplace/:harvestId', element: <HarvestDetailPage /> }],
+  },
 ]
 
 export const marketplaceNavItems: NavItem[] = [
@@ -29,12 +45,12 @@ export const marketplaceNavItems: NavItem[] = [
     labelKey: 'nav.myListings',
     path: '/marketplace/mine',
     icon: <Basket size={18} weight="duotone" />,
-    allowedRoles: ['Farmer', 'Admin'],
+    allowedRoles: ['Farmer'],
   },
   {
     labelKey: 'nav.myRequests',
     path: '/marketplace/requests',
     icon: <ClipboardText size={18} weight="duotone" />,
-    allowedRoles: ['Farmer', 'Admin'],
+    allowedRoles: ['Farmer'],
   },
 ]

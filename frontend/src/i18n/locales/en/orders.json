@@ -71,5 +71,28 @@
       "entity": "Entity",
       "change": "Change"
     }
+  },
+  "departments": {
+    "title": "Departments",
+    "subtitle": "Manage the departments Officer accounts can be assigned to.",
+    "name": "Department name",
+    "nameRequired": "Department name is required",
+    "createdOn": "Created",
+    "newDepartment": "New Department",
+    "create": "Create Department",
+    "rename": "Rename",
+    "saveChanges": "Save Changes",
+    "selectDepartment": "Select a department",
+    "noneYetForCreateUser": "No departments yet — create one on the Departments page before adding an Officer.",
+    "empty": "No departments yet.",
+    "loadError": "Could not load departments. Try refreshing the page.",
+    "created": "\"{{name}}\" was created.",
+    "renamed": "Renamed to \"{{name}}\".",
+    "deleted": "\"{{name}}\" was deleted.",
+    "duplicateError": "A department with this name already exists.",
+    "saveError": "Could not save this department. Try again.",
+    "deleteInUseError": "This department has officers assigned to it. Reassign them before deleting it.",
+    "confirmDeleteTitle": "Delete department?",
+    "confirmDeleteBody": "This will permanently delete \"{{name}}\". This can't be undone."
   }
 }

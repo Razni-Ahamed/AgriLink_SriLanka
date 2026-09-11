@@ -20,9 +20,8 @@ public class CreateUserRequest
     [MaxLength(50)]
     public string District { get; set; } = string.Empty;
 
-    /// <summary>Required when Role is "Officer".</summary>
-    [MaxLength(100)]
-    public string? Department { get; set; }
+    /// <summary>Required when Role is "Officer" — must reference an existing Department.</summary>
+    public int? DepartmentId { get; set; }
 
     /// <summary>Required when Role is "Buyer".</summary>
     [MaxLength(100)]

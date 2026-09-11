@@ -11,6 +11,7 @@
     "notifications": "அறிவிப்புகள்",
     "adminDashboard": "நிர்வாக டாஷ்போர்டு",
     "manageUsers": "பயனர்களை நிர்வகித்தல்",
+    "departments": "துறைகள்",
     "auditLog": "தணிக்கைப் பதிவு"
   },
   "actions": {
@@ -46,6 +47,7 @@
     "password": "கடவுச்சொல்",
     "fullName": "முழுப் பெயர்",
     "district": "மாவட்டம்",
+    "selectDistrict": "ஒரு மாவட்டத்தைத் தேர்ந்தெடுக்கவும்",
     "nic": "தேசிய அடையாள அட்டை இலக்கம்",
     "role": "பங்கு",
     "department": "துறை",
