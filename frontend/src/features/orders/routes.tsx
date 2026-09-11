@@ -1,10 +1,11 @@
 import type { RouteObject } from 'react-router-dom'
-import { Bell, Gear, UserCircle } from '@/components/ui/icons'
+import { Bell, Gear, ClipboardText, UserCircle } from '@/components/ui/icons'
 import { OrderTruckIcon } from '@/components/ui/icons/custom'
 import { RequireRole } from '@/app/RequireRole'
 import type { NavItem } from '@/types/common'
 import { AdminDashboardPage } from './pages/AdminDashboardPage'
 import { AdminUsersPage } from './pages/AdminUsersPage'
+import { AuditLogPage } from './pages/AuditLogPage'
 import { MyOrdersPage } from './pages/MyOrdersPage'
 import { NotificationsPage } from './pages/NotificationsPage'
 import { OrderDetailPage } from './pages/OrderDetailPage'
@@ -18,6 +19,7 @@ export const ordersRoutes: RouteObject[] = [
     children: [
       { path: '/admin', element: <AdminDashboardPage /> },
       { path: '/admin/users', element: <AdminUsersPage /> },
+      { path: '/admin/audit-log', element: <AuditLogPage /> },
     ],
   },
 ]
@@ -45,6 +47,12 @@ export const ordersNavItems: NavItem[] = [
     labelKey: 'nav.manageUsers',
     path: '/admin/users',
     icon: <UserCircle size={18} weight="duotone" />,
+    allowedRoles: ['Admin'],
+  },
+  {
+    labelKey: 'nav.auditLog',
+    path: '/admin/audit-log',
+    icon: <ClipboardText size={18} weight="duotone" />,
     allowedRoles: ['Admin'],
   },
 ]

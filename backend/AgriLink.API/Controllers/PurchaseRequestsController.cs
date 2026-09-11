@@ -15,11 +15,13 @@ public class PurchaseRequestsController : ControllerBase
 {
     private readonly AgriLinkDbContext _db;
     private readonly ICurrentUserService _currentUser;
+    private readonly IAuditLogService _auditLog;
 
-    public PurchaseRequestsController(AgriLinkDbContext db, ICurrentUserService currentUser)
+    public PurchaseRequestsController(AgriLinkDbContext db, ICurrentUserService currentUser, IAuditLogService auditLog)
     {
         _db = db;
         _currentUser = currentUser;
+        _auditLog = auditLog;
     }
 
     [HttpPost]
@@ -120,6 +122,13 @@ public class PurchaseRequestsController : ControllerBase
         if (action == "decline")
         {
             purchaseRequest.Status = PurchaseRequestStatus.Declined;
+            _auditLog.Record(
+                _currentUser.GetUserId(User),
+                "PurchaseRequestDeclined",
+                "PurchaseRequest",
+                purchaseRequest.RequestId,
+                PurchaseRequestStatus.Pending.ToString(),
+                PurchaseRequestStatus.Declined.ToString());
             await _db.SaveChangesAsync();
             return Ok(ToResponse(purchaseRequest));
         }
@@ -149,6 +158,15 @@ public class PurchaseRequestsController : ControllerBase
         };
 
         _db.Orders.Add(order);
+
+        _auditLog.Record(
+            _currentUser.GetUserId(User),
+            "PurchaseRequestAccepted",
+            "PurchaseRequest",
+            purchaseRequest.RequestId,
+            PurchaseRequestStatus.Pending.ToString(),
+            PurchaseRequestStatus.Accepted.ToString());
+
         await _db.SaveChangesAsync();
 
         return Ok(ToResponse(purchaseRequest));

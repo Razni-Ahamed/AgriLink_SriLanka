@@ -40,6 +40,36 @@
     "userCreated": "{{name}} ({{role}}) created.",
     "createUserError": "Could not create the user. Check the details and try again.",
     "createUser": "Create User",
-    "creating": "Creating…"
+    "creating": "Creating…",
+    "manageExisting": "Manage Existing Users",
+    "actions": "Actions",
+    "active": "Active",
+    "inactive": "Inactive",
+    "changeRole": "Change Role",
+    "changeRoleFor": "Choose a new role for {{name}}.",
+    "updateRole": "Update Role",
+    "updating": "Updating…",
+    "roleUpdated": "{{name}} is now a {{role}}.",
+    "roleUpdateError": "Could not update this user's role. Check the details and try again.",
+    "activate": "Activate",
+    "deactivate": "Deactivate",
+    "userActivated": "{{name}} was activated.",
+    "userDeactivated": "{{name}} was deactivated.",
+    "statusUpdateError": "Could not update this user's status.",
+    "loadUsersError": "Could not load users. Try refreshing the page.",
+    "noUsers": "No users found."
+  },
+  "auditLog": {
+    "title": "Audit Log",
+    "subtitle": "A record of key actions taken across the platform.",
+    "empty": "No audit entries yet.",
+    "loadError": "Could not load the audit log. Try refreshing the page.",
+    "columns": {
+      "when": "When",
+      "actor": "Actor",
+      "action": "Action",
+      "entity": "Entity",
+      "change": "Change"
+    }
   }
 }

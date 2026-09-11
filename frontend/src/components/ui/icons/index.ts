@@ -14,4 +14,5 @@ export {
   UserCircle,
   Gear,
   Translate,
+  ClipboardText,
 } from '@phosphor-icons/react'
