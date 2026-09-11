@@ -34,7 +34,9 @@ public class PurchaseRequestsController : ControllerBase
             return Forbid();
         }
 
-        var listing = await _db.HarvestListings.FirstOrDefaultAsync(h => h.HarvestId == request.HarvestId);
+        var listing = await _db.HarvestListings
+            .Include(h => h.Crop).ThenInclude(c => c.Field).ThenInclude(f => f.Farm)
+            .FirstOrDefaultAsync(h => h.HarvestId == request.HarvestId);
         if (listing is null)
         {
             return NotFound(new { message = "Harvest listing not found." });
@@ -53,6 +55,7 @@ public class PurchaseRequestsController : ControllerBase
         var purchaseRequest = new PurchaseRequest
         {
             HarvestId = request.HarvestId,
+            Harvest = listing,
             BuyerProfileId = buyerProfileId.Value,
             RequestedQuantity = request.RequestedQuantity,
             Message = request.Message ?? string.Empty,
@@ -65,6 +68,7 @@ public class PurchaseRequestsController : ControllerBase
         return StatusCode(StatusCodes.Status201Created, ToResponse(purchaseRequest));
     }
 
+    /// <summary>Incoming requests on the logged-in farmer's own listings.</summary>
     [HttpGet("mine")]
     [Authorize(Roles = "Farmer")]
     public async Task<ActionResult<List<PurchaseRequestResponse>>> Mine()
@@ -76,8 +80,28 @@ public class PurchaseRequestsController : ControllerBase
         }
 
         var requests = await _db.PurchaseRequests
-            .Include(r => r.Harvest)
+            .Include(r => r.Harvest).ThenInclude(h => h.Crop).ThenInclude(c => c.Field).ThenInclude(f => f.Farm)
             .Where(r => r.Harvest.FarmerProfileId == farmerProfileId)
+            .OrderByDescending(r => r.CreatedAt)
+            .ToListAsync();
+
+        return Ok(requests.Select(ToResponse));
+    }
+
+    /// <summary>The logged-in buyer's own submitted requests, across every listing, any status.</summary>
+    [HttpGet("sent")]
+    [Authorize(Roles = "Buyer")]
+    public async Task<ActionResult<List<PurchaseRequestResponse>>> Sent()
+    {
+        var buyerProfileId = await _currentUser.GetBuyerProfileIdAsync(User);
+        if (buyerProfileId is null)
+        {
+            return Forbid();
+        }
+
+        var requests = await _db.PurchaseRequests
+            .Include(r => r.Harvest).ThenInclude(h => h.Crop).ThenInclude(c => c.Field).ThenInclude(f => f.Farm)
+            .Where(r => r.BuyerProfileId == buyerProfileId)
             .OrderByDescending(r => r.CreatedAt)
             .ToListAsync();
 
@@ -95,7 +119,7 @@ public class PurchaseRequestsController : ControllerBase
         }
 
         var purchaseRequest = await _db.PurchaseRequests
-            .Include(r => r.Harvest)
+            .Include(r => r.Harvest).ThenInclude(h => h.Crop).ThenInclude(c => c.Field).ThenInclude(f => f.Farm)
             .FirstOrDefaultAsync(r => r.RequestId == id);
 
         if (purchaseRequest is null)
@@ -181,5 +205,8 @@ public class PurchaseRequestsController : ControllerBase
         Message = request.Message,
         Status = request.Status.ToString(),
         CreatedAt = request.CreatedAt,
+        CropType = request.Harvest.Crop.CropType,
+        District = request.Harvest.Crop.Field.Farm.District,
+        PricePerUnit = request.Harvest.PricePerUnit,
     };
 }

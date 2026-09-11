@@ -10,8 +10,9 @@ import { useAuthStore } from '@/auth/authStore'
 import { useUiStore } from '@/lib/useUiStore'
 import { formatDate, formatQuantity } from '@/lib/utils'
 import { useStatusLabel } from '@/lib/useStatusLabel'
+import { AdminEditHarvestForm } from '../components/AdminEditHarvestForm'
 import { PurchaseRequestForm } from '../components/PurchaseRequestForm'
-import { useHarvest } from '../hooks/useHarvests'
+import { useHarvest, useUpdateHarvest } from '../hooks/useHarvests'
 import { useCreatePurchaseRequest } from '../hooks/usePurchaseRequests'
 
 const statusVariant = {
@@ -30,9 +31,11 @@ export function HarvestDetailPage() {
 
   const { data: harvest, isLoading } = useHarvest(id)
   const createRequest = useCreatePurchaseRequest()
+  const updateHarvest = useUpdateHarvest(id)
 
   const [isRequestOpen, setRequestOpen] = useState(false)
   const [requestSent, setRequestSent] = useState(false)
+  const [isEditOpen, setEditOpen] = useState(false)
 
   if (isLoading) {
     return <Skeleton className="h-56" />
@@ -103,6 +106,12 @@ export function HarvestDetailPage() {
         </Button>
       )}
 
+      {role === 'Admin' && (
+        <Button className="w-fit" variant="secondary" onClick={() => setEditOpen(true)}>
+          {t('marketplace:adminEdit.editListing')}
+        </Button>
+      )}
+
       <Modal
         open={isRequestOpen}
         onClose={() => {
@@ -132,6 +141,26 @@ export function HarvestDetailPage() {
             }
           />
         )}
+      </Modal>
+
+      <Modal
+        open={isEditOpen}
+        onClose={() => setEditOpen(false)}
+        title={t('marketplace:adminEdit.editListing')}
+      >
+        <AdminEditHarvestForm
+          harvest={harvest}
+          isSubmitting={updateHarvest.isPending}
+          onSubmit={(values) =>
+            updateHarvest.mutate(values, {
+              onSuccess: () => {
+                addToast({ type: 'success', message: t('marketplace:adminEdit.saved') })
+                setEditOpen(false)
+              },
+              onError: () => addToast({ type: 'error', message: t('marketplace:adminEdit.saveError') }),
+            })
+          }
+        />
       </Modal>
     </div>
   )

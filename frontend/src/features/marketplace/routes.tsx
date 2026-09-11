@@ -6,6 +6,7 @@ import { BrowseHarvestsPage } from './pages/BrowseHarvestsPage'
 import { HarvestDetailPage } from './pages/HarvestDetailPage'
 import { MyListingsPage } from './pages/MyListingsPage'
 import { MyPurchaseRequestsPage } from './pages/MyPurchaseRequestsPage'
+import { MySentPurchaseRequestsPage } from './pages/MySentPurchaseRequestsPage'
 
 /** Public — GET /api/harvests has no [Authorize], so this must render outside RequireAuth. */
 export const marketplacePublicRoutes: RouteObject[] = [
@@ -26,6 +27,12 @@ export const marketplaceRoutes: RouteObject[] = [
       { path: '/marketplace/mine', element: <MyListingsPage /> },
       { path: '/marketplace/requests', element: <MyPurchaseRequestsPage /> },
     ],
+  },
+  {
+    // GET /api/purchase-requests/sent is [Authorize(Roles = "Buyer")] — a buyer's own
+    // submitted requests, distinct from /marketplace/requests above (a farmer's incoming ones).
+    element: <RequireRole allow={['Buyer']} />,
+    children: [{ path: '/marketplace/sent-requests', element: <MySentPurchaseRequestsPage /> }],
   },
   {
     // GET /api/harvests/{id} is [Authorize] only — any authenticated role may view a listing.
@@ -52,5 +59,14 @@ export const marketplaceNavItems: NavItem[] = [
     path: '/marketplace/requests',
     icon: <ClipboardText size={18} weight="duotone" />,
     allowedRoles: ['Farmer'],
+  },
+  {
+    // Same label as the Farmer item above — a Buyer never sees the Farmer's entry (and vice
+    // versa), since allowedRoles keeps the two mutually exclusive, but each is "my requests"
+    // from that role's own vantage point (incoming vs. sent).
+    labelKey: 'nav.myRequests',
+    path: '/marketplace/sent-requests',
+    icon: <ClipboardText size={18} weight="duotone" />,
+    allowedRoles: ['Buyer'],
   },
 ]

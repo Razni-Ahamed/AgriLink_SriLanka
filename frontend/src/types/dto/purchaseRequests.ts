@@ -8,6 +8,9 @@ export interface PurchaseRequestResponse {
   message: string
   status: PurchaseRequestStatus
   createdAt: string
+  cropType: string
+  district: string
+  pricePerUnit: number
 }
 
 export interface CreatePurchaseRequestRequest {

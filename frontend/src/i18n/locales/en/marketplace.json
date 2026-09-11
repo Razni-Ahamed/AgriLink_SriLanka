@@ -60,5 +60,16 @@
     "quantityLabel": "Quantity (up to {{max}})",
     "send": "Send Request",
     "sending": "Sending…"
+  },
+  "sentRequests": {
+    "title": "My Requests",
+    "empty": "You haven't requested to buy anything yet."
+  },
+  "adminEdit": {
+    "editListing": "Edit Listing",
+    "save": "Save Changes",
+    "saving": "Saving…",
+    "saved": "Listing updated.",
+    "saveError": "Could not update the listing."
   }
 }
