@@ -55,7 +55,12 @@
     "status": "Status",
     "location": "Location",
     "quantity": "Quantity",
-    "messageOptional": "Message (optional)"
+    "messageOptional": "Message (optional)",
+    "cropType": "Crop type",
+    "selectCropType": "Select a crop type",
+    "crop": "Crop",
+    "selectCrop": "Select a crop",
+    "cropLocation": "{{field}} · {{farm}}"
   },
   "status": {
     "crop": {
@@ -116,7 +121,8 @@
     "locationRequired": "Location is required",
     "onlyAvailable": "Only {{max}} available",
     "departmentRequiredOfficer": "Department is required for Officer accounts",
-    "businessNameRequiredBuyer": "Business name is required for Buyer accounts"
+    "businessNameRequiredBuyer": "Business name is required for Buyer accounts",
+    "cropRequired": "Choose which crop this is for."
   },
   "severity": {
     "Low": "Low",
@@ -127,5 +133,50 @@
     "Low": "Low",
     "Medium": "Medium",
     "High": "High"
+  },
+  "cropTypes": {
+    "Tea": "Tea",
+    "Rubber": "Rubber",
+    "Coconut": "Coconut",
+    "Cinnamon": "Cinnamon",
+    "Pepper": "Pepper",
+    "Cardamom": "Cardamom",
+    "Sugarcane": "Sugarcane",
+    "Paddy": "Paddy",
+    "Maize": "Maize",
+    "Green Gram": "Green Gram",
+    "Cowpea": "Cowpea",
+    "Groundnut": "Groundnut",
+    "Soybean": "Soybean",
+    "Potato": "Potato",
+    "Sweet Potato": "Sweet Potato",
+    "Cassava": "Cassava",
+    "Onion": "Onion",
+    "Tomato": "Tomato",
+    "Chilli": "Chilli",
+    "Brinjal": "Brinjal",
+    "Okra": "Okra",
+    "Cabbage": "Cabbage",
+    "Carrot": "Carrot",
+    "Beans": "Beans",
+    "Pumpkin": "Pumpkin",
+    "Cucumber": "Cucumber",
+    "Leeks": "Leeks",
+    "Beetroot": "Beetroot",
+    "Banana": "Banana",
+    "Mango": "Mango",
+    "Pineapple": "Pineapple",
+    "Papaya": "Papaya",
+    "Avocado": "Avocado",
+    "Passion Fruit": "Passion Fruit",
+    "Other": "Other"
+  },
+  "cropGroups": {
+    "plantation": "Plantation & export",
+    "cereals": "Cereals & pulses",
+    "roots": "Roots & tubers",
+    "vegetables": "Vegetables",
+    "fruit": "Fruit",
+    "other": "Other"
   }
 }

@@ -55,7 +55,12 @@
     "status": "நிலை",
     "location": "இடம்",
     "quantity": "அளவு",
-    "messageOptional": "செய்தி (விருப்பத்தேர்வு)"
+    "messageOptional": "செய்தி (விருப்பத்தேர்வு)",
+    "cropType": "பயிர் வகை",
+    "selectCropType": "பயிர் வகையைத் தேர்ந்தெடுக்கவும்",
+    "crop": "பயிர்",
+    "selectCrop": "பயிரைத் தேர்ந்தெடுக்கவும்",
+    "cropLocation": "{{field}} · {{farm}}"
   },
   "status": {
     "crop": {
@@ -116,7 +121,8 @@
     "locationRequired": "இடம் தேவை",
     "onlyAvailable": "{{max}} மட்டுமே உள்ளது",
     "departmentRequiredOfficer": "அலுவலர் கணக்குகளுக்குத் துறை தேவை",
-    "businessNameRequiredBuyer": "வாங்குபவர் கணக்குகளுக்கு வணிகப் பெயர் தேவை"
+    "businessNameRequiredBuyer": "வாங்குபவர் கணக்குகளுக்கு வணிகப் பெயர் தேவை",
+    "cropRequired": "இது எந்தப் பயிருக்கானது என்பதைத் தேர்ந்தெடுக்கவும்."
   },
   "severity": {
     "Low": "குறைவு",
@@ -127,5 +133,50 @@
     "Low": "குறைவு",
     "Medium": "நடுத்தரம்",
     "High": "அதிகம்"
+  },
+  "cropTypes": {
+    "Tea": "தேயிலை",
+    "Rubber": "இறப்பர்",
+    "Coconut": "தென்னை",
+    "Cinnamon": "இலவங்கப்பட்டை",
+    "Pepper": "மிளகு",
+    "Cardamom": "ஏலக்காய்",
+    "Sugarcane": "கரும்பு",
+    "Paddy": "நெல்",
+    "Maize": "மக்காச்சோளம்",
+    "Green Gram": "பச்சைப் பயறு",
+    "Cowpea": "காராமணி",
+    "Groundnut": "நிலக்கடலை",
+    "Soybean": "சோயா",
+    "Potato": "உருளைக்கிழங்கு",
+    "Sweet Potato": "சர்க்கரைவள்ளிக்கிழங்கு",
+    "Cassava": "மரவள்ளிக்கிழங்கு",
+    "Onion": "வெங்காயம்",
+    "Tomato": "தக்காளி",
+    "Chilli": "மிளகாய்",
+    "Brinjal": "கத்தரிக்காய்",
+    "Okra": "வெண்டைக்காய்",
+    "Cabbage": "முட்டைக்கோஸ்",
+    "Carrot": "கேரட்",
+    "Beans": "பீன்ஸ்",
+    "Pumpkin": "பூசணி",
+    "Cucumber": "வெள்ளரி",
+    "Leeks": "லீக்ஸ்",
+    "Beetroot": "பீட்ரூட்",
+    "Banana": "வாழை",
+    "Mango": "மாம்பழம்",
+    "Pineapple": "அன்னாசி",
+    "Papaya": "பப்பாளி",
+    "Avocado": "வெண்ணெய்ப்பழம்",
+    "Passion Fruit": "பேஷன் பழம்",
+    "Other": "மற்றவை"
+  },
+  "cropGroups": {
+    "plantation": "பெருந்தோட்ட & ஏற்றுமதி",
+    "cereals": "தானியங்கள் & பயறு வகைகள்",
+    "roots": "கிழங்கு வகைகள்",
+    "vegetables": "காய்கறிகள்",
+    "fruit": "பழங்கள்",
+    "other": "மற்றவை"
   }
 }

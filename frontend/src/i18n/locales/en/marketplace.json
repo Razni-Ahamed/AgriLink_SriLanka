@@ -10,7 +10,10 @@
     "district": "District",
     "districtPlaceholder": "e.g. Nuwara Eliya",
     "minPrice": "Min price/unit",
-    "maxPrice": "Max price/unit"
+    "maxPrice": "Max price/unit",
+    "allCropTypes": "All crop types",
+    "allDistricts": "All districts",
+    "clear": "Clear filters"
   },
   "detail": {
     "back": "Back to marketplace",
@@ -33,7 +36,8 @@
     "updated": "Listing updated.",
     "updateError": "Could not update the listing.",
     "published": "Listing published.",
-    "publishError": "Could not publish the listing."
+    "publishError": "Could not publish the listing.",
+    "emptyHint": "List a harvest so buyers can find it and send you purchase requests."
   },
   "listingForm": {
     "cropId": "Crop ID",
@@ -43,7 +47,12 @@
     "location": "Location",
     "publish": "Publish Listing",
     "publishing": "Publishing…",
-    "prefill": "Listing {{cropType}} (crop #{{cropId}})"
+    "prefill": "Listing {{cropType}} (crop #{{cropId}})",
+    "crop": "Which crop are you listing?",
+    "noCrops": "You have no crops to list yet.",
+    "goToFarms": "Go to My Farms",
+    "expectedYield": "Expected yield: {{value}} kg",
+    "estimatedTotal": "Est. total"
   },
   "requests": {
     "title": "Purchase Requests",
@@ -54,7 +63,9 @@
     "acceptError": "Could not accept the request.",
     "declineError": "Could not decline the request.",
     "sent": "Purchase request sent.",
-    "sendError": "Could not send the request. Try again."
+    "sendError": "Could not send the request. Try again.",
+    "emptyHint": "Buyers' requests for your listings show up here. Keep an active listing up so buyers can find you.",
+    "goToListings": "Go to My Listings"
   },
   "requestForm": {
     "quantityLabel": "Quantity (up to {{max}})",
@@ -63,9 +74,11 @@
   },
   "sentRequests": {
     "title": "My Requests",
-    "empty": "You haven't requested to buy anything yet."
+    "empty": "You haven't requested to buy anything yet.",
+    "emptyHint": "Requests you send to farmers show up here, along with whether they were accepted.",
+    "browseMarketplace": "Browse the marketplace"
   },
-  "adminEdit": {
+  "editForm": {
     "editListing": "Edit Listing",
     "save": "Save Changes",
     "saving": "Saving…",
