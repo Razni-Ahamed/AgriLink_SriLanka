@@ -68,6 +68,7 @@ public class IssuesController : ControllerBase
         var advisory = await _orchestrator.RunPipelineAsync(issue, crop, recentActivities, HttpContext.RequestAborted);
         issue.Advisories.Add(advisory);
 
+        issue.Crop = crop;
         _db.CropIssues.Add(issue);
         await _db.SaveChangesAsync();
 
@@ -86,6 +87,7 @@ public class IssuesController : ControllerBase
 
         var issues = await _db.CropIssues
             .Include(i => i.Advisories)
+            .Include(i => i.Crop)
             .Where(i => i.FarmerProfileId == farmerProfileId)
             .OrderByDescending(i => i.CreatedAt)
             .ToListAsync();
@@ -99,6 +101,7 @@ public class IssuesController : ControllerBase
     {
         var issues = await _db.CropIssues
             .Include(i => i.Advisories)
+            .Include(i => i.Crop)
             .Where(i => i.Advisories.Any(a => a.Status == AdvisoryStatus.Draft))
             .OrderBy(i => i.CreatedAt)
             .ToListAsync();
@@ -110,6 +113,8 @@ public class IssuesController : ControllerBase
     {
         IssueId = issue.IssueId,
         CropId = issue.CropId,
+        CropType = issue.Crop?.CropType ?? string.Empty,
+        Variety = issue.Crop?.Variety ?? string.Empty,
         Title = issue.Title,
         Description = issue.Description,
         Severity = issue.Severity.ToString(),
