@@ -6,6 +6,7 @@ public class AdminMetricsResponse
     public int TotalFarms { get; set; }
     public int TotalCrops { get; set; }
     public int IssuesReported { get; set; }
+    public int IssuesPending { get; set; }
     public int IssuesResolved { get; set; }
     public decimal HarvestVolumeSoldThisMonth { get; set; }
 }

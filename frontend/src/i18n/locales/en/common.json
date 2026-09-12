@@ -4,6 +4,7 @@
     "farms": "Farms",
     "myIssues": "My Issues",
     "pendingIssues": "Pending Issues",
+    "allIssues": "All Issues",
     "marketplace": "Marketplace",
     "myListings": "My Listings",
     "myRequests": "My Requests",
@@ -12,7 +13,9 @@
     "adminDashboard": "Admin Dashboard",
     "manageUsers": "Manage Users",
     "departments": "Departments",
-    "auditLog": "Audit Log"
+    "auditLog": "Audit Log",
+    "myReviews": "My Reviews",
+    "officerDashboard": "Dashboard"
   },
   "actions": {
     "saving": "Saving…",

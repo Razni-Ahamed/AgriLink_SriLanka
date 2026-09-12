@@ -28,7 +28,17 @@
   "pending": {
     "title": "Pending Issues",
     "empty": "No issues are awaiting review right now.",
-    "cropAndDate": "{{crop}} · {{date}}"
+    "cropAndDate": "{{crop}} · {{date}}",
+    "scopedToDistrict": "Showing issues in {{district}}",
+    "reportedBy": "Reported by {{name}}"
+  },
+  "all": {
+    "title": "All Issues",
+    "subtitle": "Every issue ever reported, whatever its status — pending, resolved, or rejected.",
+    "empty": "No issues have been reported yet.",
+    "loadError": "Could not load issues. Try refreshing the page.",
+    "reportedBy": "Reported by {{name}}",
+    "unknownReporter": "Unknown farmer"
   },
   "advisory": {
     "back": "Back",
@@ -39,11 +49,42 @@
     "recommendation": "Recommendation",
     "riskPrefix": "Risk: {{level}}",
     "confidence": "{{value}}% confidence",
+    "reportedBy": "Reported by {{name}} · {{district}} · {{date}}",
+    "unknownReporter": "Unknown farmer",
+    "reviewedBy": "Reviewed by {{name}} on {{date}}",
     "approve": "Approve",
     "reject": "Reject",
     "approved": "Advisory approved.",
     "approveError": "Could not approve the advisory.",
     "rejected": "Advisory rejected.",
-    "rejectError": "Could not reject the advisory."
+    "rejectError": "Could not reject the advisory.",
+    "reviewNoteLabel": "Add a note (optional)",
+    "reviewNotePlaceholder": "e.g. why you're rejecting this, or extra advice for the farmer beyond the AI's recommendation"
+  },
+  "previousIssues": {
+    "title": "Previous issues on this crop ({{count}})",
+    "empty": "No previous issues on this crop."
+  },
+  "agentTrace": {
+    "title": "How this was diagnosed",
+    "ranOn": "AI pipeline ran on {{date}}",
+    "noOutput": "This step produced no output.",
+    "showInput": "Show what this step was given",
+    "status": {
+      "Completed": "Completed",
+      "Running": "Running",
+      "Failed": "Failed"
+    }
+  },
+  "reviewed": {
+    "title": "My Reviews",
+    "subtitle": "Issues you've approved or rejected, most recently reviewed first.",
+    "empty": "You haven't reviewed any issues yet.",
+    "loadError": "Could not load your review history.",
+    "reviewedOn": "Reviewed {{date}}",
+    "outcome": {
+      "Resolved": "Approved",
+      "Rejected": "Rejected"
+    }
   }
 }

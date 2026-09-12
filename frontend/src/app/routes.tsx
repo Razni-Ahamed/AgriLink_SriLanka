@@ -5,6 +5,7 @@ import { RegisterPage } from '@/auth/RegisterPage'
 import { farmsRoutes } from '@/features/farms/routes'
 import { issuesRoutes } from '@/features/issues/routes'
 import { marketplacePublicRoutes, marketplaceRoutes } from '@/features/marketplace/routes'
+import { officerRoutes } from '@/features/officer/routes'
 import { ordersRoutes } from '@/features/orders/routes'
 import { AppLayout } from './AppLayout'
 import { RequireAuth } from './RequireAuth'
@@ -33,6 +34,7 @@ export const router = createBrowserRouter([
           ...farmsRoutes,
           ...issuesRoutes,
           ...marketplaceRoutes,
+          ...officerRoutes,
           ...ordersRoutes,
           { path: '/unauthorized', element: <UnauthorizedPage /> },
         ],

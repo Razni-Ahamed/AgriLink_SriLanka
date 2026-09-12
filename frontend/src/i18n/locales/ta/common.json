@@ -4,6 +4,7 @@
     "farms": "பண்ணைகள்",
     "myIssues": "எனது சிக்கல்கள்",
     "pendingIssues": "மறுஆய்வுக்கான சிக்கல்கள்",
+    "allIssues": "அனைத்து சிக்கல்களும்",
     "marketplace": "சந்தை",
     "myListings": "எனது பட்டியல்கள்",
     "myRequests": "எனது கோரிக்கைகள்",
@@ -12,7 +13,9 @@
     "adminDashboard": "நிர்வாக டாஷ்போர்டு",
     "manageUsers": "பயனர்களை நிர்வகித்தல்",
     "departments": "துறைகள்",
-    "auditLog": "தணிக்கைப் பதிவு"
+    "auditLog": "தணிக்கைப் பதிவு",
+    "myReviews": "எனது மதிப்பாய்வுகள்",
+    "officerDashboard": "டாஷ்போர்டு"
   },
   "actions": {
     "saving": "சேமிக்கிறது…",

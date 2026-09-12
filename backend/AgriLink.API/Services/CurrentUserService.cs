@@ -43,6 +43,15 @@ public class CurrentUserService : ICurrentUserService
             .FirstOrDefaultAsync();
     }
 
+    public async Task<string?> GetOfficerDistrictAsync(ClaimsPrincipal principal)
+    {
+        var userId = GetUserId(principal);
+        return await _db.OfficerProfiles
+            .Where(o => o.UserId == userId)
+            .Select(o => (string?)o.District)
+            .FirstOrDefaultAsync();
+    }
+
     public async Task<int?> GetBuyerProfileIdAsync(ClaimsPrincipal principal)
     {
         var userId = GetUserId(principal);

@@ -29,6 +29,18 @@ public class IssuesControllerCropDetailsTests
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options);
 
+        // A real ApplicationUser row backing the FarmerProfile is required: EF Core compiles
+        // Include() on a required navigation (FarmerProfile.User) to an INNER JOIN, so without
+        // this row Pending()/GetAll() would silently drop the issue instead of just omitting a
+        // reporter name — a gap real data, with its FK constraints, can never actually have.
+        db.Users.Add(new ApplicationUser
+        {
+            Id = FarmerUserId,
+            UserName = "farmer@test.com",
+            Email = "farmer@test.com",
+            FullName = "Test Farmer",
+        });
+
         db.FarmerProfiles.Add(new FarmerProfile
         {
             FarmerProfileId = FarmerProfileId,
@@ -69,6 +81,17 @@ public class IssuesControllerCropDetailsTests
             {
                 new AIAdvisory { AdvisoryId = 1, Status = AdvisoryStatus.Draft },
             },
+        });
+
+        // Pending() now scopes an Officer to their own district — matching the district the
+        // farm above is in, so this officer's queue actually contains the seeded issue.
+        db.Departments.Add(new Department { DepartmentId = 1, Name = "Agriculture Extension" });
+        db.OfficerProfiles.Add(new OfficerProfile
+        {
+            OfficerProfileId = 1,
+            UserId = OfficerUserId,
+            DepartmentId = 1,
+            District = "Kandy",
         });
 
         db.SaveChanges();
@@ -115,5 +138,6 @@ public class IssuesControllerCropDetailsTests
         var issue = Assert.Single(issues);
         Assert.Equal("Paddy", issue.CropType);
         Assert.Equal("Samba", issue.Variety);
+        Assert.Equal("Test Farmer", issue.ReporterName);
     }
 }

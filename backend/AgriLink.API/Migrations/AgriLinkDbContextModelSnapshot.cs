@@ -43,6 +43,9 @@ namespace AgriLink.API.Migrations
                     b.Property<bool>("RequiresApproval")
                         .HasColumnType("boolean");
 
+                    b.Property<string>("ReviewNote")
+                        .HasColumnType("text");
+
                     b.Property<DateTime?>("ReviewedAt")
                         .HasColumnType("timestamp with time zone");
 

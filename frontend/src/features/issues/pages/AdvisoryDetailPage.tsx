@@ -9,7 +9,9 @@ import { Skeleton } from '@/components/ui/Skeleton'
 import { FlashOnSuccess } from '@/components/ui/motion/FlashOnSuccess'
 import { useAuthStore } from '@/auth/authStore'
 import { AdvisoryPanel } from '../components/AdvisoryPanel'
+import { AgentTracePanel } from '../components/AgentTracePanel'
 import { ApproveRejectControls } from '../components/ApproveRejectControls'
+import { PreviousIssuesList } from '../components/PreviousIssuesList'
 import { useAdvisory } from '../hooks/useAdvisories'
 
 export function AdvisoryDetailPage() {
@@ -49,7 +51,9 @@ export function AdvisoryDetailPage() {
   return (
     <div className="flex flex-col gap-6">
       <Link
-        to={role === 'Farmer' ? '/issues/mine' : '/issues/pending'}
+        to={
+          role === 'Farmer' ? '/issues/mine' : role === 'Admin' ? '/issues/all' : '/issues/pending'
+        }
         className="flex w-fit items-center gap-1 text-sm text-text-secondary hover:text-brand-forest"
       >
         <ArrowLeft size={14} />
@@ -75,6 +79,11 @@ export function AdvisoryDetailPage() {
         <FlashOnSuccess trigger={approveFlash}>
           <Card className="flex flex-col gap-6">
             <AdvisoryPanel advisory={advisory} />
+
+            {/* Present only for the Officer/Admin caller the backend actually returned this
+                to — absent entirely on a farmer's own view of their own advisory. */}
+            {advisory.previousIssues && <PreviousIssuesList issues={advisory.previousIssues} />}
+            {advisory.agentTrace && <AgentTracePanel trace={advisory.agentTrace} />}
 
             <AnimatePresence>
               {showControls && (

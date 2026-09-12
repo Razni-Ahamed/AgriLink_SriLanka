@@ -1,0 +1,13 @@
+{
+  "dashboard": {
+    "title": "Officer Dashboard",
+    "pendingInDistrict": "Pending in my district",
+    "reviewedToday": "Reviewed today",
+    "approvedTotal": "Approved (all-time)",
+    "rejectedTotal": "Rejected (all-time)",
+    "goToQueue": "Review Queue",
+    "goToQueueHint": "Draft advisories waiting on your decision",
+    "goToReviews": "My Reviews",
+    "goToReviewsHint": "Issues you've already approved or rejected"
+  }
+}

@@ -6,6 +6,7 @@ import enCommon from './locales/en/common.json'
 import enFarms from './locales/en/farms.json'
 import enIssues from './locales/en/issues.json'
 import enMarketplace from './locales/en/marketplace.json'
+import enOfficer from './locales/en/officer.json'
 import enOrders from './locales/en/orders.json'
 
 import siAuth from './locales/si/auth.json'
@@ -13,6 +14,7 @@ import siCommon from './locales/si/common.json'
 import siFarms from './locales/si/farms.json'
 import siIssues from './locales/si/issues.json'
 import siMarketplace from './locales/si/marketplace.json'
+import siOfficer from './locales/si/officer.json'
 import siOrders from './locales/si/orders.json'
 
 import taAuth from './locales/ta/auth.json'
@@ -20,6 +22,7 @@ import taCommon from './locales/ta/common.json'
 import taFarms from './locales/ta/farms.json'
 import taIssues from './locales/ta/issues.json'
 import taMarketplace from './locales/ta/marketplace.json'
+import taOfficer from './locales/ta/officer.json'
 import taOrders from './locales/ta/orders.json'
 
 import {
@@ -62,6 +65,7 @@ export const resources = {
     farms: enFarms,
     issues: enIssues,
     marketplace: enMarketplace,
+    officer: enOfficer,
     orders: enOrders,
   },
   si: {
@@ -70,6 +74,7 @@ export const resources = {
     farms: siFarms,
     issues: siIssues,
     marketplace: siMarketplace,
+    officer: siOfficer,
     orders: siOrders,
   },
   ta: {
@@ -78,6 +83,7 @@ export const resources = {
     farms: taFarms,
     issues: taIssues,
     marketplace: taMarketplace,
+    officer: taOfficer,
     orders: taOrders,
   },
 } as const
@@ -89,7 +95,7 @@ void i18n.use(initReactI18next).init({
   lng: readStoredLanguage(),
   fallbackLng: DEFAULT_LANGUAGE,
   defaultNS: 'common',
-  ns: ['common', 'auth', 'farms', 'issues', 'marketplace', 'orders'],
+  ns: ['common', 'auth', 'farms', 'issues', 'marketplace', 'officer', 'orders'],
   // React escapes interpolated values already.
   interpolation: { escapeValue: false },
 })

@@ -15,3 +15,15 @@ export async function getPendingIssues(): Promise<CropIssueResponse[]> {
   const { data } = await apiClient.get<CropIssueResponse[]>('/api/issues/pending')
   return data
 }
+
+/** Every issue ever reported, any status — Admin-only. */
+export async function getAllIssues(): Promise<CropIssueResponse[]> {
+  const { data } = await apiClient.get<CropIssueResponse[]>('/api/issues')
+  return data
+}
+
+/** Issues the calling officer has personally reviewed, most recently reviewed first — Officer-only. */
+export async function getReviewedIssues(): Promise<CropIssueResponse[]> {
+  const { data } = await apiClient.get<CropIssueResponse[]>('/api/issues/reviewed')
+  return data
+}
