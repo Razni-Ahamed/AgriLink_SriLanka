@@ -13,7 +13,9 @@
     "adminDashboard": "පරිපාලක උපකරණ පුවරුව",
     "manageUsers": "පරිශීලකයන් කළමනාකරණය",
     "departments": "දෙපාර්තමේන්තු",
-    "auditLog": "විගණන සටහන"
+    "auditLog": "විගණන සටහන",
+    "myReviews": "මගේ සමාලෝචන",
+    "officerDashboard": "උපකරණ පුවරුව"
   },
   "actions": {
     "saving": "සුරකිමින්…",

@@ -13,7 +13,9 @@
     "adminDashboard": "நிர்வாக டாஷ்போர்டு",
     "manageUsers": "பயனர்களை நிர்வகித்தல்",
     "departments": "துறைகள்",
-    "auditLog": "தணிக்கைப் பதிவு"
+    "auditLog": "தணிக்கைப் பதிவு",
+    "myReviews": "எனது மதிப்பாய்வுகள்",
+    "officerDashboard": "டாஷ்போர்டு"
   },
   "actions": {
     "saving": "சேமிக்கிறது…",
