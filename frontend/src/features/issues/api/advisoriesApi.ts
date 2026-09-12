@@ -6,12 +6,19 @@ export async function getAdvisory(advisoryId: number): Promise<AdvisoryResponse>
   return data
 }
 
-export async function approveAdvisory(advisoryId: number): Promise<AdvisoryResponse> {
-  const { data } = await apiClient.post<AdvisoryResponse>(`/api/advisories/${advisoryId}/approve`)
+export async function approveAdvisory(
+  advisoryId: number,
+  note?: string,
+): Promise<AdvisoryResponse> {
+  const { data } = await apiClient.post<AdvisoryResponse>(`/api/advisories/${advisoryId}/approve`, {
+    note,
+  })
   return data
 }
 
-export async function rejectAdvisory(advisoryId: number): Promise<AdvisoryResponse> {
-  const { data } = await apiClient.post<AdvisoryResponse>(`/api/advisories/${advisoryId}/reject`)
+export async function rejectAdvisory(advisoryId: number, note?: string): Promise<AdvisoryResponse> {
+  const { data } = await apiClient.post<AdvisoryResponse>(`/api/advisories/${advisoryId}/reject`, {
+    note,
+  })
   return data
 }

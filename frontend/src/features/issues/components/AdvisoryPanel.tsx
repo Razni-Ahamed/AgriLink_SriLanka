@@ -30,7 +30,9 @@ export function AdvisoryPanel({ advisory }: { advisory: AdvisoryResponse }) {
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 text-sm text-text-secondary">
             <CropIcon cropType={advisory.cropType} size={16} />
-            <span>{advisory.variety ? `${advisory.cropType} · ${advisory.variety}` : advisory.cropType}</span>
+            <span>
+              {advisory.variety ? `${advisory.cropType} · ${advisory.variety}` : advisory.cropType}
+            </span>
           </div>
           <SeverityBadge severity={advisory.issueSeverity} />
         </div>
@@ -66,9 +68,19 @@ export function AdvisoryPanel({ advisory }: { advisory: AdvisoryResponse }) {
       </div>
 
       {advisory.reviewedByName && advisory.reviewedAt && (
-        <p className="text-xs text-text-secondary">
-          {t('advisory.reviewedBy', { name: advisory.reviewedByName, date: formatDate(advisory.reviewedAt) })}
-        </p>
+        <div className="flex flex-col gap-1">
+          <p className="text-xs text-text-secondary">
+            {t('advisory.reviewedBy', {
+              name: advisory.reviewedByName,
+              date: formatDate(advisory.reviewedAt),
+            })}
+          </p>
+          {advisory.reviewNote && (
+            <p className="whitespace-pre-wrap rounded-xl bg-bg-canvas p-3 text-sm text-text-primary">
+              {advisory.reviewNote}
+            </p>
+          )}
+        </div>
       )}
     </div>
   )

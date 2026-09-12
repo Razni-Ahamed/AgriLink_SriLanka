@@ -12,10 +12,11 @@ export function useAdvisory(advisoryId: number) {
 export function useApproveAdvisory(advisoryId: number) {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: () => advisoriesApi.approveAdvisory(advisoryId),
+    mutationFn: (note?: string) => advisoriesApi.approveAdvisory(advisoryId, note),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['advisories', 'detail', advisoryId] })
       queryClient.invalidateQueries({ queryKey: ['issues'] })
+      queryClient.invalidateQueries({ queryKey: ['officer', 'metrics'] })
     },
   })
 }
@@ -23,10 +24,11 @@ export function useApproveAdvisory(advisoryId: number) {
 export function useRejectAdvisory(advisoryId: number) {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: () => advisoriesApi.rejectAdvisory(advisoryId),
+    mutationFn: (note?: string) => advisoriesApi.rejectAdvisory(advisoryId, note),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['advisories', 'detail', advisoryId] })
       queryClient.invalidateQueries({ queryKey: ['issues'] })
+      queryClient.invalidateQueries({ queryKey: ['officer', 'metrics'] })
     },
   })
 }
