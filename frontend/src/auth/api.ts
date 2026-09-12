@@ -13,6 +13,8 @@ export interface UserProfileResponse {
   role: Role
   nic?: string
   district?: string
+  /** Present only for Farmer accounts — lets the UI tell the caller's own listings apart. */
+  farmerProfileId?: number
 }
 
 export interface LoginRequest {

@@ -51,6 +51,7 @@ public class UsersController : ControllerBase
             var profile = await _db.FarmerProfiles.AsNoTracking().FirstOrDefaultAsync(f => f.UserId == user.Id);
             response.NIC = profile?.NIC;
             response.District = profile?.District;
+            response.FarmerProfileId = profile?.FarmerProfileId;
         }
         else if (role == "Officer")
         {
