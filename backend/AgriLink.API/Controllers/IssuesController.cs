@@ -99,15 +99,56 @@ public class IssuesController : ControllerBase
     [Authorize(Roles = "Officer,Admin")]
     public async Task<ActionResult<List<CropIssueResponse>>> Pending()
     {
+        var query = _db.CropIssues
+            .Include(i => i.Advisories)
+            .Include(i => i.Crop).ThenInclude(c => c.Field).ThenInclude(f => f.Farm)
+            .Include(i => i.FarmerProfile).ThenInclude(fp => fp.User)
+            .Where(i => i.Advisories.Any(a => a.Status == AdvisoryStatus.Draft));
+
+        // Scoped to the calling officer's own district — the same district
+        // AgentOrchestrator.NotifyOfficersAsync already used to decide who gets notified about
+        // a new issue. Without this, every officer saw every district's queue, which disagreed
+        // with what they'd actually been notified about. Admin keeps the unscoped, nationwide
+        // view its own oversight role calls for.
+        if (!_currentUser.IsAdmin(User))
+        {
+            var district = await _currentUser.GetOfficerDistrictAsync(User);
+            query = query.Where(i => i.Crop.Field.Farm.District == district);
+        }
+
+        var issues = await query.OrderBy(i => i.CreatedAt).ToListAsync();
+
+        return Ok(issues.Select(i => ToResponse(i, includeReporter: true)));
+    }
+
+    /// <summary>
+    /// Issues the calling officer has personally reviewed (approved or rejected), most recent
+    /// first — their own decision history. Before this there was no way for an officer to see
+    /// anything once it left the Draft-only Pending queue; Admin got a full oversight
+    /// equivalent (GetAll) but nothing scoped to one officer's own past decisions existed.
+    /// </summary>
+    [HttpGet("reviewed")]
+    [Authorize(Roles = "Officer")]
+    public async Task<ActionResult<List<CropIssueResponse>>> Reviewed()
+    {
+        var userId = _currentUser.GetUserId(User);
+
         var issues = await _db.CropIssues
             .Include(i => i.Advisories)
             .Include(i => i.Crop).ThenInclude(c => c.Field).ThenInclude(f => f.Farm)
             .Include(i => i.FarmerProfile).ThenInclude(fp => fp.User)
-            .Where(i => i.Advisories.Any(a => a.Status == AdvisoryStatus.Draft))
-            .OrderBy(i => i.CreatedAt)
+            .Where(i => i.Advisories.Any(a => a.ReviewedByFK == userId))
             .ToListAsync();
 
-        return Ok(issues.Select(i => ToResponse(i, includeReporter: true)));
+        // OrderByDescending on the reviewed advisory's timestamp, not the issue's — sorting by
+        // when it was reviewed (not when it was reported) is what makes this "recent activity"
+        // rather than just Pending() with an extra filter.
+        var ordered = issues
+            .OrderByDescending(i => i.Advisories
+                .Where(a => a.ReviewedByFK == userId)
+                .Max(a => a.ReviewedAt));
+
+        return Ok(ordered.Select(i => ToResponse(i, includeReporter: true)));
     }
 
     /// <summary>Every issue ever reported, any status — Admin's full oversight view, not just
@@ -126,22 +167,26 @@ public class IssuesController : ControllerBase
         return Ok(issues.Select(i => ToResponse(i, includeReporter: true)));
     }
 
-    private static CropIssueResponse ToResponse(CropIssue issue, bool includeReporter = false) => new()
+    private static CropIssueResponse ToResponse(CropIssue issue, bool includeReporter = false)
     {
-        IssueId = issue.IssueId,
-        CropId = issue.CropId,
-        CropType = issue.Crop?.CropType ?? string.Empty,
-        Variety = issue.Crop?.Variety ?? string.Empty,
-        District = issue.Crop?.Field?.Farm?.District ?? string.Empty,
-        ReporterName = includeReporter ? issue.FarmerProfile?.User?.FullName ?? string.Empty : string.Empty,
-        Title = issue.Title,
-        Description = issue.Description,
-        Severity = issue.Severity.ToString(),
-        Status = issue.Status.ToString(),
-        CreatedAt = issue.CreatedAt,
-        AdvisoryId = issue.Advisories
-            .OrderByDescending(a => a.AdvisoryId)
-            .Select(a => (int?)a.AdvisoryId)
-            .FirstOrDefault(),
-    };
+        var latestAdvisory = issue.Advisories.OrderByDescending(a => a.AdvisoryId).FirstOrDefault();
+
+        return new CropIssueResponse
+        {
+            IssueId = issue.IssueId,
+            CropId = issue.CropId,
+            CropType = issue.Crop?.CropType ?? string.Empty,
+            Variety = issue.Crop?.Variety ?? string.Empty,
+            District = issue.Crop?.Field?.Farm?.District ?? string.Empty,
+            ReporterName = includeReporter ? issue.FarmerProfile?.User?.FullName ?? string.Empty : string.Empty,
+            Title = issue.Title,
+            Description = issue.Description,
+            Severity = issue.Severity.ToString(),
+            Status = issue.Status.ToString(),
+            CreatedAt = issue.CreatedAt,
+            AdvisoryId = latestAdvisory?.AdvisoryId,
+            ReviewedAt = latestAdvisory?.ReviewedAt,
+            ReviewNote = latestAdvisory?.ReviewNote,
+        };
+    }
 }

@@ -83,6 +83,17 @@ public class IssuesControllerCropDetailsTests
             },
         });
 
+        // Pending() now scopes an Officer to their own district — matching the district the
+        // farm above is in, so this officer's queue actually contains the seeded issue.
+        db.Departments.Add(new Department { DepartmentId = 1, Name = "Agriculture Extension" });
+        db.OfficerProfiles.Add(new OfficerProfile
+        {
+            OfficerProfileId = 1,
+            UserId = OfficerUserId,
+            DepartmentId = 1,
+            District = "Kandy",
+        });
+
         db.SaveChanges();
         return db;
     }

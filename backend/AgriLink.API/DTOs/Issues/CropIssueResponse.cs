@@ -23,4 +23,11 @@ public class CropIssueResponse
     public string Status { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; }
     public int? AdvisoryId { get; set; }
+
+    /// <summary>When the issue's latest advisory was reviewed — null while it's still in the
+    /// Draft queue. Lets "My Reviews" sort/display without a second request per row.</summary>
+    public DateTime? ReviewedAt { get; set; }
+
+    /// <summary>The reviewing officer's own note on the latest advisory, if they left one.</summary>
+    public string? ReviewNote { get; set; }
 }
