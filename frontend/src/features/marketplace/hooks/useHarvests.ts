@@ -8,11 +8,20 @@ import type {
 
 const harvestsKey = (filters: HarvestFilters = {}) => ['harvests', filters] as const
 const harvestKey = (harvestId: number) => ['harvests', 'detail', harvestId] as const
+const myHarvestsKey = ['harvests', 'mine'] as const
 
 export function useHarvests(filters: HarvestFilters = {}) {
   return useQuery({
     queryKey: harvestsKey(filters),
     queryFn: () => harvestsApi.getHarvests(filters),
+  })
+}
+
+/** The logged-in farmer's own listings, every status included — for the "My Listings" page. */
+export function useMyHarvests() {
+  return useQuery({
+    queryKey: myHarvestsKey,
+    queryFn: harvestsApi.getMyHarvests,
   })
 }
 

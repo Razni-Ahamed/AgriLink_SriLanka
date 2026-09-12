@@ -11,6 +11,7 @@
     "notifications": "දැනුම්දීම්",
     "adminDashboard": "පරිපාලක උපකරණ පුවරුව",
     "manageUsers": "පරිශීලකයන් කළමනාකරණය",
+    "departments": "දෙපාර්තමේන්තු",
     "auditLog": "විගණන සටහන"
   },
   "actions": {
@@ -46,6 +47,7 @@
     "password": "මුරපදය",
     "fullName": "සම්පූර්ණ නම",
     "district": "දිස්ත්‍රික්කය",
+    "selectDistrict": "දිස්ත්‍රික්කයක් තෝරන්න",
     "nic": "ජාතික හැඳුනුම්පත් අංකය",
     "role": "භූමිකාව",
     "department": "දෙපාර්තමේන්තුව",
@@ -53,7 +55,12 @@
     "status": "තත්ත්වය",
     "location": "ස්ථානය",
     "quantity": "ප්‍රමාණය",
-    "messageOptional": "පණිවිඩය (විකල්ප)"
+    "messageOptional": "පණිවිඩය (විකල්ප)",
+    "cropType": "බෝග වර්ගය",
+    "selectCropType": "බෝග වර්ගයක් තෝරන්න",
+    "crop": "බෝගය",
+    "selectCrop": "බෝගයක් තෝරන්න",
+    "cropLocation": "{{field}} · {{farm}}"
   },
   "status": {
     "crop": {
@@ -114,7 +121,8 @@
     "locationRequired": "ස්ථානය අවශ්‍යයි",
     "onlyAvailable": "තිබෙන්නේ {{max}}ක් පමණි",
     "departmentRequiredOfficer": "නිලධාරී ගිණුම් සඳහා දෙපාර්තමේන්තුව අවශ්‍යයි",
-    "businessNameRequiredBuyer": "ගැනුම්කරු ගිණුම් සඳහා ව්‍යාපාරයේ නම අවශ්‍යයි"
+    "businessNameRequiredBuyer": "ගැනුම්කරු ගිණුම් සඳහා ව්‍යාපාරයේ නම අවශ්‍යයි",
+    "cropRequired": "මෙය කුමන බෝගය සඳහාද යන්න තෝරන්න."
   },
   "severity": {
     "Low": "අඩු",
@@ -125,5 +133,50 @@
     "Low": "අඩු",
     "Medium": "මධ්‍යම",
     "High": "ඉහළ"
+  },
+  "cropTypes": {
+    "Tea": "තේ",
+    "Rubber": "රබර්",
+    "Coconut": "පොල්",
+    "Cinnamon": "කුරුඳු",
+    "Pepper": "ගම්මිරිස්",
+    "Cardamom": "එනසාල්",
+    "Sugarcane": "උක්",
+    "Paddy": "වී",
+    "Maize": "බඩඉරිඟු",
+    "Green Gram": "මුං",
+    "Cowpea": "කව්පි",
+    "Groundnut": "රටකජු",
+    "Soybean": "සෝයා",
+    "Potato": "අර්තාපල්",
+    "Sweet Potato": "බතල",
+    "Cassava": "මඤ්ඤොක්කා",
+    "Onion": "ලූනු",
+    "Tomato": "තක්කාලි",
+    "Chilli": "මිරිස්",
+    "Brinjal": "වම්බටු",
+    "Okra": "බණ්ඩක්කා",
+    "Cabbage": "ගෝවා",
+    "Carrot": "කැරට්",
+    "Beans": "බෝංචි",
+    "Pumpkin": "වට්ටක්කා",
+    "Cucumber": "පිපිඤ්ඤා",
+    "Leeks": "ලීක්ස්",
+    "Beetroot": "බීට්රූට්",
+    "Banana": "කෙසෙල්",
+    "Mango": "අඹ",
+    "Pineapple": "අන්නාසි",
+    "Papaya": "පැපොල්",
+    "Avocado": "අලිගැට පේර",
+    "Passion Fruit": "පැෂන් ෆෘට්",
+    "Other": "වෙනත්"
+  },
+  "cropGroups": {
+    "plantation": "වැවිලි හා අපනයන",
+    "cereals": "ධාන්‍ය හා රනිල",
+    "roots": "අල වර්ග",
+    "vegetables": "එළවළු",
+    "fruit": "පලතුරු",
+    "other": "වෙනත්"
   }
 }

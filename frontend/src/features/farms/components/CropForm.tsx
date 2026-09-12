@@ -1,9 +1,10 @@
 import { useMemo } from 'react'
-import { useForm } from 'react-hook-form'
+import { Controller, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/Button'
+import { CropTypeSelect } from '@/components/ui/CropTypeSelect'
 import { Input } from '@/components/ui/Input'
 import type { CreateCropRequest } from '@/types/dto/crops'
 
@@ -19,12 +20,12 @@ export function CropForm({ submitLabel, isSubmitting, onSubmit }: CropFormProps)
   const schema = useMemo(
     () =>
       z.object({
-        cropType: z.string().min(1, t('common:validation.cropTypeRequired')).max(100),
+        // Chosen from the catalogue, never typed: the API rejects anything outside it, and a
+        // free-text typo would otherwise have become its own marketplace category.
+        cropType: z.string().min(1, t('common:validation.cropTypeRequired')),
         variety: z.string().max(100).optional().default(''),
         plantingDate: z.string().min(1, t('common:validation.plantingDateRequired')),
-        expectedHarvestDate: z
-          .string()
-          .min(1, t('common:validation.expectedHarvestDateRequired')),
+        expectedHarvestDate: z.string().min(1, t('common:validation.expectedHarvestDateRequired')),
         expectedQuantity: z.coerce
           .number()
           .min(0.01, t('common:validation.quantityMin'))
@@ -34,19 +35,28 @@ export function CropForm({ submitLabel, isSubmitting, onSubmit }: CropFormProps)
   )
 
   const {
+    control,
     register,
     handleSubmit,
     formState: { errors },
   } = useForm<z.input<typeof schema>, unknown, z.output<typeof schema>>({
     resolver: zodResolver(schema),
+    defaultValues: { cropType: '' },
   })
 
   return (
     <form className="flex flex-col gap-4" onSubmit={handleSubmit(onSubmit)}>
-      <Input
-        label={t('farms:form.cropType')}
-        error={errors.cropType?.message}
-        {...register('cropType')}
+      <Controller
+        control={control}
+        name="cropType"
+        render={({ field }) => (
+          <CropTypeSelect
+            label={t('farms:form.cropType')}
+            error={errors.cropType?.message}
+            value={field.value ?? ''}
+            onChange={field.onChange}
+          />
+        )}
       />
       <Input
         label={t('farms:form.variety')}

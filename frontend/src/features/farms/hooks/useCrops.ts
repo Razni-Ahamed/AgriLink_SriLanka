@@ -1,18 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import * as cropsApi from '../api/cropsApi'
-import type { CreateCropRequest, CropDto, UpdateCropRequest } from '@/types/dto/crops'
+import type { CreateCropRequest, UpdateCropRequest } from '@/types/dto/crops'
 
 const cropKey = (cropId: number) => ['crops', cropId] as const
-
-/**
- * There is no `GET` endpoint that lists crops for a field (only
- * `POST /api/fields/{fieldId}/crops` and `GET/PUT /api/crops/{cropId}`).
- * We track crops planted this session in the query cache so FieldDetailPage
- * can link to them; the list does not survive a page refresh. A real
- * `GET /api/farms/{farmId}/fields/{fieldId}/crops` endpoint is needed from
- * the backend — flagged to the team, see PR description.
- */
 const fieldCropsKey = (fieldId: number) => ['fields', fieldId, 'crops'] as const
+const myCropsKey = ['crops', 'mine'] as const
 
 export function useCrop(cropId: number) {
   return useQuery({
@@ -22,25 +14,34 @@ export function useCrop(cropId: number) {
   })
 }
 
+/** The crops planted in one field, from GET /api/fields/{fieldId}/crops. */
+export function useFieldCrops(fieldId: number) {
+  return useQuery({
+    queryKey: fieldCropsKey(fieldId),
+    queryFn: () => cropsApi.getFieldCrops(fieldId),
+    enabled: Number.isFinite(fieldId),
+  })
+}
+
+/**
+ * Every crop the logged-in farmer has planted, with farm/field context — for the crop pickers
+ * on "Report an Issue" and "New Listing", which need to name a crop, not an id.
+ */
+export function useMyCrops() {
+  return useQuery({
+    queryKey: myCropsKey,
+    queryFn: cropsApi.getMyCrops,
+  })
+}
+
 export function usePlantCrop(fieldId: number) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (request: CreateCropRequest) => cropsApi.plantCrop(fieldId, request),
-    onSuccess: (crop) => {
-      queryClient.setQueryData<CropDto[]>(fieldCropsKey(fieldId), (existing) => [
-        ...(existing ?? []),
-        crop,
-      ])
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: fieldCropsKey(fieldId) })
+      void queryClient.invalidateQueries({ queryKey: myCropsKey })
     },
-  })
-}
-
-export function useFieldCrops(fieldId: number) {
-  return useQuery({
-    queryKey: fieldCropsKey(fieldId),
-    queryFn: () => Promise.resolve<CropDto[]>([]),
-    initialData: [] as CropDto[],
-    staleTime: Infinity,
   })
 }
 
@@ -48,6 +49,9 @@ export function useUpdateCropStatus(cropId: number) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (request: UpdateCropRequest) => cropsApi.updateCrop(cropId, request),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: cropKey(cropId) }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: cropKey(cropId) })
+      void queryClient.invalidateQueries({ queryKey: myCropsKey })
+    },
   })
 }

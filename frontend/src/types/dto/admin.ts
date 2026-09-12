@@ -6,7 +6,7 @@ export interface CreateUserRequest {
   role: 'Officer' | 'Buyer'
   district: string
   /** Required when role is "Officer" */
-  department?: string
+  departmentId?: number
   /** Required when role is "Buyer" */
   businessName?: string
 }
@@ -35,6 +35,8 @@ export interface AdminUserSummary {
   email: string
   role: ManagedRole
   district?: string | null
+  /** Populated only for Officer accounts. */
+  department?: string | null
   isActive: boolean
   createdAt: string
 }
@@ -44,7 +46,7 @@ export interface UpdateUserRoleRequest {
   role: 'Officer' | 'Buyer'
   district: string
   /** Required when role is "Officer" */
-  department?: string
+  departmentId?: number
   /** Required when role is "Buyer" */
   businessName?: string
 }
@@ -63,4 +65,14 @@ export interface AuditLogEntry {
   oldValue: string | null
   newValue: string | null
   createdAt: string
+}
+
+export interface Department {
+  departmentId: number
+  name: string
+  createdAt: string
+}
+
+export interface DepartmentRequest {
+  name: string
 }

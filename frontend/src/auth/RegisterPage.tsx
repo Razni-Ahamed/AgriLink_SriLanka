@@ -8,6 +8,7 @@ import { useTranslation } from 'react-i18next'
 import { motion } from 'motion/react'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
+import { DistrictSelect } from '@/components/ui/DistrictSelect'
 import { Card } from '@/components/ui/Card'
 import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher'
 import { useAuthStore } from './authStore'
@@ -88,11 +89,7 @@ export function RegisterPage() {
               error={errors.nic?.message}
               {...registerField('nic')}
             />
-            <Input
-              label={t('common:fields.district')}
-              error={errors.district?.message}
-              {...registerField('district')}
-            />
+            <DistrictSelect error={errors.district?.message} {...registerField('district')} />
             {mutation.isError && (
               <p className="text-sm text-state-danger">{t('auth:register.error')}</p>
             )}

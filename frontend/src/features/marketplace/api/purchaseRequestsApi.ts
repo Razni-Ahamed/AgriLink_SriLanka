@@ -18,6 +18,12 @@ export async function getMyIncomingRequests(): Promise<PurchaseRequestResponse[]
   return data
 }
 
+/** The logged-in buyer's own submitted requests, across every listing, any status. Buyer-only endpoint. */
+export async function getMySentRequests(): Promise<PurchaseRequestResponse[]> {
+  const { data } = await apiClient.get<PurchaseRequestResponse[]>('/api/purchase-requests/sent')
+  return data
+}
+
 export async function respondToRequest(
   requestId: number,
   action: PurchaseRequestAction,

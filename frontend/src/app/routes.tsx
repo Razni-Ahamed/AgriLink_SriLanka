@@ -8,7 +8,6 @@ import { marketplacePublicRoutes, marketplaceRoutes } from '@/features/marketpla
 import { ordersRoutes } from '@/features/orders/routes'
 import { AppLayout } from './AppLayout'
 import { RequireAuth } from './RequireAuth'
-import { RequireRole } from './RequireRole'
 import { RoleHomeRedirect } from './RoleHomeRedirect'
 import { UnauthorizedPage } from './UnauthorizedPage'
 
@@ -27,19 +26,14 @@ export const router = createBrowserRouter([
         element: <RequireAuth />,
         children: [
           { path: '/', element: <RoleHomeRedirect /> },
-          { element: <RequireRole allow={['Farmer', 'Admin']} />, children: farmsRoutes },
-          {
-            element: <RequireRole allow={['Farmer', 'Officer', 'Admin']} />,
-            children: issuesRoutes,
-          },
-          {
-            element: <RequireRole allow={['Farmer', 'Buyer', 'Admin']} />,
-            children: marketplaceRoutes,
-          },
-          {
-            element: <RequireRole allow={['Farmer', 'Buyer', 'Officer', 'Admin']} />,
-            children: ordersRoutes,
-          },
+          // Each feature's own routes.tsx wraps its sub-routes in RequireRole scoped to
+          // exactly what its backend endpoints authorize (see the comments there) — no
+          // single coarse role list here, since farms/issues/marketplace mix Farmer-only,
+          // Officer-only, and shared sub-routes that a single wrapper can't tell apart.
+          ...farmsRoutes,
+          ...issuesRoutes,
+          ...marketplaceRoutes,
+          ...ordersRoutes,
           { path: '/unauthorized', element: <UnauthorizedPage /> },
         ],
       },

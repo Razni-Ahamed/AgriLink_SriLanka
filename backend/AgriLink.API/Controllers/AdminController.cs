@@ -41,6 +41,27 @@ public class AdminController : ControllerBase
             return BadRequest(new { message = "Role must be 'Officer' or 'Buyer'." });
         }
 
+        var district = SriLankaDistricts.Canonicalize(request.District);
+        if (district is null)
+        {
+            return BadRequest(new { message = "District must be one of Sri Lanka's 25 administrative districts." });
+        }
+
+        Department? department = null;
+        if (role == "Officer")
+        {
+            if (request.DepartmentId is null)
+            {
+                return BadRequest(new { message = "Department is required when creating an Officer account." });
+            }
+
+            department = await _db.Departments.FirstOrDefaultAsync(d => d.DepartmentId == request.DepartmentId);
+            if (department is null)
+            {
+                return BadRequest(new { message = "The selected department does not exist." });
+            }
+        }
+
         var existing = await _userManager.FindByEmailAsync(request.Email);
         if (existing is not null)
         {
@@ -67,8 +88,8 @@ public class AdminController : ControllerBase
             _db.OfficerProfiles.Add(new OfficerProfile
             {
                 UserId = user.Id,
-                Department = request.Department ?? string.Empty,
-                District = request.District,
+                DepartmentId = department!.DepartmentId,
+                District = district,
             });
         }
         else
@@ -77,7 +98,7 @@ public class AdminController : ControllerBase
             {
                 UserId = user.Id,
                 BusinessName = request.BusinessName ?? string.Empty,
-                District = request.District,
+                District = district,
             });
         }
 
@@ -102,11 +123,14 @@ public class AdminController : ControllerBase
     {
         var users = await _db.Users.OrderBy(u => u.CreatedAt).ToListAsync();
 
-        // Three small dictionary reads beat an N+1 profile lookup per user; a course-project
-        // dataset never gets large enough for this shape to matter either way.
+        // A handful of small dictionary reads beat an N+1 profile lookup per user; a
+        // course-project dataset never gets large enough for this shape to matter either way.
         var farmerDistricts = await _db.FarmerProfiles.ToDictionaryAsync(f => f.UserId, f => f.District);
         var officerDistricts = await _db.OfficerProfiles.ToDictionaryAsync(o => o.UserId, o => o.District);
         var buyerDistricts = await _db.BuyerProfiles.ToDictionaryAsync(b => b.UserId, b => b.District);
+        var officerDepartments = await _db.OfficerProfiles
+            .Include(o => o.Department)
+            .ToDictionaryAsync(o => o.UserId, o => o.Department.Name);
 
         var summaries = new List<AdminUserSummary>();
         foreach (var user in users)
@@ -123,6 +147,7 @@ public class AdminController : ControllerBase
                 Email = user.Email ?? string.Empty,
                 Role = roles.FirstOrDefault() ?? string.Empty,
                 District = district,
+                Department = officerDepartments.GetValueOrDefault(user.Id),
                 IsActive = user.IsActive,
                 CreatedAt = user.CreatedAt,
             });
@@ -163,9 +188,25 @@ public class AdminController : ControllerBase
             return BadRequest(new { message = $"User already has the {newRole} role." });
         }
 
-        if (newRole == "Officer" && string.IsNullOrWhiteSpace(request.Department))
+        var district = SriLankaDistricts.Canonicalize(request.District);
+        if (district is null)
         {
-            return BadRequest(new { message = "Department is required when assigning the Officer role." });
+            return BadRequest(new { message = "District must be one of Sri Lanka's 25 administrative districts." });
+        }
+
+        Department? department = null;
+        if (newRole == "Officer")
+        {
+            if (request.DepartmentId is null)
+            {
+                return BadRequest(new { message = "Department is required when assigning the Officer role." });
+            }
+
+            department = await _db.Departments.FirstOrDefaultAsync(d => d.DepartmentId == request.DepartmentId);
+            if (department is null)
+            {
+                return BadRequest(new { message = "The selected department does not exist." });
+            }
         }
 
         if (newRole == "Buyer" && string.IsNullOrWhiteSpace(request.BusinessName))
@@ -209,8 +250,8 @@ public class AdminController : ControllerBase
             _db.OfficerProfiles.Add(new OfficerProfile
             {
                 UserId = userId,
-                Department = request.Department!,
-                District = request.District,
+                DepartmentId = department!.DepartmentId,
+                District = district,
             });
         }
         else
@@ -219,7 +260,7 @@ public class AdminController : ControllerBase
             {
                 UserId = userId,
                 BusinessName = request.BusinessName!,
-                District = request.District,
+                District = district,
             });
         }
 
@@ -232,7 +273,8 @@ public class AdminController : ControllerBase
             FullName = user.FullName,
             Email = user.Email ?? string.Empty,
             Role = newRole,
-            District = request.District,
+            District = district,
+            Department = department?.Name,
             IsActive = user.IsActive,
             CreatedAt = user.CreatedAt,
         });

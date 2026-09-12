@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { ArrowLeft, Leaf, Plus } from '@phosphor-icons/react'
+import { ArrowLeft, Plus } from '@phosphor-icons/react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
+import { CropIcon } from '@/components/ui/CropIcon'
 import { IconBadge } from '@/components/ui/IconBadge'
 import { Modal } from '@/components/ui/Modal'
 import { Skeleton } from '@/components/ui/Skeleton'
@@ -23,7 +24,7 @@ export function FieldDetailPage() {
   const fieldIdNum = Number(fieldId)
 
   const { data: field, isLoading } = useField(farmIdNum, fieldIdNum)
-  const { data: crops } = useFieldCrops(fieldIdNum)
+  const { data: crops, isLoading: isLoadingCrops } = useFieldCrops(fieldIdNum)
   const plantCrop = usePlantCrop(fieldIdNum)
 
   const [isModalOpen, setModalOpen] = useState(false)
@@ -61,30 +62,42 @@ export function FieldDetailPage() {
         </Button>
       </div>
 
-      {crops.length === 0 ? (
-        <p className="text-sm text-text-secondary">{t('farms:field.empty')}</p>
-      ) : (
-        <StaggerList className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {crops.map((crop) => (
-            <StaggerList.Item key={crop.cropId}>
-              <CardHover>
-                <Link to={`/farms/${farmIdNum}/fields/${fieldIdNum}/crops/${crop.cropId}`}>
-                  <Card className="flex flex-col gap-3">
-                    <IconBadge tone="forest">
-                      <Leaf size={20} weight="duotone" />
-                    </IconBadge>
-                    <h3 className="font-display text-lg text-text-primary">{crop.cropType}</h3>
-                    <p className="text-sm text-text-secondary">
-                      {crop.variety || t('farms:crop.noVariety')}
-                    </p>
-                    <p className="font-mono text-xs text-brand-forest">
-                      {statusLabel('crop', crop.status)}
-                    </p>
-                  </Card>
-                </Link>
-              </CardHover>
-            </StaggerList.Item>
+      {isLoadingCrops && (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 3 }).map((_, index) => (
+            <Skeleton key={index} className="h-40" />
           ))}
+        </div>
+      )}
+
+      {!isLoadingCrops && crops && crops.length === 0 && (
+        <p className="text-sm text-text-secondary">{t('farms:field.empty')}</p>
+      )}
+
+      {!isLoadingCrops && crops && crops.length > 0 && (
+        <StaggerList className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {crops.map((crop) => {
+            return (
+              <StaggerList.Item key={crop.cropId}>
+                <CardHover>
+                  <Link to={`/farms/${farmIdNum}/fields/${fieldIdNum}/crops/${crop.cropId}`}>
+                    <Card className="flex flex-col gap-3">
+                      <IconBadge tone="forest">
+                        <CropIcon cropType={crop.cropType} size={20} />
+                      </IconBadge>
+                      <h3 className="font-display text-lg text-text-primary">{crop.cropType}</h3>
+                      <p className="text-sm text-text-secondary">
+                        {crop.variety || t('farms:crop.noVariety')}
+                      </p>
+                      <p className="font-mono text-xs text-brand-forest">
+                        {statusLabel('crop', crop.status)}
+                      </p>
+                    </Card>
+                  </Link>
+                </CardHover>
+              </StaggerList.Item>
+            )
+          })}
         </StaggerList>
       )}
 

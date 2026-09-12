@@ -5,7 +5,9 @@ import { z } from 'zod'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
+import { DistrictSelect } from '@/components/ui/DistrictSelect'
 import { Select } from '@/components/ui/Select'
+import { useDepartments } from '../hooks/useDepartments'
 import type { CreateUserRequest } from '@/types/dto/admin'
 
 interface UserCreateFormProps {
@@ -15,6 +17,7 @@ interface UserCreateFormProps {
 
 export function UserCreateForm({ isSubmitting, onSubmit }: UserCreateFormProps) {
   const { t } = useTranslation(['orders', 'common'])
+  const { data: departments, isLoading: isLoadingDepartments } = useDepartments()
 
   const schema = useMemo(
     () =>
@@ -25,12 +28,12 @@ export function UserCreateForm({ isSubmitting, onSubmit }: UserCreateFormProps) 
           password: z.string().min(8, t('common:validation.passwordMin')),
           role: z.enum(['Officer', 'Buyer']),
           district: z.string().min(1, t('common:validation.districtRequired')).max(50),
-          department: z.string().max(100).optional(),
+          departmentId: z.coerce.number().optional(),
           businessName: z.string().max(100).optional(),
         })
-        .refine((values) => values.role !== 'Officer' || !!values.department, {
+        .refine((values) => values.role !== 'Officer' || !!values.departmentId, {
           message: t('common:validation.departmentRequiredOfficer'),
-          path: ['department'],
+          path: ['departmentId'],
         })
         .refine((values) => values.role !== 'Buyer' || !!values.businessName, {
           message: t('common:validation.businessNameRequiredBuyer'),
@@ -74,17 +77,26 @@ export function UserCreateForm({ isSubmitting, onSubmit }: UserCreateFormProps) 
         <option value="Officer">{t('common:roles.Officer')}</option>
         <option value="Buyer">{t('common:roles.Buyer')}</option>
       </Select>
-      <Input
-        label={t('common:fields.district')}
-        error={errors.district?.message}
-        {...register('district')}
-      />
+      <DistrictSelect error={errors.district?.message} {...register('district')} />
       {role === 'Officer' && (
-        <Input
+        <Select
           label={t('common:fields.department')}
-          error={errors.department?.message}
-          {...register('department')}
-        />
+          error={errors.departmentId?.message}
+          disabled={isLoadingDepartments}
+          defaultValue=""
+          {...register('departmentId')}
+        >
+          <option value="" disabled>
+            {isLoadingDepartments
+              ? t('common:actions.loading')
+              : t('orders:departments.selectDepartment')}
+          </option>
+          {departments?.map((department) => (
+            <option key={department.departmentId} value={department.departmentId}>
+              {department.name}
+            </option>
+          ))}
+        </Select>
       )}
       {role === 'Buyer' && (
         <Input
@@ -92,6 +104,9 @@ export function UserCreateForm({ isSubmitting, onSubmit }: UserCreateFormProps) 
           error={errors.businessName?.message}
           {...register('businessName')}
         />
+      )}
+      {role === 'Officer' && departments && departments.length === 0 && !isLoadingDepartments && (
+        <p className="text-sm text-state-danger">{t('orders:departments.noneYetForCreateUser')}</p>
       )}
       <Button type="submit" disabled={isSubmitting}>
         {isSubmitting ? t('orders:admin.creating') : t('orders:admin.createUser')}

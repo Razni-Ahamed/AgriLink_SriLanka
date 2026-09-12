@@ -167,8 +167,8 @@ public class AgentOrchestratorTests
     {
         using var db = CreateDb();
         db.OfficerProfiles.AddRange(
-            new OfficerProfile { OfficerProfileId = 1, UserId = 100, Department = "Agriculture", District = "Colombo" },
-            new OfficerProfile { OfficerProfileId = 2, UserId = 200, Department = "Agriculture", District = "Kandy" });
+            new OfficerProfile { OfficerProfileId = 1, UserId = 100, DepartmentId = 1, District = "Colombo" },
+            new OfficerProfile { OfficerProfileId = 2, UserId = 200, DepartmentId = 1, District = "Kandy" });
         await db.SaveChangesAsync();
 
         var notifications = new Mock<INotificationService>();

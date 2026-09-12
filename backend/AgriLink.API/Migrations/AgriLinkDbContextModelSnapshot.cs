@@ -417,6 +417,30 @@ namespace AgriLink.API.Migrations
                     b.ToTable("CropIssues");
                 });
 
+            modelBuilder.Entity("AgriLink.API.Models.Department", b =>
+                {
+                    b.Property<int>("DepartmentId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("DepartmentId"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.HasKey("DepartmentId");
+
+                    b.HasIndex("Name")
+                        .IsUnique();
+
+                    b.ToTable("Departments");
+                });
+
             modelBuilder.Entity("AgriLink.API.Models.Farm", b =>
                 {
                     b.Property<int>("FarmId")
@@ -599,10 +623,8 @@ namespace AgriLink.API.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("OfficerProfileId"));
 
-                    b.Property<string>("Department")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
+                    b.Property<int>("DepartmentId")
+                        .HasColumnType("integer");
 
                     b.Property<string>("District")
                         .IsRequired()
@@ -613,6 +635,8 @@ namespace AgriLink.API.Migrations
                         .HasColumnType("integer");
 
                     b.HasKey("OfficerProfileId");
+
+                    b.HasIndex("DepartmentId");
 
                     b.HasIndex("UserId")
                         .IsUnique();
@@ -1009,11 +1033,19 @@ namespace AgriLink.API.Migrations
 
             modelBuilder.Entity("AgriLink.API.Models.OfficerProfile", b =>
                 {
+                    b.HasOne("AgriLink.API.Models.Department", "Department")
+                        .WithMany("OfficerProfiles")
+                        .HasForeignKey("DepartmentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("AgriLink.API.Models.ApplicationUser", "User")
                         .WithOne("OfficerProfile")
                         .HasForeignKey("AgriLink.API.Models.OfficerProfile", "UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Department");
 
                     b.Navigation("User");
                 });
@@ -1142,6 +1174,11 @@ namespace AgriLink.API.Migrations
             modelBuilder.Entity("AgriLink.API.Models.CropIssue", b =>
                 {
                     b.Navigation("Advisories");
+                });
+
+            modelBuilder.Entity("AgriLink.API.Models.Department", b =>
+                {
+                    b.Navigation("OfficerProfiles");
                 });
 
             modelBuilder.Entity("AgriLink.API.Models.Farm", b =>

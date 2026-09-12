@@ -15,4 +15,5 @@ export {
   Gear,
   Translate,
   ClipboardText,
+  Building,
 } from '@phosphor-icons/react'

@@ -18,8 +18,9 @@ const statusVariant = {
 
 interface PurchaseRequestCardProps {
   request: PurchaseRequestResponse
-  onAccept: () => void
-  onDecline: () => void
+  /** Omit both to render a read-only card — used for a buyer's own sent requests. */
+  onAccept?: () => void
+  onDecline?: () => void
   isResponding?: boolean
 }
 
@@ -36,22 +37,25 @@ export function PurchaseRequestCard({
 
   function handleAccept() {
     setJustAccepted(true)
-    onAccept()
+    onAccept?.()
   }
 
   function handleDecline() {
     setJustDeclined(true)
-    onDecline()
+    onDecline?.()
   }
 
   return (
     <Shake trigger={justDeclined}>
       <FlashOnSuccess trigger={justAccepted}>
         <Card className="flex flex-col gap-3">
-          <div className="flex items-center justify-between">
-            <span className="font-mono tabular-nums text-sm text-text-secondary">
-              {t('marketplace:requests.requestNumber', { id: request.requestId })}
-            </span>
+          <div className="flex items-start justify-between">
+            <div>
+              <h3 className="font-display text-lg text-text-primary">{request.cropType}</h3>
+              <span className="font-mono tabular-nums text-xs text-text-secondary">
+                {t('marketplace:requests.requestNumber', { id: request.requestId })}
+              </span>
+            </div>
             <Badge variant={statusVariant[request.status]}>
               {statusLabel('request', request.status)}
             </Badge>
@@ -63,11 +67,17 @@ export function PurchaseRequestCard({
             })}
           </p>
 
+          <p className="font-mono tabular-nums text-sm text-text-secondary">
+            {t('common:units.rupeesPerUnit', { value: formatQuantity(request.pricePerUnit) })}
+            {' · '}
+            {request.district}
+          </p>
+
           {request.message && <p className="text-sm text-text-secondary">{request.message}</p>}
 
           <p className="text-xs text-text-secondary">{formatDate(request.createdAt)}</p>
 
-          {request.status === 'Pending' && (
+          {request.status === 'Pending' && onAccept && onDecline && (
             <div className="flex gap-2">
               <Button size="sm" onClick={handleAccept} isLoading={isResponding && justAccepted}>
                 {t('common:actions.accept')}

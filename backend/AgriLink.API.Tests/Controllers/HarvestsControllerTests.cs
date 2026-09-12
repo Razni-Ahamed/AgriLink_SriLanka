@@ -106,4 +106,47 @@ public class HarvestsControllerTests
         Assert.Equal(nameof(HarvestStatus.Active), auditLog.OldValue);
         Assert.Equal(nameof(HarvestStatus.Cancelled), auditLog.NewValue);
     }
+
+    [Fact]
+    public async Task Mine_ReturnsOnlyTheCallingFarmersOwnListingsRegardlessOfStatus()
+    {
+        using var db = CreateDb();
+        var ownListing = SeedListing(db, farmerProfileId: 1, farmerUserId: 10);
+        ownListing.Status = HarvestStatus.Sold;
+        db.SaveChanges();
+
+        // A second farmer in the same district — "mine" must not leak into their listings the
+        // way the frontend's earlier district-based filter did.
+        db.FarmerProfiles.Add(new FarmerProfile { FarmerProfileId = 2, UserId = 20, NIC = "2", District = "Kandy" });
+        var otherCrop = new Crop
+        {
+            CropId = 2,
+            CropType = "Rice",
+            Field = new Field { FieldId = 2, Name = "Field 2", Farm = new Farm { FarmId = 2, Name = "Farm 2", District = "Kandy", FarmerProfileId = 2 } },
+        };
+        db.HarvestListings.Add(new HarvestListing
+        {
+            HarvestId = 2,
+            FarmerProfileId = 2,
+            CropId = 2,
+            Crop = otherCrop,
+            Quantity = 50,
+            AvailableQuantity = 50,
+            HarvestDate = DateOnly.FromDateTime(DateTime.UtcNow),
+            PricePerUnit = 30,
+            Location = "Kandy Town",
+            Status = HarvestStatus.Active,
+        });
+        db.SaveChanges();
+
+        var controller = CreateController(db, actingUserId: 10, role: "Farmer");
+
+        var result = await controller.Mine();
+
+        var listings = Assert.IsType<OkObjectResult>(result.Result).Value as IEnumerable<HarvestListingResponse>;
+        var listingList = listings!.ToList();
+        var onlyListing = Assert.Single(listingList);
+        Assert.Equal(ownListing.HarvestId, onlyListing.HarvestId);
+        Assert.Equal(nameof(HarvestStatus.Sold), onlyListing.Status);
+    }
 }

@@ -5,6 +5,8 @@ import type {
   AuditLogEntry,
   CreateUserRequest,
   CreateUserResponse,
+  Department,
+  DepartmentRequest,
   UpdateUserRoleRequest,
   UpdateUserStatusRequest,
 } from '@/types/dto/admin'
@@ -50,4 +52,26 @@ export async function getAuditLogs(entityName?: string): Promise<AuditLogEntry[]
     params: entityName ? { entityName } : undefined,
   })
   return data
+}
+
+export async function getDepartments(): Promise<Department[]> {
+  const { data } = await apiClient.get<Department[]>('/api/admin/departments')
+  return data
+}
+
+export async function createDepartment(request: DepartmentRequest): Promise<Department> {
+  const { data } = await apiClient.post<Department>('/api/admin/departments', request)
+  return data
+}
+
+export async function renameDepartment(
+  departmentId: number,
+  request: DepartmentRequest,
+): Promise<Department> {
+  const { data } = await apiClient.put<Department>(`/api/admin/departments/${departmentId}`, request)
+  return data
+}
+
+export async function deleteDepartment(departmentId: number): Promise<void> {
+  await apiClient.delete(`/api/admin/departments/${departmentId}`)
 }

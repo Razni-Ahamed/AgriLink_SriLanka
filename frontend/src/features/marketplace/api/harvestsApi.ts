@@ -16,6 +16,12 @@ export async function getHarvests(filters: HarvestFilters = {}): Promise<Harvest
   return data
 }
 
+/** The logged-in farmer's own listings, every status included (GET /api/harvests only returns Active ones). */
+export async function getMyHarvests(): Promise<HarvestListingResponse[]> {
+  const { data } = await apiClient.get<HarvestListingResponse[]>('/api/harvests/mine')
+  return data
+}
+
 export async function getHarvest(harvestId: number): Promise<HarvestListingResponse> {
   const { data } = await apiClient.get<HarvestListingResponse>(`/api/harvests/${harvestId}`)
   return data
