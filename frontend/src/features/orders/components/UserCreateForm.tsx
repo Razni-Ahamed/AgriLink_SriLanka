@@ -5,8 +5,8 @@ import { z } from 'zod'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
+import { DistrictSelect } from '@/components/ui/DistrictSelect'
 import { Select } from '@/components/ui/Select'
-import { useDistricts } from '@/lib/useDistricts'
 import { useDepartments } from '../hooks/useDepartments'
 import type { CreateUserRequest } from '@/types/dto/admin'
 
@@ -17,7 +17,6 @@ interface UserCreateFormProps {
 
 export function UserCreateForm({ isSubmitting, onSubmit }: UserCreateFormProps) {
   const { t } = useTranslation(['orders', 'common'])
-  const { data: districts, isLoading: isLoadingDistricts } = useDistricts()
   const { data: departments, isLoading: isLoadingDepartments } = useDepartments()
 
   const schema = useMemo(
@@ -78,22 +77,7 @@ export function UserCreateForm({ isSubmitting, onSubmit }: UserCreateFormProps) 
         <option value="Officer">{t('common:roles.Officer')}</option>
         <option value="Buyer">{t('common:roles.Buyer')}</option>
       </Select>
-      <Select
-        label={t('common:fields.district')}
-        error={errors.district?.message}
-        disabled={isLoadingDistricts}
-        defaultValue=""
-        {...register('district')}
-      >
-        <option value="" disabled>
-          {isLoadingDistricts ? t('common:actions.loading') : t('common:fields.selectDistrict')}
-        </option>
-        {districts?.map((district) => (
-          <option key={district} value={district}>
-            {district}
-          </option>
-        ))}
-      </Select>
+      <DistrictSelect error={errors.district?.message} {...register('district')} />
       {role === 'Officer' && (
         <Select
           label={t('common:fields.department')}

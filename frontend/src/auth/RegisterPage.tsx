@@ -8,10 +8,9 @@ import { useTranslation } from 'react-i18next'
 import { motion } from 'motion/react'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
-import { Select } from '@/components/ui/Select'
+import { DistrictSelect } from '@/components/ui/DistrictSelect'
 import { Card } from '@/components/ui/Card'
 import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher'
-import { useDistricts } from '@/lib/useDistricts'
 import { useAuthStore } from './authStore'
 import { register as registerRequest } from './api'
 
@@ -19,7 +18,6 @@ export function RegisterPage() {
   const { t } = useTranslation(['auth', 'common'])
   const navigate = useNavigate()
   const setSession = useAuthStore((state) => state.login)
-  const { data: districts, isLoading: isLoadingDistricts } = useDistricts()
 
   const schema = useMemo(
     () =>
@@ -91,22 +89,7 @@ export function RegisterPage() {
               error={errors.nic?.message}
               {...registerField('nic')}
             />
-            <Select
-              label={t('common:fields.district')}
-              error={errors.district?.message}
-              disabled={isLoadingDistricts}
-              defaultValue=""
-              {...registerField('district')}
-            >
-              <option value="" disabled>
-                {isLoadingDistricts ? t('common:actions.loading') : t('common:fields.selectDistrict')}
-              </option>
-              {districts?.map((district) => (
-                <option key={district} value={district}>
-                  {district}
-                </option>
-              ))}
-            </Select>
+            <DistrictSelect error={errors.district?.message} {...registerField('district')} />
             {mutation.isError && (
               <p className="text-sm text-state-danger">{t('auth:register.error')}</p>
             )}

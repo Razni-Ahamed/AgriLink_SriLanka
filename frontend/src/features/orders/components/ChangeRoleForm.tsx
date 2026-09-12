@@ -5,8 +5,8 @@ import { z } from 'zod'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
+import { DistrictSelect } from '@/components/ui/DistrictSelect'
 import { Select } from '@/components/ui/Select'
-import { useDistricts } from '@/lib/useDistricts'
 import { useDepartments } from '../hooks/useDepartments'
 import type { AdminUserSummary, UpdateUserRoleRequest } from '@/types/dto/admin'
 
@@ -19,7 +19,6 @@ interface ChangeRoleFormProps {
 /** Only Officer and Buyer are reachable here — AdminController rejects Farmer/Admin targets. */
 export function ChangeRoleForm({ user, isSubmitting, onSubmit }: ChangeRoleFormProps) {
   const { t } = useTranslation(['orders', 'common'])
-  const { data: districts, isLoading: isLoadingDistricts } = useDistricts()
   const { data: departments, isLoading: isLoadingDepartments } = useDepartments()
   const otherRole = user.role === 'Officer' ? 'Buyer' : 'Officer'
 
@@ -68,21 +67,7 @@ export function ChangeRoleForm({ user, isSubmitting, onSubmit }: ChangeRoleFormP
           {t('common:roles.Buyer')}
         </option>
       </Select>
-      <Select
-        label={t('common:fields.district')}
-        error={errors.district?.message}
-        disabled={isLoadingDistricts}
-        {...register('district')}
-      >
-        <option value="" disabled>
-          {isLoadingDistricts ? t('common:actions.loading') : t('common:fields.selectDistrict')}
-        </option>
-        {districts?.map((district) => (
-          <option key={district} value={district}>
-            {district}
-          </option>
-        ))}
-      </Select>
+      <DistrictSelect error={errors.district?.message} {...register('district')} />
       {role === 'Officer' && (
         <Select
           label={t('common:fields.department')}
