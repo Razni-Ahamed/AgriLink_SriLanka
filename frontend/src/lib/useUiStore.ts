@@ -1,6 +1,19 @@
 import { create } from 'zustand'
+import {
+  applyTheme,
+  readStoredThemePreference,
+  resolveTheme,
+  subscribeToSystemTheme,
+  writeStoredThemePreference,
+  type ResolvedTheme,
+  type ThemePreference,
+} from '@/lib/themeStorage'
 
-export type Theme = 'light' | 'dark'
+export type { ResolvedTheme, ThemePreference } from '@/lib/themeStorage'
+
+/** @deprecated Prefer `ResolvedTheme`; kept so existing imports keep compiling. */
+export type Theme = ResolvedTheme
+
 export type ToastType = 'success' | 'error' | 'info'
 
 export interface Toast {
@@ -9,48 +22,41 @@ export interface Toast {
   message: string
 }
 
-const THEME_STORAGE_KEY = 'agrilink.theme'
 const TOAST_DURATION_MS = 4000
 
-function readStoredTheme(): Theme {
-  try {
-    const stored = localStorage.getItem(THEME_STORAGE_KEY)
-    return stored === 'dark' ? 'dark' : 'light'
-  } catch {
-    return 'light'
-  }
-}
-
-function applyThemeClass(theme: Theme): void {
-  document.documentElement.classList.toggle('dark', theme === 'dark')
-}
-
 interface UiState {
-  theme: Theme
+  /** What the user picked — `system` follows the OS. */
+  themePreference: ThemePreference
+  /** What is on screen, with `system` already resolved. */
+  theme: ResolvedTheme
   toasts: Toast[]
-  setTheme: (theme: Theme) => void
+  setThemePreference: (preference: ThemePreference) => void
+  /** Flips to the opposite of what is currently *shown*, pinning the result. */
   toggleTheme: () => void
   addToast: (toast: Omit<Toast, 'id'>) => void
   removeToast: (id: string) => void
 }
 
 export const useUiStore = create<UiState>((set, get) => ({
-  theme: 'light',
+  // Start from storage so the store agrees with what the pre-paint script in
+  // index.html already rendered — no first-paint flash to correct.
+  themePreference: readStoredThemePreference(),
+  theme: resolveTheme(readStoredThemePreference()),
 
   toasts: [],
 
-  setTheme: (theme) => {
-    try {
-      localStorage.setItem(THEME_STORAGE_KEY, theme)
-    } catch {
-      // localStorage unavailable — theme just won't persist across reloads
-    }
-    applyThemeClass(theme)
-    set({ theme })
+  setThemePreference: (preference) => {
+    writeStoredThemePreference(preference)
+    const theme = resolveTheme(preference)
+    applyTheme(theme)
+    set({ themePreference: preference, theme })
   },
 
   toggleTheme: () => {
-    get().setTheme(get().theme === 'dark' ? 'light' : 'dark')
+    // Deliberately keyed off the resolved theme, not the preference: from
+    // `system` the user means "give me the other one than this", which has to
+    // land on an explicit choice.
+    get().setThemePreference(get().theme === 'dark' ? 'light' : 'dark')
   },
 
   addToast: (toast) => {
@@ -64,7 +70,30 @@ export const useUiStore = create<UiState>((set, get) => ({
   },
 }))
 
+let unsubscribeFromSystemTheme: (() => void) | undefined
+
+/**
+ * Paint the stored theme and start tracking the OS setting.
+ *
+ * Safe to call more than once — StrictMode mounts effects twice in
+ * development, so the previous system-theme subscription is torn down first.
+ */
 export function hydrateTheme(): void {
-  applyThemeClass(readStoredTheme())
-  useUiStore.setState({ theme: readStoredTheme() })
+  const preference = readStoredThemePreference()
+  const theme = resolveTheme(preference)
+
+  // No animation on hydration: there is no previous palette to fade from.
+  applyTheme(theme, { animate: false })
+  useUiStore.setState({ themePreference: preference, theme })
+
+  unsubscribeFromSystemTheme?.()
+  unsubscribeFromSystemTheme = subscribeToSystemTheme((systemTheme) => {
+    // Only follow the OS while the user is actually on `system`; an explicit
+    // light/dark choice outranks it.
+    if (useUiStore.getState().themePreference !== 'system') {
+      return
+    }
+    applyTheme(systemTheme)
+    useUiStore.setState({ theme: systemTheme })
+  })
 }

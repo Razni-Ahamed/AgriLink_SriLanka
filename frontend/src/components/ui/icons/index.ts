@@ -16,4 +16,7 @@ export {
   Translate,
   ClipboardText,
   Building,
+  Sun,
+  Moon,
+  Desktop,
 } from '@phosphor-icons/react'

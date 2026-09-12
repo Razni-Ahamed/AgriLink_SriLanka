@@ -10,7 +10,7 @@ import {
 import { useTranslation } from 'react-i18next'
 import { Card } from '@/components/ui/Card'
 import { formatQuantity } from '@/lib/utils'
-import { chartColors } from '../lib/chartColors'
+import { useChartColors } from '../lib/chartColors'
 
 interface MetricsBarChartProps {
   data: { label: string; value: number }[]
@@ -21,6 +21,7 @@ interface MetricsBarChartProps {
 // no legend, per the dataviz skill's job->color mapping.
 export function MetricsBarChart({ data }: MetricsBarChartProps) {
   const { t } = useTranslation('orders')
+  const chartColors = useChartColors()
 
   return (
     <Card className="flex flex-col gap-4">

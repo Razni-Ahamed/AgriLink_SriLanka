@@ -5,6 +5,7 @@ import { useAuthStore } from '@/auth/authStore'
 import { getNavItemsForRole } from './navConfig'
 import { cn } from '@/lib/utils'
 import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher'
+import { ThemeToggle } from '@/components/ui/ThemeToggle'
 import { ToastViewport } from '@/components/ui/Toast'
 import { NotificationBell } from '@/features/orders/components/NotificationBell'
 
@@ -31,6 +32,7 @@ export function AppLayout() {
 
         <div className="flex items-center gap-4">
           <LanguageSwitcher variant="compact" />
+          <ThemeToggle variant="compact" />
           {/* Gated on the token, not on `user`: this layout also wraps the public
               marketplace browse route, and the bell polls GET /api/notifications/mine,
               which 401s for an anonymous visitor. */}

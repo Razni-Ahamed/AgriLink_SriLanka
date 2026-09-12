@@ -20,7 +20,7 @@ interface ButtonProps extends NativeButtonProps {
 
 const variantClasses: Record<Variant, string> = {
   primary: 'bg-brand-forest text-bg-surface hover:bg-brand-forest-light',
-  secondary: 'bg-brand-harvest text-brand-forest hover:brightness-95',
+  secondary: 'bg-brand-harvest text-brand-ink hover:brightness-95',
   ghost: 'bg-transparent text-brand-forest hover:bg-brand-forest/10',
   danger: 'bg-state-danger text-bg-surface hover:brightness-95',
 }
