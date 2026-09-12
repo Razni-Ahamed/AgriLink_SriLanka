@@ -34,6 +34,7 @@
     "title": "All Issues",
     "subtitle": "Every issue ever reported, whatever its status — pending, resolved, or rejected.",
     "empty": "No issues have been reported yet.",
+    "loadError": "Could not load issues. Try refreshing the page.",
     "reportedBy": "Reported by {{name}}",
     "unknownReporter": "Unknown farmer"
   },

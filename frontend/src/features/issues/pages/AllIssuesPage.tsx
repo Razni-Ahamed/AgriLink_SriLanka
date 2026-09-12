@@ -57,7 +57,7 @@ function AllIssuesCard({ issue }: { issue: CropIssueResponse }) {
 /** Admin-only oversight view: every issue ever reported, any status, with who reported it. */
 export function AllIssuesPage() {
   const { t } = useTranslation('issues')
-  const { data: issues, isLoading } = useAllIssues()
+  const { data: issues, isLoading, isError, error } = useAllIssues()
 
   return (
     <div className="flex flex-col gap-6">
@@ -74,11 +74,21 @@ export function AllIssuesPage() {
         </div>
       )}
 
-      {!isLoading && issues && issues.length === 0 && (
+      {/* A failed request used to leave this exact area blank — no loading skeleton (it had
+          already stopped), no card grid, and no message either, so it looked identical to
+          "nothing to show" from a user's point of view. */}
+      {isError && (
+        <p className="text-sm text-state-danger">
+          {t('all.loadError')}
+          {import.meta.env.DEV && error instanceof Error && `: ${error.message}`}
+        </p>
+      )}
+
+      {!isLoading && !isError && issues && issues.length === 0 && (
         <p className="text-sm text-text-secondary">{t('all.empty')}</p>
       )}
 
-      {!isLoading && issues && issues.length > 0 && (
+      {!isLoading && !isError && issues && issues.length > 0 && (
         <StaggerList className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {issues.map((issue) => (
             <StaggerList.Item key={issue.issueId}>
