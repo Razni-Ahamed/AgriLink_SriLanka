@@ -1,10 +1,12 @@
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import { MapPin } from '@phosphor-icons/react'
 import { Card } from '@/components/ui/Card'
 import { CropIcon } from '@/components/ui/CropIcon'
 import { IconBadge } from '@/components/ui/IconBadge'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { StaggerList } from '@/components/ui/motion/StaggerList'
+import { useAuthStore } from '@/auth/authStore'
 import { formatDate } from '@/lib/utils'
 import { SeverityBadge } from '../components/SeverityBadge'
 import { usePendingIssues } from '../hooks/useIssues'
@@ -12,10 +14,23 @@ import { usePendingIssues } from '../hooks/useIssues'
 export function PendingIssuesPage() {
   const { t } = useTranslation('issues')
   const { data: issues, isLoading } = usePendingIssues()
+  const role = useAuthStore((state) => state.role)
+  const officerDistrict = useAuthStore((state) => state.user?.district)
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="font-display text-2xl text-text-primary">{t('pending.title')}</h1>
+      <div>
+        <h1 className="font-display text-2xl text-text-primary">{t('pending.title')}</h1>
+        {/* This queue is scoped to the officer's own district on the backend
+            (IssuesController.Pending) — said explicitly here so it doesn't read as "the whole
+            queue happens to be short today" when it's actually always this district only. */}
+        {role === 'Officer' && officerDistrict && (
+          <p className="mt-1 flex items-center gap-1 text-sm text-text-secondary">
+            <MapPin size={14} />
+            {t('pending.scopedToDistrict', { district: officerDistrict })}
+          </p>
+        )}
+      </div>
 
       {isLoading && (
         <div className="flex flex-col gap-3">
@@ -54,6 +69,12 @@ export function PendingIssuesPage() {
                             date: formatDate(issue.createdAt),
                           })}
                         </p>
+                        {issue.reporterName && (
+                          <p className="truncate text-xs text-text-secondary">
+                            {t('pending.reportedBy', { name: issue.reporterName })}
+                            {issue.district && ` · ${issue.district}`}
+                          </p>
+                        )}
                       </div>
                     </div>
                     <SeverityBadge severity={issue.severity} />

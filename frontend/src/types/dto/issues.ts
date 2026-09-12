@@ -24,4 +24,8 @@ export interface CropIssueResponse {
   createdAt: string
   /** Latest advisory for this issue; null until the AI pipeline has produced one. */
   advisoryId: number | null
+  /** When the latest advisory was reviewed — null while still in the Draft queue. */
+  reviewedAt?: string
+  /** The reviewing officer's own note on the latest advisory, if they left one. */
+  reviewNote?: string
 }

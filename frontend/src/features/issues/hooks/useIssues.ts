@@ -24,6 +24,14 @@ export function useAllIssues() {
   })
 }
 
+/** The calling officer's own review history — issues they've personally approved or rejected. */
+export function useReviewedIssues() {
+  return useQuery({
+    queryKey: ['issues', 'reviewed'],
+    queryFn: issuesApi.getReviewedIssues,
+  })
+}
+
 export function useCreateIssue() {
   const queryClient = useQueryClient()
   return useMutation({

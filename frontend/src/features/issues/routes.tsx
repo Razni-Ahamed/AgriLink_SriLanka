@@ -1,10 +1,11 @@
 import type { RouteObject } from 'react-router-dom'
-import { FirstAidKit, ListChecks, Table } from '@phosphor-icons/react'
+import { ClockCounterClockwise, FirstAidKit, ListChecks, Table } from '@phosphor-icons/react'
 import { RequireRole } from '@/app/RequireRole'
 import type { NavItem } from '@/types/common'
 import { AdvisoryDetailPage } from './pages/AdvisoryDetailPage'
 import { AllIssuesPage } from './pages/AllIssuesPage'
 import { MyIssuesPage } from './pages/MyIssuesPage'
+import { MyReviewedIssuesPage } from './pages/MyReviewedIssuesPage'
 import { NewIssuePage } from './pages/NewIssuePage'
 import { PendingIssuesPage } from './pages/PendingIssuesPage'
 
@@ -22,6 +23,12 @@ export const issuesRoutes: RouteObject[] = [
   {
     element: <RequireRole allow={['Officer', 'Admin']} />,
     children: [{ path: '/issues/pending', element: <PendingIssuesPage /> }],
+  },
+  {
+    // GET /api/issues/reviewed is [Authorize(Roles = "Officer")] — an officer's own review
+    // history; Admin's equivalent oversight is the unscoped /issues/all above.
+    element: <RequireRole allow={['Officer']} />,
+    children: [{ path: '/issues/reviewed', element: <MyReviewedIssuesPage /> }],
   },
   {
     // GET /api/issues is [Authorize(Roles = "Admin")] — every issue ever reported, any status,
@@ -49,6 +56,12 @@ export const issuesNavItems: NavItem[] = [
     path: '/issues/pending',
     icon: <ListChecks size={18} weight="duotone" />,
     allowedRoles: ['Officer', 'Admin'],
+  },
+  {
+    labelKey: 'nav.myReviews',
+    path: '/issues/reviewed',
+    icon: <ClockCounterClockwise size={18} weight="duotone" />,
+    allowedRoles: ['Officer'],
   },
   {
     labelKey: 'nav.allIssues',
