@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Card } from '@/components/ui/Card'
 import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher'
+import { ThemeToggle } from '@/components/ui/ThemeToggle'
 import { useAuthStore } from './authStore'
 import { login } from './api'
 
@@ -54,8 +55,9 @@ export function LoginPage() {
         transition={{ layout: { duration: 0.25, ease: 'easeOut' } }}
       >
         <Card className="w-full max-w-sm">
-          <div className="mb-4 flex justify-center">
+          <div className="mb-4 flex flex-wrap items-center justify-center gap-2">
             <LanguageSwitcher />
+            <ThemeToggle variant="compact" />
           </div>
 
           <h1 className="mb-1 font-display text-2xl text-brand-forest">{t('common:appName')}</h1>

@@ -13,6 +13,7 @@ import { Card } from '@/components/ui/Card'
 import { IconBadge } from '@/components/ui/IconBadge'
 import { Gear } from '@/components/ui/icons'
 import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher'
+import { ThemeToggle } from '@/components/ui/ThemeToggle'
 import { useAuthStore } from './authStore'
 import { adminLogin } from './api'
 
@@ -58,8 +59,9 @@ export function AdminLoginPage() {
         transition={{ layout: { duration: 0.25, ease: 'easeOut' } }}
       >
         <Card className="w-full max-w-sm">
-          <div className="mb-4 flex justify-center">
+          <div className="mb-4 flex flex-wrap items-center justify-center gap-2">
             <LanguageSwitcher />
+            <ThemeToggle variant="compact" />
           </div>
 
           <div className="mb-4 flex items-center gap-3">
