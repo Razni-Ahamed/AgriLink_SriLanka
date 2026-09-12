@@ -25,7 +25,8 @@ public class AuthController : ControllerBase
     [HttpPost("register")]
     public async Task<ActionResult<AuthResponse>> Register(RegisterRequest request)
     {
-        if (!SriLankaDistricts.IsValid(request.District))
+        var district = SriLankaDistricts.Canonicalize(request.District);
+        if (district is null)
         {
             return BadRequest(new { message = "District must be one of Sri Lanka's 25 administrative districts." });
         }
@@ -55,7 +56,7 @@ public class AuthController : ControllerBase
         {
             UserId = user.Id,
             NIC = request.NIC,
-            District = request.District,
+            District = district,
         });
         await _db.SaveChangesAsync();
 

@@ -41,7 +41,8 @@ public class AdminController : ControllerBase
             return BadRequest(new { message = "Role must be 'Officer' or 'Buyer'." });
         }
 
-        if (!SriLankaDistricts.IsValid(request.District))
+        var district = SriLankaDistricts.Canonicalize(request.District);
+        if (district is null)
         {
             return BadRequest(new { message = "District must be one of Sri Lanka's 25 administrative districts." });
         }
@@ -88,7 +89,7 @@ public class AdminController : ControllerBase
             {
                 UserId = user.Id,
                 DepartmentId = department!.DepartmentId,
-                District = request.District,
+                District = district,
             });
         }
         else
@@ -97,7 +98,7 @@ public class AdminController : ControllerBase
             {
                 UserId = user.Id,
                 BusinessName = request.BusinessName ?? string.Empty,
-                District = request.District,
+                District = district,
             });
         }
 
@@ -187,7 +188,8 @@ public class AdminController : ControllerBase
             return BadRequest(new { message = $"User already has the {newRole} role." });
         }
 
-        if (!SriLankaDistricts.IsValid(request.District))
+        var district = SriLankaDistricts.Canonicalize(request.District);
+        if (district is null)
         {
             return BadRequest(new { message = "District must be one of Sri Lanka's 25 administrative districts." });
         }
@@ -249,7 +251,7 @@ public class AdminController : ControllerBase
             {
                 UserId = userId,
                 DepartmentId = department!.DepartmentId,
-                District = request.District,
+                District = district,
             });
         }
         else
@@ -258,7 +260,7 @@ public class AdminController : ControllerBase
             {
                 UserId = userId,
                 BusinessName = request.BusinessName!,
-                District = request.District,
+                District = district,
             });
         }
 
@@ -271,7 +273,7 @@ public class AdminController : ControllerBase
             FullName = user.FullName,
             Email = user.Email ?? string.Empty,
             Role = newRole,
-            District = request.District,
+            District = district,
             Department = department?.Name,
             IsActive = user.IsActive,
             CreatedAt = user.CreatedAt,

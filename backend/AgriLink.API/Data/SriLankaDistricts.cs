@@ -17,6 +17,23 @@ public static class SriLankaDistricts
         "Puttalam", "Ratnapura", "Trincomalee", "Vavuniya",
     };
 
-    public static bool IsValid(string? district) =>
-        !string.IsNullOrWhiteSpace(district) && All.Contains(district.Trim(), StringComparer.OrdinalIgnoreCase);
+    public static bool IsValid(string? district) => Canonicalize(district) is not null;
+
+    /// <summary>
+    /// Returns the list's own spelling of <paramref name="district"/> (matched
+    /// case-insensitively, surrounding whitespace ignored), or null when it is not a district.
+    /// Callers store the returned value: validating alone accepted "kandy" and stored it
+    /// verbatim, so the same district could sit in the database under several spellings and
+    /// split every district filter and grouping that keys off it.
+    /// </summary>
+    public static string? Canonicalize(string? district)
+    {
+        if (string.IsNullOrWhiteSpace(district))
+        {
+            return null;
+        }
+
+        var trimmed = district.Trim();
+        return All.FirstOrDefault(d => string.Equals(d, trimmed, StringComparison.OrdinalIgnoreCase));
+    }
 }

@@ -67,11 +67,20 @@ public class FarmsController : ControllerBase
             return BadRequest(new { message = "Only users with a farmer profile can create farms." });
         }
 
+        // A farm's district drives the marketplace district filter (a listing inherits it from
+        // the farm), so it is constrained to the same fixed list registration uses instead of
+        // the free text this endpoint accepted before.
+        var district = SriLankaDistricts.Canonicalize(request.District);
+        if (district is null)
+        {
+            return BadRequest(new { message = "District must be one of Sri Lanka's 25 administrative districts." });
+        }
+
         var farm = new Farm
         {
             FarmerProfileId = farmerProfileId.Value,
             Name = request.Name,
-            District = request.District,
+            District = district,
             Area = request.Area,
         };
 
@@ -95,8 +104,14 @@ public class FarmsController : ControllerBase
             return Forbid();
         }
 
+        var district = SriLankaDistricts.Canonicalize(request.District);
+        if (district is null)
+        {
+            return BadRequest(new { message = "District must be one of Sri Lanka's 25 administrative districts." });
+        }
+
         farm.Name = request.Name;
-        farm.District = request.District;
+        farm.District = district;
         farm.Area = request.Area;
         await _db.SaveChangesAsync();
 
