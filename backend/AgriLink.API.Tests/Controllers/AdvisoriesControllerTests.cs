@@ -6,6 +6,7 @@ using AgriLink.API.Tests.TestSupport;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Moq;
 
 namespace AgriLink.API.Tests.Controllers;
 
@@ -65,7 +66,8 @@ public class AdvisoriesControllerTests
     private static AdvisoriesController CreateController(AgriLinkDbContext db, int officerUserId) => new(
         db,
         new CurrentUserService(db),
-        new AuditLogService(db))
+        new AuditLogService(db),
+        Mock.Of<INotificationService>())
     {
         ControllerContext = new ControllerContext
         {
