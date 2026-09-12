@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 import { Card } from '@/components/ui/Card'
 import { IconBadge } from '@/components/ui/IconBadge'
 import { formatQuantity } from '@/lib/utils'
-import { useCountUp } from '../hooks/useCountUp'
+import { useCountUp } from '@/lib/useCountUp'
 
 interface MetricsCardProps {
   label: string

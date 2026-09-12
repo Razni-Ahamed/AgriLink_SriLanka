@@ -4,7 +4,7 @@ import { Basket, Farm, UserCircle, WarningCircle } from '@/components/ui/icons'
 import { CropGenericIcon, HarvestScaleIcon } from '@/components/ui/icons/custom'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { MetricsBarChart } from '../components/MetricsBarChart'
-import { MetricsCard } from '../components/MetricsCard'
+import { MetricsCard } from '@/components/ui/MetricsCard'
 import { useAdminMetrics } from '../hooks/useAdminMetrics'
 
 export function AdminDashboardPage() {
