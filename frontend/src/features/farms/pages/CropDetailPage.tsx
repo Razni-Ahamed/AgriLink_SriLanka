@@ -2,6 +2,8 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, Basket, Warning } from '@phosphor-icons/react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/Button'
+import { CropIcon } from '@/components/ui/CropIcon'
+import { IconBadge } from '@/components/ui/IconBadge'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { Select } from '@/components/ui/Select'
 import { formatDate, formatQuantity } from '@/lib/utils'
@@ -43,11 +45,14 @@ export function CropDetailPage() {
         {t('farms:crop.back')}
       </Link>
 
-      <div>
-        <h1 className="font-display text-2xl text-text-primary">{crop.cropType}</h1>
-        <p className="text-sm text-text-secondary">
-          {crop.variety || t('farms:crop.noVariety')}
-        </p>
+      <div className="flex items-center gap-3">
+        <IconBadge tone="forest">
+          <CropIcon cropType={crop.cropType} size={20} />
+        </IconBadge>
+        <div>
+          <h1 className="font-display text-2xl text-text-primary">{crop.cropType}</h1>
+          <p className="text-sm text-text-secondary">{crop.variety || t('farms:crop.noVariety')}</p>
+        </div>
       </div>
 
       <dl className="grid grid-cols-2 gap-4 text-sm">

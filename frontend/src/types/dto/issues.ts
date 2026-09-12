@@ -11,6 +11,9 @@ export interface CreateCropIssueRequest {
 export interface CropIssueResponse {
   issueId: number
   cropId: number
+  /** The crop this issue is about, so neither the farmer nor the reviewing officer sees a bare id. */
+  cropType: string
+  variety: string
   title: string
   description: string
   severity: IssueSeverity
