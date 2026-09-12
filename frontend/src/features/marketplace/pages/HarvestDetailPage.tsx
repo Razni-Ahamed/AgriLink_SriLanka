@@ -5,12 +5,14 @@ import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/Button'
 import { Modal } from '@/components/ui/Modal'
 import { Badge } from '@/components/ui/Badge'
+import { CropIcon } from '@/components/ui/CropIcon'
+import { IconBadge } from '@/components/ui/IconBadge'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { useAuthStore } from '@/auth/authStore'
 import { useUiStore } from '@/lib/useUiStore'
 import { formatDate, formatQuantity } from '@/lib/utils'
 import { useStatusLabel } from '@/lib/useStatusLabel'
-import { AdminEditHarvestForm } from '../components/AdminEditHarvestForm'
+import { EditHarvestForm } from '../components/EditHarvestForm'
 import { PurchaseRequestForm } from '../components/PurchaseRequestForm'
 import { useHarvest, useUpdateHarvest } from '../hooks/useHarvests'
 import { useCreatePurchaseRequest } from '../hooks/usePurchaseRequests'
@@ -27,6 +29,7 @@ export function HarvestDetailPage() {
   const { harvestId } = useParams<{ harvestId: string }>()
   const id = Number(harvestId)
   const role = useAuthStore((state) => state.role)
+  const farmerProfileId = useAuthStore((state) => state.user?.farmerProfileId)
   const addToast = useUiStore((state) => state.addToast)
 
   const { data: harvest, isLoading } = useHarvest(id)
@@ -56,11 +59,16 @@ export function HarvestDetailPage() {
       </Link>
 
       <div className="flex items-start justify-between">
-        <div>
-          <h1 className="font-display text-2xl text-text-primary">{harvest.cropType}</h1>
-          <p className="text-sm text-text-secondary">
-            {harvest.variety || t('marketplace:detail.noVariety')}
-          </p>
+        <div className="flex items-center gap-3">
+          <IconBadge tone="forest">
+            <CropIcon cropType={harvest.cropType} size={20} />
+          </IconBadge>
+          <div>
+            <h1 className="font-display text-2xl text-text-primary">{harvest.cropType}</h1>
+            <p className="text-sm text-text-secondary">
+              {harvest.variety || t('marketplace:detail.noVariety')}
+            </p>
+          </div>
         </div>
         <Badge variant={statusVariant[harvest.status]}>
           {statusLabel('harvest', harvest.status)}
@@ -106,9 +114,11 @@ export function HarvestDetailPage() {
         </Button>
       )}
 
-      {role === 'Admin' && (
+      {/* PUT /api/harvests/{id} takes an admin moderating any listing *or* the farmer who
+          owns this one — the same self-service edit the backend already allows. */}
+      {(role === 'Admin' || (role === 'Farmer' && farmerProfileId === harvest.farmerProfileId)) && (
         <Button className="w-fit" variant="secondary" onClick={() => setEditOpen(true)}>
-          {t('marketplace:adminEdit.editListing')}
+          {t('marketplace:editForm.editListing')}
         </Button>
       )}
 
@@ -146,18 +156,19 @@ export function HarvestDetailPage() {
       <Modal
         open={isEditOpen}
         onClose={() => setEditOpen(false)}
-        title={t('marketplace:adminEdit.editListing')}
+        title={t('marketplace:editForm.editListing')}
       >
-        <AdminEditHarvestForm
+        <EditHarvestForm
           harvest={harvest}
           isSubmitting={updateHarvest.isPending}
           onSubmit={(values) =>
             updateHarvest.mutate(values, {
               onSuccess: () => {
-                addToast({ type: 'success', message: t('marketplace:adminEdit.saved') })
+                addToast({ type: 'success', message: t('marketplace:editForm.saved') })
                 setEditOpen(false)
               },
-              onError: () => addToast({ type: 'error', message: t('marketplace:adminEdit.saveError') }),
+              onError: () =>
+                addToast({ type: 'error', message: t('marketplace:editForm.saveError') }),
             })
           }
         />

@@ -6,12 +6,14 @@ import { getNavItemsForRole } from './navConfig'
 import { cn } from '@/lib/utils'
 import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher'
 import { ToastViewport } from '@/components/ui/Toast'
+import { NotificationBell } from '@/features/orders/components/NotificationBell'
 
 export function AppLayout() {
   const { t } = useTranslation()
   const location = useLocation()
   const navigate = useNavigate()
   const role = useAuthStore((state) => state.role)
+  const token = useAuthStore((state) => state.token)
   const user = useAuthStore((state) => state.user)
   const logout = useAuthStore((state) => state.logout)
   const navItems = getNavItemsForRole(role)
@@ -29,7 +31,10 @@ export function AppLayout() {
 
         <div className="flex items-center gap-4">
           <LanguageSwitcher variant="compact" />
-          {/* NotificationBell slot — Jinathi wires this in */}
+          {/* Gated on the token, not on `user`: this layout also wraps the public
+              marketplace browse route, and the bell polls GET /api/notifications/mine,
+              which 401s for an anonymous visitor. */}
+          {token && <NotificationBell />}
           {user && (
             <div className="flex items-center gap-3 text-sm">
               <span className="text-text-secondary">{user.fullName}</span>

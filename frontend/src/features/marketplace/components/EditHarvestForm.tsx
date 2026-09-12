@@ -7,18 +7,28 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
 import { useStatusLabel } from '@/lib/useStatusLabel'
-import type { HarvestListingResponse, HarvestStatus, UpdateHarvestListingRequest } from '@/types/dto/harvests'
+import type {
+  HarvestListingResponse,
+  HarvestStatus,
+  UpdateHarvestListingRequest,
+} from '@/types/dto/harvests'
 
 const statusOptions: HarvestStatus[] = ['Active', 'Sold', 'Cancelled']
 
-interface AdminEditHarvestFormProps {
+interface EditHarvestFormProps {
   harvest: HarvestListingResponse
   isSubmitting?: boolean
   onSubmit: (values: UpdateHarvestListingRequest) => void
 }
 
-/** Admin-only moderation form — PUT /api/harvests/{id} lets Admin edit any farmer's listing. */
-export function AdminEditHarvestForm({ harvest, isSubmitting, onSubmit }: AdminEditHarvestFormProps) {
+/**
+ * Shared listing editor for PUT /api/harvests/{id}, which authorizes "Farmer,Admin": a farmer
+ * editing their own listing (routine self-service) and an admin moderating anyone's listing hit
+ * the same endpoint with the same editable fields, so they get the same form. The backend does
+ * the ownership check — a farmer who is not the owner is rejected there — and audits only the
+ * admin-override path.
+ */
+export function EditHarvestForm({ harvest, isSubmitting, onSubmit }: EditHarvestFormProps) {
   const { t } = useTranslation(['marketplace', 'common'])
   const statusLabel = useStatusLabel()
 
@@ -49,7 +59,11 @@ export function AdminEditHarvestForm({ harvest, isSubmitting, onSubmit }: AdminE
 
   return (
     <form className="flex flex-col gap-4" onSubmit={handleSubmit(onSubmit)}>
-      <Select label={t('common:fields.status')} error={errors.status?.message} {...register('status')}>
+      <Select
+        label={t('common:fields.status')}
+        error={errors.status?.message}
+        {...register('status')}
+      >
         {statusOptions.map((status) => (
           <option key={status} value={status}>
             {statusLabel('harvest', status)}
@@ -75,7 +89,7 @@ export function AdminEditHarvestForm({ harvest, isSubmitting, onSubmit }: AdminE
         {...register('harvestDate')}
       />
       <Button type="submit" disabled={isSubmitting}>
-        {isSubmitting ? t('marketplace:adminEdit.saving') : t('marketplace:adminEdit.save')}
+        {isSubmitting ? t('marketplace:editForm.saving') : t('marketplace:editForm.save')}
       </Button>
     </form>
   )
