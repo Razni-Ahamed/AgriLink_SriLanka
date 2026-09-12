@@ -1,4 +1,8 @@
+import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import { Card } from '@/components/ui/Card'
+import { IconBadge } from '@/components/ui/IconBadge'
+import { ClipboardText } from '@phosphor-icons/react'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { StaggerList } from '@/components/ui/motion/StaggerList'
 import { useUiStore } from '@/lib/useUiStore'
@@ -27,7 +31,19 @@ export function MyPurchaseRequestsPage() {
       )}
 
       {!isLoading && requests && requests.length === 0 && (
-        <p className="text-sm text-text-secondary">{t('requests.empty')}</p>
+        <Card className="flex flex-col items-center gap-3 py-10 text-center">
+          <IconBadge tone="forest">
+            <ClipboardText size={20} weight="duotone" />
+          </IconBadge>
+          <p className="text-sm text-text-primary">{t('requests.empty')}</p>
+          <p className="max-w-sm text-sm text-text-secondary">{t('requests.emptyHint')}</p>
+          <Link
+            to="/marketplace/mine"
+            className="text-sm font-medium text-brand-forest hover:underline"
+          >
+            {t('requests.goToListings')}
+          </Link>
+        </Card>
       )}
 
       {!isLoading && requests && requests.length > 0 && (

@@ -1,7 +1,8 @@
 import { Link } from 'react-router-dom'
-import { Basket, Calendar, MapPin } from '@phosphor-icons/react'
+import { Calendar, MapPin } from '@phosphor-icons/react'
 import { useTranslation } from 'react-i18next'
 import { Card } from '@/components/ui/Card'
+import { CropIcon } from '@/components/ui/CropIcon'
 import { IconBadge } from '@/components/ui/IconBadge'
 import { Badge } from '@/components/ui/Badge'
 import { formatDate, formatQuantity } from '@/lib/utils'
@@ -23,7 +24,7 @@ export function HarvestCard({ harvest }: { harvest: HarvestListingResponse }) {
       <Card interactive className="flex flex-col gap-3">
         <div className="flex items-start justify-between">
           <IconBadge tone="forest">
-            <Basket size={20} weight="duotone" />
+            <CropIcon cropType={harvest.cropType} size={20} />
           </IconBadge>
           <Badge variant={statusVariant[harvest.status]}>
             {statusLabel('harvest', harvest.status)}

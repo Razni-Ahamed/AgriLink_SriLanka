@@ -1,4 +1,8 @@
+import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import { Storefront } from '@phosphor-icons/react'
+import { Card } from '@/components/ui/Card'
+import { IconBadge } from '@/components/ui/IconBadge'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { StaggerList } from '@/components/ui/motion/StaggerList'
 import { PurchaseRequestCard } from '../components/PurchaseRequestCard'
@@ -22,7 +26,19 @@ export function MySentPurchaseRequestsPage() {
       )}
 
       {!isLoading && requests && requests.length === 0 && (
-        <p className="text-sm text-text-secondary">{t('sentRequests.empty')}</p>
+        <Card className="flex flex-col items-center gap-3 py-10 text-center">
+          <IconBadge tone="forest">
+            <Storefront size={20} weight="duotone" />
+          </IconBadge>
+          <p className="text-sm text-text-primary">{t('sentRequests.empty')}</p>
+          <p className="max-w-sm text-sm text-text-secondary">{t('sentRequests.emptyHint')}</p>
+          <Link
+            to="/marketplace/browse"
+            className="text-sm font-medium text-brand-forest hover:underline"
+          >
+            {t('sentRequests.browseMarketplace')}
+          </Link>
+        </Card>
       )}
 
       {!isLoading && requests && requests.length > 0 && (
