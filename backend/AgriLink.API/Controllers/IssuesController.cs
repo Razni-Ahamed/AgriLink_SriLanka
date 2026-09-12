@@ -87,12 +87,12 @@ public class IssuesController : ControllerBase
 
         var issues = await _db.CropIssues
             .Include(i => i.Advisories)
-            .Include(i => i.Crop)
+            .Include(i => i.Crop).ThenInclude(c => c.Field).ThenInclude(f => f.Farm)
             .Where(i => i.FarmerProfileId == farmerProfileId)
             .OrderByDescending(i => i.CreatedAt)
             .ToListAsync();
 
-        return Ok(issues.Select(ToResponse));
+        return Ok(issues.Select(i => ToResponse(i, includeReporter: false)));
     }
 
     [HttpGet("pending")]
@@ -101,20 +101,39 @@ public class IssuesController : ControllerBase
     {
         var issues = await _db.CropIssues
             .Include(i => i.Advisories)
-            .Include(i => i.Crop)
+            .Include(i => i.Crop).ThenInclude(c => c.Field).ThenInclude(f => f.Farm)
+            .Include(i => i.FarmerProfile).ThenInclude(fp => fp.User)
             .Where(i => i.Advisories.Any(a => a.Status == AdvisoryStatus.Draft))
             .OrderBy(i => i.CreatedAt)
             .ToListAsync();
 
-        return Ok(issues.Select(ToResponse));
+        return Ok(issues.Select(i => ToResponse(i, includeReporter: true)));
     }
 
-    private static CropIssueResponse ToResponse(CropIssue issue) => new()
+    /// <summary>Every issue ever reported, any status — Admin's full oversight view, not just
+    /// the Officer's Draft-advisory work queue.</summary>
+    [HttpGet]
+    [Authorize(Roles = "Admin")]
+    public async Task<ActionResult<List<CropIssueResponse>>> GetAll()
+    {
+        var issues = await _db.CropIssues
+            .Include(i => i.Advisories)
+            .Include(i => i.Crop).ThenInclude(c => c.Field).ThenInclude(f => f.Farm)
+            .Include(i => i.FarmerProfile).ThenInclude(fp => fp.User)
+            .OrderByDescending(i => i.CreatedAt)
+            .ToListAsync();
+
+        return Ok(issues.Select(i => ToResponse(i, includeReporter: true)));
+    }
+
+    private static CropIssueResponse ToResponse(CropIssue issue, bool includeReporter = false) => new()
     {
         IssueId = issue.IssueId,
         CropId = issue.CropId,
         CropType = issue.Crop?.CropType ?? string.Empty,
         Variety = issue.Crop?.Variety ?? string.Empty,
+        District = issue.Crop?.Field?.Farm?.District ?? string.Empty,
+        ReporterName = includeReporter ? issue.FarmerProfile?.User?.FullName ?? string.Empty : string.Empty,
         Title = issue.Title,
         Description = issue.Description,
         Severity = issue.Severity.ToString(),

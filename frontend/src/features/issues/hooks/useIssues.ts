@@ -16,6 +16,14 @@ export function usePendingIssues() {
   })
 }
 
+/** Admin's full oversight view — every issue ever reported, any status. */
+export function useAllIssues() {
+  return useQuery({
+    queryKey: ['issues', 'all'],
+    queryFn: issuesApi.getAllIssues,
+  })
+}
+
 export function useCreateIssue() {
   const queryClient = useQueryClient()
   return useMutation({

@@ -49,7 +49,7 @@ export function AdvisoryDetailPage() {
   return (
     <div className="flex flex-col gap-6">
       <Link
-        to={role === 'Farmer' ? '/issues/mine' : '/issues/pending'}
+        to={role === 'Farmer' ? '/issues/mine' : role === 'Admin' ? '/issues/all' : '/issues/pending'}
         className="flex w-fit items-center gap-1 text-sm text-text-secondary hover:text-brand-forest"
       >
         <ArrowLeft size={14} />

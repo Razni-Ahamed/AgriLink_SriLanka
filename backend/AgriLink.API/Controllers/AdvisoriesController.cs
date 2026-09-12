@@ -28,7 +28,9 @@ public class AdvisoriesController : ControllerBase
     public async Task<ActionResult<AdvisoryResponse>> GetById(int id)
     {
         var advisory = await _db.AIAdvisories
-            .Include(a => a.Issue)
+            .Include(a => a.Issue).ThenInclude(i => i.Crop).ThenInclude(c => c.Field).ThenInclude(f => f.Farm)
+            .Include(a => a.Issue).ThenInclude(i => i.FarmerProfile).ThenInclude(fp => fp.User)
+            .Include(a => a.ReviewedByUser)
             .FirstOrDefaultAsync(a => a.AdvisoryId == id);
 
         if (advisory is null)
@@ -66,7 +68,9 @@ public class AdvisoriesController : ControllerBase
     private async Task<ActionResult<AdvisoryResponse>> Review(int id, AdvisoryStatus newStatus, IssueStatus issueStatus)
     {
         var advisory = await _db.AIAdvisories
-            .Include(a => a.Issue)
+            .Include(a => a.Issue).ThenInclude(i => i.Crop).ThenInclude(c => c.Field).ThenInclude(f => f.Farm)
+            .Include(a => a.Issue).ThenInclude(i => i.FarmerProfile).ThenInclude(fp => fp.User)
+            .Include(a => a.ReviewedByUser)
             .FirstOrDefaultAsync(a => a.AdvisoryId == id);
 
         if (advisory is null)
@@ -93,10 +97,15 @@ public class AdvisoriesController : ControllerBase
             newStatus.ToString());
 
         await _db.SaveChangesAsync();
-        return Ok(ToResponse(advisory));
+
+        // ReviewedByUser was loaded before this advisory had a reviewer, so the id set just
+        // above needs a fresh lookup rather than trusting the (still-null) navigation property.
+        var reviewer = await _db.Users.FindAsync(advisory.ReviewedByFK);
+
+        return Ok(ToResponse(advisory, reviewer));
     }
 
-    private static AdvisoryResponse ToResponse(AIAdvisory advisory) => new()
+    private static AdvisoryResponse ToResponse(AIAdvisory advisory, ApplicationUser? reviewerOverride = null) => new()
     {
         AdvisoryId = advisory.AdvisoryId,
         IssueId = advisory.IssueId,
@@ -107,6 +116,15 @@ public class AdvisoriesController : ControllerBase
         ConfidenceScore = advisory.ConfidenceScore,
         RequiresApproval = advisory.RequiresApproval,
         ReviewedByFK = advisory.ReviewedByFK,
+        ReviewedByName = (reviewerOverride ?? advisory.ReviewedByUser)?.FullName,
         ReviewedAt = advisory.ReviewedAt,
+        IssueDescription = advisory.Issue.Description,
+        IssueSeverity = advisory.Issue.Severity.ToString(),
+        IssueStatus = advisory.Issue.Status.ToString(),
+        IssueCreatedAt = advisory.Issue.CreatedAt,
+        CropType = advisory.Issue.Crop?.CropType ?? string.Empty,
+        Variety = advisory.Issue.Crop?.Variety ?? string.Empty,
+        District = advisory.Issue.Crop?.Field?.Farm?.District ?? string.Empty,
+        ReporterName = advisory.Issue.FarmerProfile?.User?.FullName ?? string.Empty,
     };
 }

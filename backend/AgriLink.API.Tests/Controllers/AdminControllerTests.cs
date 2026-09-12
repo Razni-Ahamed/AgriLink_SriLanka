@@ -339,4 +339,60 @@ public class AdminControllerTests
         Assert.Equal("UserActivated", logs[0].Action);
         Assert.Equal("AgriLink Administrator", logs[0].UserName);
     }
+
+    [Fact]
+    public async Task Metrics_IssuesPending_MatchesTheSameDefinitionAsThePendingIssuesQueue()
+    {
+        var (controller, db, _, farmerUser) = await SeedIssueFixtureAsync();
+
+        var result = await controller.Metrics();
+
+        var metrics = Assert.IsType<AdminMetricsResponse>(Assert.IsType<OkObjectResult>(result.Result).Value);
+        Assert.Equal(2, metrics.IssuesReported);
+        Assert.Equal(1, metrics.IssuesPending);
+        Assert.Equal(1, metrics.IssuesResolved);
+    }
+
+    private static async Task<(AdminController Controller, AgriLinkDbContext Db, UserManager<ApplicationUser> Users, ApplicationUser Farmer)> SeedIssueFixtureAsync()
+    {
+        var (controller, db, users, _) = await CreateAsync();
+        var farmer = await CreateFarmerAsync(users, db);
+        var farmerProfile = await db.FarmerProfiles.SingleAsync(f => f.UserId == farmer.Id);
+
+        db.CropIssues.Add(new CropIssue
+        {
+            IssueId = 1,
+            CropId = 1,
+            FarmerProfileId = farmerProfile.FarmerProfileId,
+            Crop = new Crop
+            {
+                CropId = 1,
+                CropType = "Tomato",
+                Field = new Field { FieldId = 1, Name = "Field 1", Farm = new Farm { FarmId = 1, Name = "Farm 1", District = "Galle", FarmerProfileId = farmerProfile.FarmerProfileId } },
+            },
+            Title = "Still pending",
+            Description = "Awaiting officer review.",
+            Status = IssueStatus.AwaitingReview,
+            Advisories = { new AIAdvisory { AdvisoryId = 1, IssueId = 1, Status = AdvisoryStatus.Draft } },
+        });
+        db.CropIssues.Add(new CropIssue
+        {
+            IssueId = 2,
+            CropId = 2,
+            FarmerProfileId = farmerProfile.FarmerProfileId,
+            Crop = new Crop
+            {
+                CropId = 2,
+                CropType = "Rice",
+                Field = new Field { FieldId = 2, Name = "Field 2", Farm = new Farm { FarmId = 2, Name = "Farm 2", District = "Galle", FarmerProfileId = farmerProfile.FarmerProfileId } },
+            },
+            Title = "Already resolved",
+            Description = "Officer already approved this one.",
+            Status = IssueStatus.Resolved,
+            Advisories = { new AIAdvisory { AdvisoryId = 2, IssueId = 2, Status = AdvisoryStatus.Approved } },
+        });
+        await db.SaveChangesAsync();
+
+        return (controller, db, users, farmer);
+    }
 }

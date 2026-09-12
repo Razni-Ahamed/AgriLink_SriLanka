@@ -23,6 +23,7 @@ export interface AdminMetricsResponse {
   totalFarms: number
   totalCrops: number
   issuesReported: number
+  issuesPending: number
   issuesResolved: number
   harvestVolumeSoldThisMonth: number
 }

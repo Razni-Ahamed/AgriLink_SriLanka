@@ -30,6 +30,13 @@
     "empty": "No issues are awaiting review right now.",
     "cropAndDate": "{{crop}} · {{date}}"
   },
+  "all": {
+    "title": "All Issues",
+    "subtitle": "Every issue ever reported, whatever its status — pending, resolved, or rejected.",
+    "empty": "No issues have been reported yet.",
+    "reportedBy": "Reported by {{name}}",
+    "unknownReporter": "Unknown farmer"
+  },
   "advisory": {
     "back": "Back",
     "backToMyIssues": "Back to my issues",
@@ -39,6 +46,9 @@
     "recommendation": "Recommendation",
     "riskPrefix": "Risk: {{level}}",
     "confidence": "{{value}}% confidence",
+    "reportedBy": "Reported by {{name}} · {{district}} · {{date}}",
+    "unknownReporter": "Unknown farmer",
+    "reviewedBy": "Reviewed by {{name}} on {{date}}",
     "approve": "Approve",
     "reject": "Reject",
     "approved": "Advisory approved.",

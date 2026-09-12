@@ -12,6 +12,7 @@ export type NavLabelKey =
   | 'nav.farms'
   | 'nav.myIssues'
   | 'nav.pendingIssues'
+  | 'nav.allIssues'
   | 'nav.marketplace'
   | 'nav.myListings'
   | 'nav.myRequests'

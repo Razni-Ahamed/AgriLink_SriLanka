@@ -12,6 +12,11 @@ public class CropIssueResponse
     /// </summary>
     public string CropType { get; set; } = string.Empty;
     public string Variety { get; set; } = string.Empty;
+    public string District { get; set; } = string.Empty;
+
+    /// <summary>Reporting farmer's name — populated for the Officer/Admin-facing lists (Pending, All);
+    /// left blank on the farmer's own "Mine" list, since that would just echo their own name back.</summary>
+    public string ReporterName { get; set; } = string.Empty;
     public string Title { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
     public string Severity { get; set; } = string.Empty;

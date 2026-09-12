@@ -29,6 +29,18 @@ public class IssuesControllerCropDetailsTests
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options);
 
+        // A real ApplicationUser row backing the FarmerProfile is required: EF Core compiles
+        // Include() on a required navigation (FarmerProfile.User) to an INNER JOIN, so without
+        // this row Pending()/GetAll() would silently drop the issue instead of just omitting a
+        // reporter name — a gap real data, with its FK constraints, can never actually have.
+        db.Users.Add(new ApplicationUser
+        {
+            Id = FarmerUserId,
+            UserName = "farmer@test.com",
+            Email = "farmer@test.com",
+            FullName = "Test Farmer",
+        });
+
         db.FarmerProfiles.Add(new FarmerProfile
         {
             FarmerProfileId = FarmerProfileId,
@@ -115,5 +127,6 @@ public class IssuesControllerCropDetailsTests
         var issue = Assert.Single(issues);
         Assert.Equal("Paddy", issue.CropType);
         Assert.Equal("Samba", issue.Variety);
+        Assert.Equal("Test Farmer", issue.ReporterName);
     }
 }
