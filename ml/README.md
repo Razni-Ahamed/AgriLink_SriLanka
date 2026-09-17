@@ -24,19 +24,26 @@ goes through the normal text-based agents.
 
 ## Datasets
 
-Download each one into `ml/data/raw/<folder>/`. Check each licence before use and cite the
-dataset in any report.
+Download each one outside the repo (for example `Documents/agrilink-datasets/`) and pass its path
+to the scripts with the adapter name below. Check each licence before use and cite the dataset in any
+report.
 
-| Folder | Dataset | Crops | Source | Licence |
+| Adapter (`--source` name) | Dataset | Crops | Source | Licence |
 |---|---|---|---|---|
-| `plantvillage` | PlantVillage | Tomato, Potato | https://github.com/spMohanty/PlantVillage-Dataset (images under `raw/color/`) | CC BY-SA 3.0 |
-| `plantdoc` | PlantDoc | Tomato, Potato | https://github.com/pratikkayal/PlantDoc-Dataset | CC BY 4.0 |
-| `cassava` | Cassava Leaf Disease Classification | Cassava | https://www.kaggle.com/competitions/cassava-leaf-disease-classification | Competition rules |
-| `paddy-doctor` | Paddy Doctor | Paddy | https://www.kaggle.com/competitions/paddy-disease-classification | Competition rules |
-| `rice-mendeley` | Rice Leaf Disease Image Samples | Paddy | https://data.mendeley.com/datasets/fwcj7stb8r/1 | CC BY 4.0 |
+| `kaggle-cassava-2020` | Cassava Leaf Disease Classification | Cassava | https://www.kaggle.com/competitions/cassava-leaf-disease-classification | Competition rules |
+| `plantvillage-2016` | PlantVillage (lab photos) | Tomato, Potato | https://github.com/spMohanty/PlantVillage-Dataset (pass the repo folder; images under `raw/color/`) | CC BY-SA 3.0 |
+| `plantdoc-2020` | PlantDoc (field photos) | Tomato, Potato | https://github.com/pratikkayal/PlantDoc-Dataset | CC BY 4.0 |
+| `rice-mendeley-2020` | Rice Leaf Disease Image Samples | Paddy | https://data.mendeley.com/datasets/fwcj7stb8r/1 (extract the `.7z`) | CC BY 4.0 |
+| — | Paddy Doctor | Paddy | https://www.kaggle.com/competitions/paddy-disease-classification | Competition rules |
 
 For Cassava, only `train_images/` and `train.csv` are needed — `train_tfrecords/` holds the same
 images in another format.
+
+PlantVillage and PlantDoc hold both tomato and potato; each crop's preparation skips the other crop's
+folders and lists them in the summary. On Windows, PlantDoc cannot be checked out with git: some file
+names contain characters such as `?`. Download its files individually and replace those characters.
+
+The rice set has no healthy class, so a Paddy model also needs Paddy Doctor (not yet supported).
 
 A dataset can stay zipped — the preparation script reads a `.zip` or an extracted folder.
 
@@ -124,6 +131,28 @@ overall while confident "healthy" predictions were right only ~81% of the time (
 reported as healthy), and a threshold resting on 30 validation photos held up at only 82% on the
 test photos.
 
+### Lab photos flatter a model
+
+Tomato and Potato mix PlantVillage (leaves on a plain grey background, indoors) with PlantDoc (field
+photos from the web). The same model scored, on the test split:
+
+| Crop | PlantVillage | PlantDoc |
+|---|---:|---:|
+| Tomato | 99.7% | 50.0% |
+| Potato | 100% | 69.6% |
+
+Thresholds chosen across both would have released advice on field photos that was right only 58%
+(Tomato) and 73% (Potato) of the time, far below the 95% promise. So for a crop that mixes datasets,
+choose thresholds from the field-photo dataset only:
+
+```bash
+.venv/Scripts/python -m agrilink_ml.train --crop tomato --threshold-source plantdoc-2020 ...
+```
+
+With the handful of field photos available (77 for Tomato, 21 for Potato) no class clears the bar,
+so both models release nothing without an officer — the honest outcome until they are tested on real
+Sri Lankan field photos. `model.json` records which datasets the thresholds came from.
+
 ## Using a model in the backend
 
 The backend loads every `<ModelsDirectory>/<crop>/model.onnx` + `model.json` at startup. Its
@@ -162,3 +191,9 @@ Adding a dataset means writing its adapter from the dataset's real folder struct
 label mapping to the crop's label file. Before changing `--near-duplicate-distance` for a new
 dataset, check flagged pairs by eye: on the Cassava photos, pairs 3–6 bits apart were different
 plants.
+
+Duplicates are grouped by identical file contents, by leaf ids a dataset puts in its file names
+(PlantVillage), and by image hash — except for PlantVillage, whose identical grey backgrounds made
+different leaves from different disease folders hash only 2 bits apart. Any photo whose duplicate
+carries a different label (PlantDoc files the same image under two diseases several times) is left
+out of the manifest and listed in the summary.

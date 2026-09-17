@@ -1,0 +1,47 @@
+{
+  "crop": "Tomato",
+  "version": 1,
+  "classes": [
+    { "id": 0, "key": "tomato_bacterial_spot", "name": "Tomato bacterial spot" },
+    { "id": 1, "key": "tomato_early_blight", "name": "Tomato early blight" },
+    { "id": 2, "key": "tomato_late_blight", "name": "Tomato late blight" },
+    { "id": 3, "key": "tomato_leaf_mold", "name": "Tomato leaf mold" },
+    { "id": 4, "key": "tomato_septoria_leaf_spot", "name": "Tomato Septoria leaf spot" },
+    { "id": 5, "key": "tomato_spider_mites", "name": "Tomato two-spotted spider mites" },
+    { "id": 6, "key": "tomato_target_spot", "name": "Tomato target spot" },
+    { "id": 7, "key": "tomato_yellow_leaf_curl_virus", "name": "Tomato yellow leaf curl virus" },
+    { "id": 8, "key": "tomato_mosaic_virus", "name": "Tomato mosaic virus" },
+    { "id": 9, "key": "healthy", "name": "Healthy" }
+  ],
+  "sources": {
+    "plantvillage-2016": {
+      "description": "PlantVillage raw/color folder names (lab photos on plain backgrounds).",
+      "labelMap": {
+        "Tomato___Bacterial_spot": "tomato_bacterial_spot",
+        "Tomato___Early_blight": "tomato_early_blight",
+        "Tomato___Late_blight": "tomato_late_blight",
+        "Tomato___Leaf_Mold": "tomato_leaf_mold",
+        "Tomato___Septoria_leaf_spot": "tomato_septoria_leaf_spot",
+        "Tomato___Spider_mites Two-spotted_spider_mite": "tomato_spider_mites",
+        "Tomato___Target_Spot": "tomato_target_spot",
+        "Tomato___Tomato_Yellow_Leaf_Curl_Virus": "tomato_yellow_leaf_curl_virus",
+        "Tomato___Tomato_mosaic_virus": "tomato_mosaic_virus",
+        "Tomato___healthy": "healthy"
+      }
+    },
+    "plantdoc-2020": {
+      "description": "PlantDoc train/ and test/ folder names (field photos from the web). PlantDoc has no target spot class.",
+      "labelMap": {
+        "Tomato leaf bacterial spot": "tomato_bacterial_spot",
+        "Tomato Early blight leaf": "tomato_early_blight",
+        "Tomato leaf late blight": "tomato_late_blight",
+        "Tomato mold leaf": "tomato_leaf_mold",
+        "Tomato Septoria leaf spot": "tomato_septoria_leaf_spot",
+        "Tomato two spotted spider mites leaf": "tomato_spider_mites",
+        "Tomato leaf yellow virus": "tomato_yellow_leaf_curl_virus",
+        "Tomato leaf mosaic virus": "tomato_mosaic_virus",
+        "Tomato leaf": "healthy"
+      }
+    }
+  }
+}
