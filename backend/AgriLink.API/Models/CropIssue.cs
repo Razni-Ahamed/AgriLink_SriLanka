@@ -14,4 +14,5 @@ public class CropIssue
     public Crop Crop { get; set; } = null!;
     public FarmerProfile FarmerProfile { get; set; } = null!;
     public ICollection<AIAdvisory> Advisories { get; set; } = new List<AIAdvisory>();
+    public ICollection<IssueImage> Images { get; set; } = new List<IssueImage>();
 }

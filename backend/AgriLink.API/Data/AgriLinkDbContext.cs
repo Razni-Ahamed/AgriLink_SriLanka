@@ -19,6 +19,7 @@ public class AgriLinkDbContext : IdentityDbContext<ApplicationUser, IdentityRole
     public DbSet<Crop> Crops => Set<Crop>();
     public DbSet<CropActivity> CropActivities => Set<CropActivity>();
     public DbSet<CropIssue> CropIssues => Set<CropIssue>();
+    public DbSet<IssueImage> IssueImages => Set<IssueImage>();
     public DbSet<AIAdvisory> AIAdvisories => Set<AIAdvisory>();
     public DbSet<AgentWorkflow> AgentWorkflows => Set<AgentWorkflow>();
     public DbSet<AgentExecution> AgentExecutions => Set<AgentExecution>();
@@ -138,6 +139,17 @@ public class AgriLinkDbContext : IdentityDbContext<ApplicationUser, IdentityRole
                 .WithMany()
                 .HasForeignKey(i => i.FarmerProfileId)
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        builder.Entity<IssueImage>(entity =>
+        {
+            entity.HasKey(i => i.ImageId);
+            entity.Property(i => i.StorageKey).HasMaxLength(300).IsRequired();
+            entity.Property(i => i.ContentType).HasMaxLength(50).IsRequired();
+            entity.HasOne(i => i.Issue)
+                .WithMany(i => i.Images)
+                .HasForeignKey(i => i.IssueId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         builder.Entity<AIAdvisory>(entity =>
