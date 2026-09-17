@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { ArrowBendDownLeft } from '@phosphor-icons/react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/Button'
 import { Select } from '@/components/ui/Select'
@@ -103,6 +104,34 @@ export function ApproveRejectControls({
   return (
     <Shake trigger={shakeTrigger}>
       <div className="flex flex-col gap-3">
+        {diagnosis?.suggestedTreatment && (
+          <div className="flex flex-col gap-2 rounded-xl border border-brand-forest/20 bg-brand-forest/5 p-3">
+            <div>
+              <h4 className="text-sm font-medium text-brand-forest">
+                {t('advisory.review.suggestedTitle')}
+              </h4>
+              <p className="text-xs text-text-secondary">{t('advisory.review.suggestedHint')}</p>
+            </div>
+            <p className="whitespace-pre-wrap text-sm text-text-primary">
+              {diagnosis.suggestedTreatment}
+            </p>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="self-start"
+              disabled={isBusy}
+              onClick={() => {
+                setTreatment(diagnosis.suggestedTreatment ?? '')
+                setErrors((current) => ({ ...current, treatment: undefined }))
+              }}
+            >
+              <ArrowBendDownLeft size={16} weight="duotone" />
+              {t('advisory.review.useSuggested')}
+            </Button>
+          </div>
+        )}
+
         {diagnosis && (
           <>
             <Textarea

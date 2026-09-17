@@ -50,6 +50,15 @@ public class DiseaseKnowledgeBaseTests
     }
 
     [Fact]
+    public void DefaultEntries_KeepEveryClassBehindAnOfficer_IncludingHealthy()
+    {
+        // Advice is written for officers to start from; none of it may reach a farmer on its own until
+        // an agricultural officer approves the wording and clears IsSerious for that disease.
+        Assert.All(DiseaseKnowledgeBase.DefaultEntries, entry =>
+            Assert.True(entry.IsSerious, $"{entry.Crop}/{entry.Key} would release advice without an officer."));
+    }
+
+    [Fact]
     public void Find_MatchesCropCaseInsensitively_AndKeyExactly()
     {
         var knowledgeBase = new DiseaseKnowledgeBase();

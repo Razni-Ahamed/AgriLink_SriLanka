@@ -316,6 +316,7 @@ public class AdvisoriesController : ControllerBase
             response.EscalationReasons = advisory.EscalationReasons?
                 .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
                 .ToList() ?? new List<string>();
+            response.SuggestedTreatment = _diseases.Find(crop, key)?.Treatment;
             response.DiseaseOptions = _diseases.ForCrop(crop)
                 .Select(d => new DiseaseOptionResponse { Key = d.Key, Name = d.DisplayName })
                 .Append(new DiseaseOptionResponse { Key = DiseaseKnowledgeEntry.OtherKey, Name = DiseaseKnowledgeEntry.OtherDisplayName })

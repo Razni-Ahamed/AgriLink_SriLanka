@@ -99,7 +99,10 @@
       "diseaseRequired": "Choose the correct disease to correct the diagnosis.",
       "useCorrectToChange": "To change the diagnosis, use Correct diagnosis.",
       "confirmed": "Diagnosis confirmed.",
-      "corrected": "Diagnosis corrected. The farmer will be told to follow your advice."
+      "corrected": "Diagnosis corrected. The farmer will be told to follow your advice.",
+      "suggestedTitle": "Suggested treatment (not officer-approved)",
+      "suggestedHint": "Written from published guidance. Check it, then use it as it is or edit it.",
+      "useSuggested": "Use this text"
     }
   },
   "previousIssues": {

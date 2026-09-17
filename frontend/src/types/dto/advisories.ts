@@ -86,6 +86,9 @@ export interface PhotoDiagnosis {
   modelVersion?: string | null
   /** Officer/Admin only: codes for why the diagnosis was held for an officer. */
   escalationReasons?: string[] | null
+  /** Officer/Admin only: the knowledge base's advice for this disease, as a starting point for the
+   *  officer's own treatment. Not approved advice. */
+  suggestedTreatment?: string | null
   /** Officer/Admin only: what the diagnosis can be corrected to. */
   diseaseOptions?: DiseaseOption[] | null
 }
