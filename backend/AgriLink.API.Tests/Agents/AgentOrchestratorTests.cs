@@ -311,6 +311,41 @@ public class AgentOrchestratorTests
     }
 
     [Fact]
+    public async Task Photo_ReleasedAsPreliminary_NotifiesTheFarmer_AndAsksOfficersToConfirm()
+    {
+        using var db = CreateDb();
+        db.FarmerProfiles.Add(new FarmerProfile { FarmerProfileId = 1, UserId = 42, NIC = "1", District = "Colombo" });
+        db.OfficerProfiles.Add(new OfficerProfile { OfficerProfileId = 1, UserId = 100, DepartmentId = 1, District = "Colombo" });
+        await db.SaveChangesAsync();
+        var pipeline = new PhotoPipeline();
+
+        var advisory = await pipeline.Create(db, KnowledgeBaseWithApprovedMosaicTreatment(), autoReleaseEnabled: true)
+            .RunPipelineAsync(CreateIssue(), CassavaCrop(), Array.Empty<CropActivity>(), Photo, CancellationToken.None);
+
+        Assert.Equal(AdvisoryStatus.Preliminary, advisory.Status);
+        pipeline.ValidationAgent.Verify(v => v.ValidateAsync(
+            It.Is<AgentContext>(c => c.AdviceReleasedBeforeReview), It.IsAny<CropFindings?>(), It.IsAny<WeatherFindings?>(), It.IsAny<CancellationToken>()), Times.Once);
+        pipeline.Notifications.Verify(n => n.NotifyAsync(42, It.Is<string>(t => t.Contains("ready")), It.IsAny<string>()), Times.Once);
+        pipeline.Notifications.Verify(n => n.NotifyAsync(100, It.Is<string>(t => t.Contains("confirmation")), It.IsAny<string>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task Photo_HeldBackForTheOfficer_NeverNotifiesTheFarmer()
+    {
+        using var db = CreateDb();
+        db.FarmerProfiles.Add(new FarmerProfile { FarmerProfileId = 1, UserId = 42, NIC = "1", District = "Colombo" });
+        await db.SaveChangesAsync();
+        var pipeline = new PhotoPipeline();
+
+        var advisory = await pipeline.Create(db).RunPipelineAsync(CreateIssue(), CassavaCrop(), Array.Empty<CropActivity>(), Photo, CancellationToken.None);
+
+        Assert.Equal(AdvisoryStatus.Draft, advisory.Status);
+        pipeline.ValidationAgent.Verify(v => v.ValidateAsync(
+            It.Is<AgentContext>(c => !c.AdviceReleasedBeforeReview), It.IsAny<CropFindings?>(), It.IsAny<WeatherFindings?>(), It.IsAny<CancellationToken>()), Times.Once);
+        pipeline.Notifications.Verify(n => n.NotifyAsync(42, It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+    }
+
+    [Fact]
     public async Task Photo_CleanTriage_WithAutoReleaseSwitchedOff_StaysADraft()
     {
         using var db = CreateDb();

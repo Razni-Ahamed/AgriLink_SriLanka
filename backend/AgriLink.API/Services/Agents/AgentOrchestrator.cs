@@ -117,6 +117,7 @@ public class AgentOrchestrator : IAgentOrchestrator
                     cancellationToken);
                 cropFindings = FindingsFromPhoto(image, disease, triage);
                 RecordPhotoDiagnosis(advisory, image, triage);
+                context = context with { AdviceReleasedBeforeReview = triage?.AutoRelease == true };
             }
             else if (plan.UseCropAgent)
             {
@@ -171,7 +172,13 @@ public class AgentOrchestrator : IAgentOrchestrator
             workflow.CompletedAt = DateTime.UtcNow;
         }
 
-        await NotifyOfficersAsync(context, cancellationToken);
+        var releasedToFarmer = advisory.Status == AdvisoryStatus.Preliminary;
+        await NotifyOfficersAsync(context, releasedToFarmer, cancellationToken);
+        if (releasedToFarmer)
+        {
+            await NotifyFarmerOfPreliminaryAdviceAsync(issue.FarmerProfileId, context, cancellationToken);
+        }
+
         return advisory;
     }
 
@@ -224,19 +231,38 @@ public class AgentOrchestrator : IAgentOrchestrator
         advisory.RequiresApproval = true;
     }
 
-    private async Task NotifyOfficersAsync(AgentContext context, CancellationToken cancellationToken)
+    private async Task NotifyOfficersAsync(AgentContext context, bool releasedToFarmer, CancellationToken cancellationToken)
     {
         var officerUserIds = await _db.OfficerProfiles
             .Where(o => o.District == context.District)
             .Select(o => o.UserId)
             .ToListAsync(cancellationToken);
 
+        var (title, message) = releasedToFarmer
+            ? ("Preliminary crop advice needs your confirmation",
+               $"Advice for \"{context.IssueTitle}\" was sent to the farmer from a photo diagnosis. Please confirm or correct it.")
+            : ("New crop issue advisory pending review",
+               $"A new AI-drafted advisory for \"{context.IssueTitle}\" needs your review.");
+
         foreach (var userId in officerUserIds)
+        {
+            await _notifications.NotifyAsync(userId, title, message);
+        }
+    }
+
+    private async Task NotifyFarmerOfPreliminaryAdviceAsync(int farmerProfileId, AgentContext context, CancellationToken cancellationToken)
+    {
+        var farmerUserId = await _db.FarmerProfiles
+            .Where(f => f.FarmerProfileId == farmerProfileId)
+            .Select(f => (int?)f.UserId)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (farmerUserId is int userId)
         {
             await _notifications.NotifyAsync(
                 userId,
-                "New crop issue advisory pending review",
-                $"A new AI-drafted advisory for \"{context.IssueTitle}\" needs your review.");
+                "Advice for your crop is ready",
+                $"We identified the problem in your photo for \"{context.IssueTitle}\". An agricultural officer will also confirm the advice.");
         }
     }
 

@@ -21,8 +21,9 @@ public class ImageClassificationOptions
 
     /// <summary>
     /// When false, a photo whose triage would allow releasing the stored advice straight to the
-    /// farmer is still kept as a Draft for an officer. Stays false until the review screens and
-    /// farmer-facing endpoints handle preliminary advisories.
+    /// farmer is still kept as a Draft for an officer. The API handles Preliminary advisories
+    /// (farmer visibility, review queue, confirm/correct); keep this off until the web app shows
+    /// preliminary advice as unconfirmed and gives officers the correction form.
     /// </summary>
     public bool AutoReleaseEnabled { get; set; }
 }

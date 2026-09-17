@@ -56,6 +56,33 @@ public class ValidationAgentTests
     }
 
     [Fact]
+    public async Task ValidateAsync_AdviceReleasedBeforeReview_DoesNotTellTheFarmerToWaitForApproval()
+    {
+        var context = BuildContext() with { AdviceReleasedBeforeReview = true };
+        var cropFindings = new CropFindings
+        {
+            PossibleCauses = new[] { "Cassava mosaic disease (identified from the photo)" },
+            RecommendedActions = new[] { "Uproot infected plants and replant with clean cuttings" },
+        };
+
+        var result = await CreateAgent().ValidateAsync(context, cropFindings, weatherFindings: null, CancellationToken.None);
+
+        Assert.Contains("Uproot infected plants", result.Recommendation);
+        Assert.DoesNotContain(ClosingDisclaimer, result.Recommendation);
+        Assert.EndsWith("contact your officer.", result.Recommendation);
+    }
+
+    [Fact]
+    public async Task ValidateAsync_AdviceHeldForReview_KeepsTheWaitForApprovalDisclaimer()
+    {
+        var cropFindings = new CropFindings { PossibleCauses = new[] { "Cassava mosaic disease (identified from the photo)" } };
+
+        var result = await CreateAgent().ValidateAsync(BuildContext(), cropFindings, weatherFindings: null, CancellationToken.None);
+
+        Assert.EndsWith(ClosingDisclaimer, result.Recommendation);
+    }
+
+    [Fact]
     public async Task ValidateAsync_NoFindings_UsesSafeGenericFallback()
     {
         var agent = CreateAgent();
