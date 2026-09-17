@@ -178,6 +178,13 @@ def predict_logits(model: nn.Module, loader: DataLoader, device: torch.device) -
 
 
 def export_onnx(model: CalibratedClassifier, image_size: int, path: Path) -> None:
+    # PyTorch's ONNX exporter prints emoji; on Windows, output redirected to a file otherwise uses
+    # the legacy code page, which cannot encode them and crashes the export. Done here rather than
+    # in main() so every caller of the export is covered.
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(encoding="utf-8", errors="replace")
+
     model = model.eval().cpu()
     dummy = torch.randn(1, 3, image_size, image_size)
     torch.onnx.export(
@@ -369,12 +376,6 @@ def main(argv: list[str] | None = None) -> int:
                         help="Reuse best.pt and history.csv already in the output folder; only calibrate, "
                              "evaluate and export.")
     args = parser.parse_args(argv)
-
-    # PyTorch's ONNX exporter prints emoji; on Windows, output redirected to a file otherwise uses
-    # the legacy code page, which cannot encode them and crashes the export.
-    for stream in (sys.stdout, sys.stderr):
-        if hasattr(stream, "reconfigure"):
-            stream.reconfigure(encoding="utf-8", errors="replace")
 
     import timm  # imported here so --help works without it
 

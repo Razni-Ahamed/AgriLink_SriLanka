@@ -124,6 +124,40 @@ overall while confident "healthy" predictions were right only ~81% of the time (
 reported as healthy), and a threshold resting on 30 validation photos held up at only 82% on the
 test photos.
 
+## Using a model in the backend
+
+The backend loads every `<ModelsDirectory>/<crop>/model.onnx` + `model.json` at startup. Its
+`ImageClassification:ModelsDirectory` setting defaults to this repo's `ml/models`, so a model
+trained here is picked up the next time the API starts — the log shows
+`Loaded image classification model <version> for <Crop>`. Without a model, photos of that crop go
+through the text-only agents.
+
+Before a crop's photos can be diagnosed, every class in `labels/<crop>.json` needs an entry in
+`backend/AgriLink.API/Services/Agents/DiseaseKnowledgeBase.cs` (a backend test enforces this). New
+entries start serious with no treatment, so every case goes to an officer until an agricultural
+officer provides approved advice.
+
+The backend prepares photos with a C# port of Pillow's bilinear resize, so it feeds the model what
+`eval_transform` did in training. If `eval_transform` changes, regenerate the backend's fixtures
+with `.venv/Scripts/python -m tools.make_backend_fixtures` and run the backend tests.
+
+### Checking a model in the backend
+
+After training, confirm the backend reproduces Python's predictions on real photos:
+
+```bash
+.venv/Scripts/python -m tools.export_parity_photos --crop cassava --source kaggle-cassava-2020=C:/Users/you/Downloads/cassava-leaf-disease-classification.zip --output-dir C:/Users/you/Documents/agrilink-parity/cassava
+```
+
+Then, from `backend/`, with `AGRILINK_MODEL_PARITY_DIR` set to that folder (and
+`AGRILINK_MODEL_PARITY_CROP` if it is not Cassava):
+
+```bash
+dotnet test AgriLink.API.Tests --filter "FullyQualifiedName~RealModelParityTests" --logger "console;verbosity=detailed"
+```
+
+Keep that folder outside the repo: the photos come from the dataset.
+
 Adding a dataset means writing its adapter from the dataset's real folder structure and adding its
 label mapping to the crop's label file. Before changing `--near-duplicate-distance` for a new
 dataset, check flagged pairs by eye: on the Cassava photos, pairs 3–6 bits apart were different

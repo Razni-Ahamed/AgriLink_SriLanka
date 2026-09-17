@@ -146,7 +146,8 @@ public class IssuesController : ControllerBase
 
         try
         {
-            var advisory = await _orchestrator.RunPipelineAsync(issue, crop, recentActivities, HttpContext.RequestAborted);
+            var advisory = await _orchestrator.RunPipelineAsync(
+                issue, crop, recentActivities, processedPhoto?.Content, HttpContext.RequestAborted);
             issue.Advisories.Add(advisory);
 
             issue.Crop = crop;

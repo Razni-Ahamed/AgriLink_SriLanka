@@ -4,6 +4,7 @@ using AgriLink.API.Data;
 using AgriLink.API.Models;
 using AgriLink.API.Services;
 using AgriLink.API.Services.Agents;
+using AgriLink.API.Services.Agents.ImageClassification;
 using AgriLink.API.Services.Images;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
@@ -73,6 +74,20 @@ builder.Services.AddScoped<IAuditLogService, AuditLogService>();
 
 builder.Services.Configure<WeatherOptions>(builder.Configuration.GetSection("Weather"));
 builder.Services.Configure<AdminSeedOptions>(builder.Configuration.GetSection(AdminSeedOptions.SectionName));
+
+// ----- Photo classification -----
+builder.Services.Configure<ImageClassificationOptions>(builder.Configuration.GetSection(ImageClassificationOptions.SectionName));
+builder.Services.AddSingleton<IDiseaseKnowledgeBase, DiseaseKnowledgeBase>();
+builder.Services.AddSingleton<IImageClassifier>(sp =>
+{
+    var options = sp.GetRequiredService<IOptions<ImageClassificationOptions>>().Value;
+    var env = sp.GetRequiredService<IWebHostEnvironment>();
+    return new OnnxImageClassifier(
+        Path.GetFullPath(Path.Combine(env.ContentRootPath, options.ModelsDirectory)),
+        options.IntraOpThreads,
+        TimeSpan.FromSeconds(options.TimeoutSeconds),
+        sp.GetRequiredService<ILogger<OnnxImageClassifier>>());
+});
 
 builder.Services.AddScoped<IPlannerAgent, PlannerAgent>();
 builder.Services.AddScoped<ICropAnalysisAgent, CropAnalysisAgent>();
@@ -163,6 +178,10 @@ using (var scope = app.Services.CreateScope())
     var seedLogger = scope.ServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("AdminSeeder");
     await AdminSeeder.SeedAsync(userManager, adminSeed, seedLogger);
 }
+
+// Load the photo models now rather than on the first farmer's upload, so a missing or invalid
+// model shows up in the startup log.
+app.Services.GetRequiredService<IImageClassifier>();
 
 // ----- Middleware pipeline -----
 if (app.Environment.IsDevelopment())

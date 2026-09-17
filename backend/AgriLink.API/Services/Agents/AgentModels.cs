@@ -1,4 +1,5 @@
 using AgriLink.API.Models;
+using AgriLink.API.Services.Agents.ImageClassification;
 
 namespace AgriLink.API.Services.Agents;
 
@@ -16,6 +17,10 @@ public record AgentContext
     public IssueSeverity Severity { get; init; }
     public string District { get; init; } = string.Empty;
     public IReadOnlyList<AgentActivitySnapshot> RecentActivities { get; init; } = Array.Empty<AgentActivitySnapshot>();
+
+    /// <summary>What the photo model saw, when the farmer attached a photo of a crop that has a
+    /// model and classification succeeded. Null means the text-only agents handle the issue.</summary>
+    public ImageFindings? ImageFindings { get; init; }
 }
 
 public record PlannerPlan
