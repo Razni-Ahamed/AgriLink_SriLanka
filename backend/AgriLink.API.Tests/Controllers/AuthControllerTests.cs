@@ -12,51 +12,71 @@ namespace AgriLink.API.Tests.Controllers;
 
 public class AuthControllerTests
 {
-    private static async Task<(AuthController Controller, AgriLinkDbContext Db)> CreateAsync()
+    private static RegisterRequest FarmerRequest(string email = "new.farmer@agrilink.lk", string district = "Kandy") => new()
+    {
+        FullName = "New Farmer",
+        Email = email,
+        Password = "Farmer@AgriLink.2026!",
+        NIC = "199912345678",
+        District = district,
+        Role = "Farmer",
+        FieldPlotNumber = "PLOT-42",
+        PhoneNumber = "0771234567",
+    };
+
+    private static RegisterRequest BuyerRequest(string email = "new.buyer@agrilink.lk", string district = "Kandy") => new()
+    {
+        FullName = "New Buyer",
+        Email = email,
+        Password = "Buyer@AgriLink.2026!",
+        NIC = "199912345678",
+        District = district,
+        Role = "Buyer",
+        BusinessRegistrationNumber = "BRN-001",
+        BusinessPhone = "0771234567",
+        LegalBusinessName = "Test Traders Ltd",
+    };
+
+    private static async Task<(AuthController Controller, AgriLinkDbContext Db, Mock<INotificationService> Notifications)> CreateAsync()
     {
         var (db, userManager, roleManager) = IdentityTestHarness.Create();
         await IdentityTestHarness.SeedRolesAsync(roleManager);
 
         var tokenService = Mock.Of<IJwtTokenService>(
             t => t.GenerateToken(It.IsAny<ApplicationUser>(), It.IsAny<IList<string>>()) == "fake-jwt");
-        var controller = new AuthController(userManager, db, tokenService);
+        var notifications = new Mock<INotificationService>();
+        var controller = new AuthController(userManager, db, tokenService, notifications.Object);
 
-        return (controller, db);
+        return (controller, db, notifications);
     }
 
     [Fact]
-    public async Task Register_ValidDistrict_CreatesFarmerAccount()
+    public async Task Register_ValidFarmer_CreatesPendingInactiveAccount()
     {
-        var (controller, db) = await CreateAsync();
+        var (controller, db, _) = await CreateAsync();
 
-        var result = await controller.Register(new RegisterRequest
-        {
-            FullName = "New Farmer",
-            Email = "new.farmer@agrilink.lk",
-            Password = "Farmer@AgriLink.2026!",
-            NIC = "199912345678",
-            District = "Kandy",
-        });
+        var result = await controller.Register(FarmerRequest());
 
         Assert.IsType<ObjectResult>(result.Result);
-        var profile = await db.FarmerProfiles.FirstOrDefaultAsync(f => f.User.Email == "new.farmer@agrilink.lk");
+        var user = await db.Users.FirstOrDefaultAsync(u => u.Email == "new.farmer@agrilink.lk");
+        Assert.NotNull(user);
+        Assert.False(user!.IsActive);
+        Assert.Equal(RegistrationStatus.Pending, user.RegistrationStatus);
+
+        var profile = await db.FarmerProfiles.FirstOrDefaultAsync(f => f.UserId == user.Id);
         Assert.NotNull(profile);
         Assert.Equal("Kandy", profile!.District);
+        Assert.Equal("PLOT-42", profile.FieldPlotNumber);
+        Assert.Equal("0771234567", profile.PhoneNumber);
     }
 
     [Fact]
     public async Task Register_UnknownDistrict_ReturnsBadRequestAndCreatesNoAccount()
     {
-        var (controller, db) = await CreateAsync();
+        var (controller, db, _) = await CreateAsync();
 
-        var result = await controller.Register(new RegisterRequest
-        {
-            FullName = "New Farmer",
-            Email = "new.farmer@agrilink.lk",
-            Password = "Farmer@AgriLink.2026!",
-            NIC = "199912345678",
-            District = "Notaplace",
-        });
+        var request = FarmerRequest(district: "Notaplace");
+        var result = await controller.Register(request);
 
         Assert.IsType<BadRequestObjectResult>(result.Result);
         Assert.Empty(db.Users);
@@ -67,17 +87,146 @@ public class AuthControllerTests
     [InlineData("  Kandy  ")]
     public async Task Register_DistrictCaseAndWhitespaceInsensitive_Succeeds(string district)
     {
-        var (controller, _) = await CreateAsync();
+        var (controller, _, _) = await CreateAsync();
 
-        var result = await controller.Register(new RegisterRequest
-        {
-            FullName = "New Farmer",
-            Email = "new.farmer@agrilink.lk",
-            Password = "Farmer@AgriLink.2026!",
-            NIC = "199912345678",
-            District = district,
-        });
+        var result = await controller.Register(FarmerRequest(district: district));
 
         Assert.IsType<ObjectResult>(result.Result);
+    }
+
+    [Fact]
+    public async Task Register_FarmerMissingFieldPlotNumber_ReturnsBadRequest()
+    {
+        var (controller, db, _) = await CreateAsync();
+
+        var request = FarmerRequest();
+        request.FieldPlotNumber = null;
+
+        var result = await controller.Register(request);
+
+        Assert.IsType<BadRequestObjectResult>(result.Result);
+        Assert.Empty(db.Users);
+    }
+
+    [Fact]
+    public async Task Register_ValidBuyer_CreatesPendingInactiveAccountWithBusinessFields()
+    {
+        var (controller, db, _) = await CreateAsync();
+
+        var result = await controller.Register(BuyerRequest());
+
+        Assert.IsType<ObjectResult>(result.Result);
+        var user = await db.Users.FirstOrDefaultAsync(u => u.Email == "new.buyer@agrilink.lk");
+        Assert.NotNull(user);
+        Assert.False(user!.IsActive);
+        Assert.Equal(RegistrationStatus.Pending, user.RegistrationStatus);
+
+        var profile = await db.BuyerProfiles.FirstOrDefaultAsync(b => b.UserId == user.Id);
+        Assert.NotNull(profile);
+        Assert.Equal("Test Traders Ltd", profile!.BusinessName);
+        Assert.Equal("BRN-001", profile.BusinessRegistrationNumber);
+        Assert.Equal("0771234567", profile.BusinessPhone);
+        Assert.Equal("Kandy", profile.District);
+    }
+
+    [Fact]
+    public async Task Register_BuyerMissingBusinessFields_ReturnsBadRequest()
+    {
+        var (controller, db, _) = await CreateAsync();
+
+        var request = BuyerRequest();
+        request.BusinessRegistrationNumber = null;
+
+        var result = await controller.Register(request);
+
+        Assert.IsType<BadRequestObjectResult>(result.Result);
+        Assert.Empty(db.Users);
+    }
+
+    [Fact]
+    public async Task Register_UnknownRole_ReturnsBadRequest()
+    {
+        var (controller, db, _) = await CreateAsync();
+
+        var request = FarmerRequest();
+        request.Role = "Officer";
+
+        var result = await controller.Register(request);
+
+        Assert.IsType<BadRequestObjectResult>(result.Result);
+        Assert.Empty(db.Users);
+    }
+
+    [Fact]
+    public async Task Login_PendingAccount_FailsWithApprovalMessageNotGenericError()
+    {
+        var (controller, _, _) = await CreateAsync();
+        await controller.Register(FarmerRequest());
+
+        var result = await controller.Login(new LoginRequest { Email = "new.farmer@agrilink.lk", Password = "Farmer@AgriLink.2026!" });
+
+        var objectResult = Assert.IsType<ObjectResult>(result.Result);
+        Assert.Equal(403, objectResult.StatusCode);
+    }
+
+    [Fact]
+    public async Task Login_WrongPassword_StillReturnsGenericUnauthorized()
+    {
+        var (controller, _, _) = await CreateAsync();
+        await controller.Register(FarmerRequest());
+
+        var result = await controller.Login(new LoginRequest { Email = "new.farmer@agrilink.lk", Password = "WrongPassword123!" });
+
+        Assert.IsType<UnauthorizedObjectResult>(result.Result);
+    }
+
+    [Fact]
+    public async Task Login_ApprovedAccount_Succeeds()
+    {
+        var (controller, db, _) = await CreateAsync();
+        await controller.Register(FarmerRequest());
+        var user = await db.Users.FirstAsync(u => u.Email == "new.farmer@agrilink.lk");
+        user.RegistrationStatus = RegistrationStatus.Approved;
+        user.IsActive = true;
+        await db.SaveChangesAsync();
+
+        var result = await controller.Login(new LoginRequest { Email = "new.farmer@agrilink.lk", Password = "Farmer@AgriLink.2026!" });
+
+        Assert.IsType<OkObjectResult>(result.Result);
+    }
+
+    [Fact]
+    public async Task Login_RejectedAccount_FailsWithRejectionMessage()
+    {
+        var (controller, db, _) = await CreateAsync();
+        await controller.Register(FarmerRequest());
+        var user = await db.Users.FirstAsync(u => u.Email == "new.farmer@agrilink.lk");
+        user.RegistrationStatus = RegistrationStatus.Rejected;
+        user.RejectionReason = "NIC could not be verified.";
+        await db.SaveChangesAsync();
+
+        var result = await controller.Login(new LoginRequest { Email = "new.farmer@agrilink.lk", Password = "Farmer@AgriLink.2026!" });
+
+        var objectResult = Assert.IsType<ObjectResult>(result.Result);
+        Assert.Equal(403, objectResult.StatusCode);
+    }
+
+    [Fact]
+    public async Task Register_Farmer_NotifiesOfficersInSameDistrictOnly()
+    {
+        var (controller, db, notifications) = await CreateAsync();
+        db.Departments.Add(new Department { DepartmentId = 1, Name = "Extension Services" });
+        db.OfficerProfiles.AddRange(
+            new OfficerProfile { OfficerProfileId = 1, UserId = 100, DepartmentId = 1, District = "Kandy" },
+            new OfficerProfile { OfficerProfileId = 2, UserId = 101, DepartmentId = 1, District = "Galle" });
+        db.Users.AddRange(
+            new ApplicationUser { Id = 100, UserName = "kandy.officer@test.com", Email = "kandy.officer@test.com", FullName = "Kandy Officer" },
+            new ApplicationUser { Id = 101, UserName = "galle.officer@test.com", Email = "galle.officer@test.com", FullName = "Galle Officer" });
+        await db.SaveChangesAsync();
+
+        await controller.Register(FarmerRequest(district: "Kandy"));
+
+        notifications.Verify(n => n.NotifyAsync(100, It.IsAny<string>(), It.IsAny<string>()), Times.Once);
+        notifications.Verify(n => n.NotifyAsync(101, It.IsAny<string>(), It.IsAny<string>()), Times.Never);
     }
 }
