@@ -90,6 +90,15 @@ export interface PhotoDiagnosis {
   diseaseOptions?: DiseaseOption[] | null
 }
 
+/** Body for approve/reject. For a photo diagnosis the backend requires a treatment when
+ *  approving held-back (Draft) advice, and a diseaseKey plus treatment when rejecting. */
+export interface ReviewAdvisoryRequest {
+  note?: string
+  /** Reject only: the correct disease — a DiseaseOption key, or "other". */
+  diseaseKey?: string
+  treatment?: string
+}
+
 export interface DiseaseOption {
   key: string
   name: string

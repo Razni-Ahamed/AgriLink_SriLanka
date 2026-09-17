@@ -6,7 +6,7 @@
     "approvedTotal": "Approved (all-time)",
     "rejectedTotal": "Rejected (all-time)",
     "goToQueue": "Review Queue",
-    "goToQueueHint": "Draft advisories waiting on your decision",
+    "goToQueueHint": "Advisories waiting on your decision, including preliminary advice to confirm",
     "goToReviews": "My Reviews",
     "goToReviewsHint": "Issues you've already approved or rejected"
   }

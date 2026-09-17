@@ -1,35 +1,141 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/Button'
+import { Select } from '@/components/ui/Select'
 import { Textarea } from '@/components/ui/Textarea'
 import { Shake } from '@/components/ui/motion/Shake'
 import { useUiStore } from '@/lib/useUiStore'
+import type { AdvisoryResponse, ReviewAdvisoryRequest } from '@/types/dto/advisories'
 import { useApproveAdvisory, useRejectAdvisory } from '../hooks/useAdvisories'
 
 interface ApproveRejectControlsProps {
-  advisoryId: number
+  advisory: AdvisoryResponse
   shakeTrigger: boolean
   onApproved: () => void
   onRejected: () => void
 }
 
+type FieldErrors = { treatment?: string; disease?: string }
+
 export function ApproveRejectControls({
-  advisoryId,
+  advisory,
   shakeTrigger,
   onApproved,
   onRejected,
 }: ApproveRejectControlsProps) {
   const { t } = useTranslation('issues')
   const addToast = useUiStore((state) => state.addToast)
-  const approve = useApproveAdvisory(advisoryId)
-  const reject = useRejectAdvisory(advisoryId)
+  const approve = useApproveAdvisory(advisory.advisoryId)
+  const reject = useRejectAdvisory(advisory.advisoryId)
   const [note, setNote] = useState('')
+  const [treatment, setTreatment] = useState('')
+  const [diseaseKey, setDiseaseKey] = useState('')
+  const [errors, setErrors] = useState<FieldErrors>({})
 
   const isBusy = approve.isPending || reject.isPending
+  const diagnosis = advisory.photoDiagnosis
+  // Held back (Draft): the farmer has had no advice yet, so confirming needs the officer's treatment.
+  const treatmentRequiredToConfirm = Boolean(diagnosis) && advisory.status === 'Draft'
+
+  // Mirrors the backend's rules for a photo diagnosis (AdvisoriesController.Review), so the
+  // officer is told what is missing before a request is refused.
+  function validate(action: 'approve' | 'reject'): FieldErrors {
+    if (!diagnosis) {
+      return {}
+    }
+    const found: FieldErrors = {}
+    if (action === 'approve') {
+      if (diseaseKey && diseaseKey !== diagnosis.diseaseKey) {
+        found.disease = t('advisory.review.useCorrectToChange')
+      }
+      if (treatmentRequiredToConfirm && !treatment.trim()) {
+        found.treatment = t('advisory.review.treatmentRequired')
+      }
+    } else {
+      if (!diseaseKey) {
+        found.disease = t('advisory.review.diseaseRequired')
+      }
+      if (!treatment.trim()) {
+        found.treatment = t('advisory.review.treatmentRequired')
+      }
+    }
+    return found
+  }
+
+  function review(action: 'approve' | 'reject') {
+    const found = validate(action)
+    setErrors(found)
+    if (found.treatment || found.disease) {
+      return
+    }
+
+    const body: ReviewAdvisoryRequest = {
+      note: note.trim() || undefined,
+      treatment: treatment.trim() || undefined,
+      diseaseKey: action === 'reject' && diagnosis ? diseaseKey : undefined,
+    }
+
+    if (action === 'approve') {
+      approve.mutate(body, {
+        onSuccess: () => {
+          addToast({
+            type: 'success',
+            message: diagnosis ? t('advisory.review.confirmed') : t('advisory.approved'),
+          })
+          onApproved()
+        },
+        onError: () => addToast({ type: 'error', message: t('advisory.approveError') }),
+      })
+    } else {
+      reject.mutate(body, {
+        onSuccess: () => {
+          addToast({
+            type: 'info',
+            message: diagnosis ? t('advisory.review.corrected') : t('advisory.rejected'),
+          })
+          onRejected()
+        },
+        onError: () => addToast({ type: 'error', message: t('advisory.rejectError') }),
+      })
+    }
+  }
 
   return (
     <Shake trigger={shakeTrigger}>
       <div className="flex flex-col gap-3">
+        {diagnosis && (
+          <>
+            <Textarea
+              label={
+                treatmentRequiredToConfirm
+                  ? t('advisory.review.treatmentLabelRequired')
+                  : t('advisory.review.treatmentLabelOptional')
+              }
+              placeholder={t('advisory.review.treatmentPlaceholder')}
+              rows={4}
+              maxLength={2000}
+              value={treatment}
+              disabled={isBusy}
+              error={errors.treatment}
+              onChange={(event) => setTreatment(event.target.value)}
+            />
+            <Select
+              label={t('advisory.review.correctDiseaseLabel')}
+              value={diseaseKey}
+              disabled={isBusy}
+              error={errors.disease}
+              onChange={(event) => setDiseaseKey(event.target.value)}
+            >
+              <option value="">{t('advisory.review.correctDiseasePlaceholder')}</option>
+              {(diagnosis.diseaseOptions ?? []).map((option) => (
+                <option key={option.key} value={option.key}>
+                  {option.name}
+                </option>
+              ))}
+            </Select>
+          </>
+        )}
+
         {/* Optional — an officer can still approve/reject with nothing typed here, same as
             before this existed. When filled, it reaches the farmer as part of their
             approved/rejected notification, and is kept on the advisory for this officer's own
@@ -43,37 +149,21 @@ export function ApproveRejectControls({
           disabled={isBusy}
           onChange={(event) => setNote(event.target.value)}
         />
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button
             isLoading={approve.isPending}
             disabled={reject.isPending}
-            onClick={() =>
-              approve.mutate(note.trim() || undefined, {
-                onSuccess: () => {
-                  addToast({ type: 'success', message: t('advisory.approved') })
-                  onApproved()
-                },
-                onError: () => addToast({ type: 'error', message: t('advisory.approveError') }),
-              })
-            }
+            onClick={() => review('approve')}
           >
-            {t('advisory.approve')}
+            {diagnosis ? t('advisory.review.confirmDiagnosis') : t('advisory.approve')}
           </Button>
           <Button
             variant="danger"
             isLoading={reject.isPending}
             disabled={approve.isPending}
-            onClick={() =>
-              reject.mutate(note.trim() || undefined, {
-                onSuccess: () => {
-                  addToast({ type: 'info', message: t('advisory.rejected') })
-                  onRejected()
-                },
-                onError: () => addToast({ type: 'error', message: t('advisory.rejectError') }),
-              })
-            }
+            onClick={() => review('reject')}
           >
-            {t('advisory.reject')}
+            {diagnosis ? t('advisory.review.correctDiagnosis') : t('advisory.reject')}
           </Button>
         </div>
       </div>

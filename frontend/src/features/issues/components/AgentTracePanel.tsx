@@ -4,7 +4,9 @@ import {
   Brain,
   CheckCircle,
   CloudSun,
+  ListChecks,
   MagnifyingGlass,
+  Scan,
   ShieldCheck,
   Robot,
   WarningCircle,
@@ -19,6 +21,8 @@ const AGENT_ICON: Record<string, ReactNode> = {
   CropAnalysisAgent: <MagnifyingGlass size={16} weight="duotone" />,
   WeatherAgent: <CloudSun size={16} weight="duotone" />,
   ValidationAgent: <ShieldCheck size={16} weight="duotone" />,
+  ImageClassificationAgent: <Scan size={16} weight="duotone" />,
+  PhotoTriageAgent: <ListChecks size={16} weight="duotone" />,
 }
 
 const STATUS_VARIANT: Record<AgentExecutionStatus, 'success' | 'danger' | 'info'> = {

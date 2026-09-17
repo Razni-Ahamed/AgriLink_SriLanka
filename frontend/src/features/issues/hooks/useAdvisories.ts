@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import type { ReviewAdvisoryRequest } from '@/types/dto/advisories'
 import * as advisoriesApi from '../api/advisoriesApi'
 
 export function useAdvisory(advisoryId: number) {
@@ -12,7 +13,8 @@ export function useAdvisory(advisoryId: number) {
 export function useApproveAdvisory(advisoryId: number) {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (note?: string) => advisoriesApi.approveAdvisory(advisoryId, note),
+    mutationFn: (review: ReviewAdvisoryRequest) =>
+      advisoriesApi.approveAdvisory(advisoryId, review),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['advisories', 'detail', advisoryId] })
       queryClient.invalidateQueries({ queryKey: ['issues'] })
@@ -24,7 +26,7 @@ export function useApproveAdvisory(advisoryId: number) {
 export function useRejectAdvisory(advisoryId: number) {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (note?: string) => advisoriesApi.rejectAdvisory(advisoryId, note),
+    mutationFn: (review: ReviewAdvisoryRequest) => advisoriesApi.rejectAdvisory(advisoryId, review),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['advisories', 'detail', advisoryId] })
       queryClient.invalidateQueries({ queryKey: ['issues'] })
