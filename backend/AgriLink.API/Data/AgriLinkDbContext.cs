@@ -161,6 +161,8 @@ public class AgriLinkDbContext : IdentityDbContext<ApplicationUser, IdentityRole
             entity.Property(a => a.PredictedDiseaseKey).HasMaxLength(100);
             entity.Property(a => a.ModelVersion).HasMaxLength(100);
             entity.Property(a => a.EscalationReasons).HasMaxLength(500);
+            entity.Property(a => a.ConfirmedDiseaseKey).HasMaxLength(100);
+            entity.Property(a => a.OfficerTreatment).HasMaxLength(2000);
             entity.HasIndex(a => a.Status);
             entity.HasOne(a => a.Issue)
                 .WithMany(i => i.Advisories)

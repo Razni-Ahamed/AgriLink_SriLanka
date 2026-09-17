@@ -20,6 +20,11 @@ public record DiseaseKnowledgeEntry(
 {
     public const string HealthyKey = "healthy";
 
+    /// <summary>An officer's correction for a disease that is not one of the model's classes.</summary>
+    public const string OtherKey = "other";
+
+    public const string OtherDisplayName = "Other (not in the list)";
+
     public bool IsHealthy => Key == HealthyKey;
 }
 
@@ -28,6 +33,10 @@ public interface IDiseaseKnowledgeBase
     DiseaseKnowledgeEntry? Find(string crop, string key);
 
     IReadOnlyList<DiseaseKnowledgeEntry> ForCrop(string crop);
+
+    /// <summary>A display name for any key an advisory can hold, including "other"; falls back to
+    /// the key itself for one no longer in the knowledge base.</summary>
+    string DisplayName(string crop, string key);
 }
 
 // Static and versioned with the code, like CropKnowledgeBase. Every class in ml/labels/*.json must
@@ -76,4 +85,7 @@ public class DiseaseKnowledgeBase : IDiseaseKnowledgeBase
 
     public IReadOnlyList<DiseaseKnowledgeEntry> ForCrop(string crop) =>
         _entries.Where(e => string.Equals(e.Crop, crop.Trim(), StringComparison.OrdinalIgnoreCase)).ToList();
+
+    public string DisplayName(string crop, string key) =>
+        key == DiseaseKnowledgeEntry.OtherKey ? DiseaseKnowledgeEntry.OtherDisplayName : Find(crop, key)?.DisplayName ?? key;
 }

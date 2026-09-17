@@ -33,6 +33,14 @@ public class AIAdvisory
     /// officer; null when the advice was released without one, or there was no photo diagnosis.</summary>
     public string? EscalationReasons { get; set; }
 
+    /// <summary>The disease the reviewing officer confirmed for a photo diagnosis: the predicted key
+    /// when they approved it, their own choice (a class key, or "other") when they corrected it.
+    /// Together with the stored photo this is a labelled example for retraining.</summary>
+    public string? ConfirmedDiseaseKey { get; set; }
+
+    /// <summary>Treatment the reviewing officer gave the farmer, replacing any AI-drafted advice.</summary>
+    public string? OfficerTreatment { get; set; }
+
     public CropIssue Issue { get; set; } = null!;
     public ApplicationUser? ReviewedByUser { get; set; }
     public ICollection<AgentWorkflow> Workflows { get; set; } = new List<AgentWorkflow>();
