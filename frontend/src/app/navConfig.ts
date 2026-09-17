@@ -4,6 +4,7 @@ import { issuesNavItems } from '@/features/issues/routes'
 import { marketplaceNavItems } from '@/features/marketplace/routes'
 import { officerNavItems } from '@/features/officer/routes'
 import { ordersNavItems } from '@/features/orders/routes'
+import { registrationsNavItems } from '@/features/registrations/routes'
 
 const allNavItems: NavItem[] = [
   ...farmsNavItems,
@@ -11,6 +12,7 @@ const allNavItems: NavItem[] = [
   ...marketplaceNavItems,
   ...officerNavItems,
   ...ordersNavItems,
+  ...registrationsNavItems,
 ]
 
 export function getNavItemsForRole(role: Role | null): NavItem[] {

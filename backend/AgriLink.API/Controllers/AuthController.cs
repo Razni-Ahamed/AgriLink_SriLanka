@@ -4,6 +4,7 @@ using AgriLink.API.Models;
 using AgriLink.API.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace AgriLink.API.Controllers;
 
@@ -11,24 +12,55 @@ namespace AgriLink.API.Controllers;
 [Route("api/auth")]
 public class AuthController : ControllerBase
 {
+    private static readonly string[] SelfRegisterableRoles = { "Farmer", "Buyer" };
+
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly AgriLinkDbContext _db;
     private readonly IJwtTokenService _tokenService;
+    private readonly INotificationService _notificationService;
 
-    public AuthController(UserManager<ApplicationUser> userManager, AgriLinkDbContext db, IJwtTokenService tokenService)
+    public AuthController(
+        UserManager<ApplicationUser> userManager,
+        AgriLinkDbContext db,
+        IJwtTokenService tokenService,
+        INotificationService notificationService)
     {
         _userManager = userManager;
         _db = db;
         _tokenService = tokenService;
+        _notificationService = notificationService;
     }
 
     [HttpPost("register")]
-    public async Task<ActionResult<AuthResponse>> Register(RegisterRequest request)
+    public async Task<ActionResult<RegisterResponse>> Register(RegisterRequest request)
     {
+        var role = SelfRegisterableRoles.FirstOrDefault(r => string.Equals(r, request.Role, StringComparison.OrdinalIgnoreCase));
+        if (role is null)
+        {
+            return BadRequest(new { message = "Role must be 'Farmer' or 'Buyer'." });
+        }
+
         var district = SriLankaDistricts.Canonicalize(request.District);
         if (district is null)
         {
             return BadRequest(new { message = "District must be one of Sri Lanka's 25 administrative districts." });
+        }
+
+        if (role == "Farmer")
+        {
+            if (string.IsNullOrWhiteSpace(request.FieldPlotNumber) || string.IsNullOrWhiteSpace(request.PhoneNumber))
+            {
+                return BadRequest(new { message = "Field/plot number and phone number are required for a Farmer application." });
+            }
+        }
+        else
+        {
+            if (string.IsNullOrWhiteSpace(request.BusinessRegistrationNumber)
+                || string.IsNullOrWhiteSpace(request.BusinessPhone)
+                || string.IsNullOrWhiteSpace(request.LegalBusinessName))
+            {
+                return BadRequest(new { message = "Business registration number, business phone, and legal business name are required for a Buyer application." });
+            }
         }
 
         var existing = await _userManager.FindByEmailAsync(request.Email);
@@ -42,6 +74,8 @@ public class AuthController : ControllerBase
             UserName = request.Email,
             Email = request.Email,
             FullName = request.FullName,
+            IsActive = false,
+            RegistrationStatus = RegistrationStatus.Pending,
         };
 
         var createResult = await _userManager.CreateAsync(user, request.Password);
@@ -50,25 +84,87 @@ public class AuthController : ControllerBase
             return BadRequest(new { errors = createResult.Errors.Select(e => e.Description) });
         }
 
-        await _userManager.AddToRoleAsync(user, "Farmer");
+        await _userManager.AddToRoleAsync(user, role);
 
-        _db.FarmerProfiles.Add(new FarmerProfile
+        if (role == "Farmer")
         {
-            UserId = user.Id,
-            NIC = request.NIC,
-            District = district,
-        });
+            _db.FarmerProfiles.Add(new FarmerProfile
+            {
+                UserId = user.Id,
+                NIC = request.NIC,
+                District = district,
+                FieldPlotNumber = request.FieldPlotNumber,
+                PhoneNumber = request.PhoneNumber,
+            });
+        }
+        else
+        {
+            _db.BuyerProfiles.Add(new BuyerProfile
+            {
+                UserId = user.Id,
+                BusinessName = request.LegalBusinessName!,
+                District = district,
+                NIC = request.NIC,
+                BusinessRegistrationNumber = request.BusinessRegistrationNumber,
+                BusinessPhone = request.BusinessPhone,
+            });
+        }
+
         await _db.SaveChangesAsync();
 
-        var token = _tokenService.GenerateToken(user, new[] { "Farmer" });
-        return StatusCode(StatusCodes.Status201Created, new AuthResponse { Token = token, Role = "Farmer" });
+        if (role == "Farmer")
+        {
+            var officerUserIds = await _db.OfficerProfiles
+                .Where(o => o.District == district)
+                .Select(o => o.UserId)
+                .ToListAsync();
+            foreach (var officerUserId in officerUserIds)
+            {
+                await _notificationService.NotifyAsync(
+                    officerUserId,
+                    "New farmer application",
+                    $"{user.FullName} has applied as a Farmer in {district} and is waiting for approval.");
+            }
+        }
+        else
+        {
+            var admins = await _userManager.GetUsersInRoleAsync("Admin");
+            foreach (var admin in admins)
+            {
+                await _notificationService.NotifyAsync(
+                    admin.Id,
+                    "New buyer application",
+                    $"{user.FullName} has applied as a Buyer and is waiting for approval.");
+            }
+        }
+
+        return StatusCode(StatusCodes.Status201Created, new RegisterResponse
+        {
+            Message = "Your application has been submitted and is waiting for approval.",
+            Status = nameof(RegistrationStatus.Pending),
+        });
     }
 
     [HttpPost("login")]
     public async Task<ActionResult<AuthResponse>> Login(LoginRequest request)
     {
         var user = await _userManager.FindByEmailAsync(request.Email);
-        if (user is null || !user.IsActive || !await _userManager.CheckPasswordAsync(user, request.Password))
+        if (user is null || !await _userManager.CheckPasswordAsync(user, request.Password))
+        {
+            return Unauthorized(new { message = "Invalid email or password." });
+        }
+
+        if (user.RegistrationStatus == RegistrationStatus.Pending)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { message = "Your account is waiting for approval." });
+        }
+
+        if (user.RegistrationStatus == RegistrationStatus.Rejected)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { message = "Your registration was not approved.", reason = user.RejectionReason });
+        }
+
+        if (!user.IsActive)
         {
             return Unauthorized(new { message = "Invalid email or password." });
         }

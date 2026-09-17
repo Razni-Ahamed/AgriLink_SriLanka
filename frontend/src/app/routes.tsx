@@ -7,6 +7,7 @@ import { issuesRoutes } from '@/features/issues/routes'
 import { marketplacePublicRoutes, marketplaceRoutes } from '@/features/marketplace/routes'
 import { officerRoutes } from '@/features/officer/routes'
 import { ordersRoutes } from '@/features/orders/routes'
+import { registrationsRoutes } from '@/features/registrations/routes'
 import { AppLayout } from './AppLayout'
 import { RequireAuth } from './RequireAuth'
 import { RoleHomeRedirect } from './RoleHomeRedirect'
@@ -36,6 +37,7 @@ export const router = createBrowserRouter([
           ...marketplaceRoutes,
           ...officerRoutes,
           ...ordersRoutes,
+          ...registrationsRoutes,
           { path: '/unauthorized', element: <UnauthorizedPage /> },
         ],
       },

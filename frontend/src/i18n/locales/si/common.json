@@ -15,7 +15,8 @@
     "departments": "දෙපාර්තමේන්තු",
     "auditLog": "විගණන සටහන",
     "myReviews": "මගේ සමාලෝචන",
-    "officerDashboard": "උපකරණ පුවරුව"
+    "officerDashboard": "උපකරණ පුවරුව",
+    "pendingRegistrations": "අපේක්ෂිත ලියාපදිංචි කිරීම්"
   },
   "actions": {
     "saving": "සුරකිමින්…",
@@ -61,6 +62,11 @@
     "role": "භූමිකාව",
     "department": "දෙපාර්තමේන්තුව",
     "businessName": "ව්‍යාපාරයේ නම",
+    "fieldPlotNumber": "ඉඩම/කුඹුර අංකය",
+    "phoneNumber": "දුරකථන අංකය",
+    "businessRegistrationNumber": "ව්‍යාපාර ලියාපදිංචි අංකය",
+    "businessPhone": "ව්‍යාපාර දුරකථන අංකය",
+    "legalBusinessName": "නීතිමය ව්‍යාපාර නාමය",
     "status": "තත්ත්වය",
     "location": "ස්ථානය",
     "quantity": "ප්‍රමාණය",
@@ -132,7 +138,12 @@
     "onlyAvailable": "තිබෙන්නේ {{max}}ක් පමණි",
     "departmentRequiredOfficer": "නිලධාරී ගිණුම් සඳහා දෙපාර්තමේන්තුව අවශ්‍යයි",
     "businessNameRequiredBuyer": "ගැනුම්කරු ගිණුම් සඳහා ව්‍යාපාරයේ නම අවශ්‍යයි",
-    "cropRequired": "මෙය කුමන බෝගය සඳහාද යන්න තෝරන්න."
+    "cropRequired": "මෙය කුමන බෝගය සඳහාද යන්න තෝරන්න.",
+    "fieldPlotNumberRequired": "ඉඩම/කුඹුර අංකය අවශ්‍යයි",
+    "phoneNumberRequired": "දුරකථන අංකය අවශ්‍යයි",
+    "businessRegistrationNumberRequired": "ව්‍යාපාර ලියාපදිංචි අංකය අවශ්‍යයි",
+    "businessPhoneRequired": "ව්‍යාපාර දුරකථන අංකය අවශ්‍යයි",
+    "legalBusinessNameRequired": "නීතිමය ව්‍යාපාර නාමය අවශ්‍යයි"
   },
   "severity": {
     "Low": "අඩු",

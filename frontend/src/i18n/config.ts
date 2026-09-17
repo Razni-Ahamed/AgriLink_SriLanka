@@ -8,6 +8,7 @@ import enIssues from './locales/en/issues.json'
 import enMarketplace from './locales/en/marketplace.json'
 import enOfficer from './locales/en/officer.json'
 import enOrders from './locales/en/orders.json'
+import enRegistrations from './locales/en/registrations.json'
 
 import siAuth from './locales/si/auth.json'
 import siCommon from './locales/si/common.json'
@@ -16,6 +17,7 @@ import siIssues from './locales/si/issues.json'
 import siMarketplace from './locales/si/marketplace.json'
 import siOfficer from './locales/si/officer.json'
 import siOrders from './locales/si/orders.json'
+import siRegistrations from './locales/si/registrations.json'
 
 import taAuth from './locales/ta/auth.json'
 import taCommon from './locales/ta/common.json'
@@ -24,6 +26,7 @@ import taIssues from './locales/ta/issues.json'
 import taMarketplace from './locales/ta/marketplace.json'
 import taOfficer from './locales/ta/officer.json'
 import taOrders from './locales/ta/orders.json'
+import taRegistrations from './locales/ta/registrations.json'
 
 import {
   DEFAULT_LANGUAGE,
@@ -67,6 +70,7 @@ export const resources = {
     marketplace: enMarketplace,
     officer: enOfficer,
     orders: enOrders,
+    registrations: enRegistrations,
   },
   si: {
     common: siCommon,
@@ -76,6 +80,7 @@ export const resources = {
     marketplace: siMarketplace,
     officer: siOfficer,
     orders: siOrders,
+    registrations: siRegistrations,
   },
   ta: {
     common: taCommon,
@@ -85,6 +90,7 @@ export const resources = {
     marketplace: taMarketplace,
     officer: taOfficer,
     orders: taOrders,
+    registrations: taRegistrations,
   },
 } as const
 
@@ -95,7 +101,7 @@ void i18n.use(initReactI18next).init({
   lng: readStoredLanguage(),
   fallbackLng: DEFAULT_LANGUAGE,
   defaultNS: 'common',
-  ns: ['common', 'auth', 'farms', 'issues', 'marketplace', 'officer', 'orders'],
+  ns: ['common', 'auth', 'farms', 'issues', 'marketplace', 'officer', 'orders', 'registrations'],
   // React escapes interpolated values already.
   interpolation: { escapeValue: false },
 })
