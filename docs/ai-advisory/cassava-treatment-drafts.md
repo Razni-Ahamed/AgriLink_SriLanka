@@ -1,6 +1,11 @@
 # Cassava treatment drafts — for agricultural officer review
 
-**Status: DRAFT. Not approved. Nothing here is shown to farmers.**
+**Status: DRAFT, awaiting approval. Nothing here is shown to farmers.**
+
+These drafts are now loaded in the app, but only as a **suggestion shown to the reviewing officer**,
+who can use the text as it is, edit it, or ignore it. Every disease is still marked serious, so a
+farmer only ever receives what an officer decided. Approving the wording below and clearing the
+serious flag is what would let advice reach farmers directly.
 
 When a farmer reports a cassava problem with a photo, the AI model identifies one of five classes.
 For each class, the app can show a treatment to the farmer — either straight away (only if the

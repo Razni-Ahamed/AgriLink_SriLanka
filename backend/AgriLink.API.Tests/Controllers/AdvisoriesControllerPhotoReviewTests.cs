@@ -280,6 +280,24 @@ public class AdvisoriesControllerPhotoReviewTests
     }
 
     [Fact]
+    public async Task Officer_SeesTheKnowledgeBaseAdviceAsAStartingPoint_AndTheFarmerDoesNot()
+    {
+        using var db = SeedPhotoAdvisory(AdvisoryStatus.Preliminary);
+        var expected = new DiseaseKnowledgeBase().Find("Cassava", Mosaic)!.Treatment;
+
+        var officerView = Assert.IsType<AdvisoryResponse>(
+            Assert.IsType<OkObjectResult>((await CreateController(db).GetById(1)).Result).Value);
+        var farmerView = Assert.IsType<AdvisoryResponse>(
+            Assert.IsType<OkObjectResult>((await CreateController(db, FarmerUserId, "Farmer").GetById(1)).Result).Value);
+
+        Assert.False(string.IsNullOrWhiteSpace(expected));
+        Assert.Equal(expected, officerView.PhotoDiagnosis!.SuggestedTreatment);
+        // It is a suggestion for the officer, not advice the farmer has been given.
+        Assert.Null(farmerView.PhotoDiagnosis!.SuggestedTreatment);
+        Assert.Null(farmerView.OfficerTreatment);
+    }
+
+    [Fact]
     public async Task Officer_SeesConfidenceEscalationReasonsAndCorrectionOptions()
     {
         using var db = SeedPhotoAdvisory(AdvisoryStatus.Draft);

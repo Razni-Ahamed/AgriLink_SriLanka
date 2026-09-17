@@ -160,6 +160,32 @@ describe('ApproveRejectControls', () => {
     )
   })
 
+  it('offers the suggested treatment and fills the box with it on one click', async () => {
+    const suggestion = 'Pull out affected plants and take cuttings only from healthy ones.'
+    renderControls(
+      advisory({
+        photoDiagnosis: { ...advisory().photoDiagnosis!, suggestedTreatment: suggestion },
+      }),
+    )
+
+    expect(screen.getByText('Suggested treatment (not officer-approved)')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: /use this text/i }))
+
+    expect(screen.getByLabelText('Treatment for the farmer')).toHaveValue(suggestion)
+
+    await userEvent.click(screen.getByRole('button', { name: 'Confirm diagnosis' }))
+    expect(approveMutate).toHaveBeenCalledWith(
+      { note: undefined, treatment: suggestion, diseaseKey: undefined },
+      expect.anything(),
+    )
+  })
+
+  it('shows no suggestion when the knowledge base has no advice for the disease', () => {
+    renderControls(advisory())
+
+    expect(screen.queryByText('Suggested treatment (not officer-approved)')).not.toBeInTheDocument()
+  })
+
   it('keeps plain approve and reject for an advisory without a photo diagnosis', async () => {
     renderControls(advisory({ photoDiagnosis: null }))
 

@@ -67,6 +67,11 @@ public class PhotoDiagnosisResponse
     /// <summary>EscalationReason codes: why this diagnosis was held for the officer.</summary>
     public List<string>? EscalationReasons { get; set; }
 
+    /// <summary>Officer/Admin only: the knowledge base's advice for this disease, offered as a starting
+    /// point for the officer's own treatment. Not approved advice, and never sent to a farmer by itself
+    /// while the disease is marked serious.</summary>
+    public string? SuggestedTreatment { get; set; }
+
     /// <summary>What the officer may correct the diagnosis to: the crop's classes, then "other".</summary>
     public List<DiseaseOptionResponse>? DiseaseOptions { get; set; }
 }

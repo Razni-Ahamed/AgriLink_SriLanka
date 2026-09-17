@@ -286,9 +286,11 @@ public class AgentOrchestratorTests
 
         var advisory = await pipeline.Create(db).RunPipelineAsync(CreateIssue(), CassavaCrop(), Array.Empty<CropActivity>(), Photo, CancellationToken.None);
 
+        // The shipped entries carry drafted advice for the officer, but every disease is marked serious,
+        // so the case is still held back and the farmer is given nothing.
         Assert.Equal(AdvisoryStatus.Draft, advisory.Status);
         Assert.Equal(
-            new[] { EscalationReason.SeriousDisease, EscalationReason.NoApprovedTreatment, EscalationReason.AutoReleaseDisabled },
+            new[] { EscalationReason.SeriousDisease, EscalationReason.AutoReleaseDisabled },
             advisory.EscalationReasons!.Split(','));
         Assert.Empty(pipeline.FindingsSentToValidation!.RecommendedActions);
     }
