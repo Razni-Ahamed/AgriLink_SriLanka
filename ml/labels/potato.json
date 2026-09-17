@@ -1,0 +1,26 @@
+{
+  "crop": "Potato",
+  "version": 1,
+  "classes": [
+    { "id": 0, "key": "potato_early_blight", "name": "Potato early blight" },
+    { "id": 1, "key": "potato_late_blight", "name": "Potato late blight" },
+    { "id": 2, "key": "healthy", "name": "Healthy" }
+  ],
+  "sources": {
+    "plantvillage-2016": {
+      "description": "PlantVillage raw/color folder names (lab photos on plain backgrounds).",
+      "labelMap": {
+        "Potato___Early_blight": "potato_early_blight",
+        "Potato___Late_blight": "potato_late_blight",
+        "Potato___healthy": "healthy"
+      }
+    },
+    "plantdoc-2020": {
+      "description": "PlantDoc train/ and test/ folder names (field photos from the web). PlantDoc has no healthy potato class.",
+      "labelMap": {
+        "Potato leaf early blight": "potato_early_blight",
+        "Potato leaf late blight": "potato_late_blight"
+      }
+    }
+  }
+}

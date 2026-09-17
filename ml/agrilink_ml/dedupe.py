@@ -59,3 +59,30 @@ def group_near_duplicates(hashes: list[int], max_distance: int, chunk_size: int 
     # Renumber to small consecutive ids in order of first appearance.
     renumbered: dict[int, int] = {}
     return [renumbered.setdefault(find(i), len(renumbered)) for i in range(count)]
+
+
+def merge_groups(group_ids: list[int], keys: list[str | None]) -> list[int]:
+    """Joins groups whose members share a key (for example the same leaf id in a dataset's file
+    names), on top of the image-similarity groups. Items without a key keep their group."""
+    parent: dict[int, int] = {}
+
+    def find(group: int) -> int:
+        parent.setdefault(group, group)
+        while parent[group] != group:
+            parent[group] = parent[parent[group]]
+            group = parent[group]
+        return group
+
+    first_group_for_key: dict[str, int] = {}
+    for group, key in zip(group_ids, keys):
+        if key is None:
+            continue
+        if key in first_group_for_key:
+            root_a, root_b = find(first_group_for_key[key]), find(group)
+            if root_a != root_b:
+                parent[max(root_a, root_b)] = min(root_a, root_b)
+        else:
+            first_group_for_key[key] = group
+
+    renumbered: dict[int, int] = {}
+    return [renumbered.setdefault(find(group), len(renumbered)) for group in group_ids]
