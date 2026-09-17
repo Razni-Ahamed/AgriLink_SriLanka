@@ -34,6 +34,12 @@ public class AgriLinkDbContext : IdentityDbContext<ApplicationUser, IdentityRole
     {
         base.OnModelCreating(builder);
 
+        builder.Entity<ApplicationUser>(entity =>
+        {
+            entity.Property(u => u.RegistrationStatus).HasConversion<string>().HasMaxLength(20);
+            entity.Property(u => u.RejectionReason).HasMaxLength(500);
+        });
+
         builder.Entity<FarmerProfile>(entity =>
         {
             entity.HasIndex(f => f.UserId).IsUnique();
@@ -43,6 +49,8 @@ public class AgriLinkDbContext : IdentityDbContext<ApplicationUser, IdentityRole
                 .OnDelete(DeleteBehavior.Cascade);
             entity.Property(f => f.NIC).HasMaxLength(20).IsRequired();
             entity.Property(f => f.District).HasMaxLength(50).IsRequired();
+            entity.Property(f => f.FieldPlotNumber).HasMaxLength(50);
+            entity.Property(f => f.PhoneNumber).HasMaxLength(20);
         });
 
         builder.Entity<BuyerProfile>(entity =>
@@ -54,6 +62,9 @@ public class AgriLinkDbContext : IdentityDbContext<ApplicationUser, IdentityRole
                 .OnDelete(DeleteBehavior.Cascade);
             entity.Property(b => b.BusinessName).HasMaxLength(100).IsRequired();
             entity.Property(b => b.District).HasMaxLength(50).IsRequired();
+            entity.Property(b => b.BusinessRegistrationNumber).HasMaxLength(50);
+            entity.Property(b => b.BusinessPhone).HasMaxLength(20);
+            entity.Property(b => b.NIC).HasMaxLength(20);
         });
 
         builder.Entity<OfficerProfile>(entity =>
