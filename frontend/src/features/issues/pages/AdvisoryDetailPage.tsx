@@ -73,12 +73,15 @@ export function AdvisoryDetailPage() {
             <SealCheck size={22} weight="duotone" />
           </IconBadge>
           <p className="font-display text-lg text-text-primary">{t('advisory.ready')}</p>
-          <AdvisoryPanel advisory={advisory} />
+          <AdvisoryPanel advisory={advisory} audience="farmer" />
         </Card>
       ) : (
         <FlashOnSuccess trigger={approveFlash}>
           <Card className="flex flex-col gap-6">
-            <AdvisoryPanel advisory={advisory} />
+            <AdvisoryPanel
+              advisory={advisory}
+              audience={role === 'Farmer' ? 'farmer' : 'reviewer'}
+            />
 
             {/* Present only for the Officer/Admin caller the backend actually returned this
                 to — absent entirely on a farmer's own view of their own advisory. */}

@@ -1,3 +1,5 @@
+import type { AdvisoryStatus } from './advisories'
+
 export type IssueSeverity = 'Low' | 'Medium' | 'High'
 export type IssueStatus = 'Pending' | 'AwaitingReview' | 'Resolved' | 'Rejected'
 
@@ -6,6 +8,8 @@ export interface CreateCropIssueRequest {
   title: string
   description: string
   severity: IssueSeverity
+  /** Optional photo of the problem, already prepared for upload (see preparePhotoForUpload). */
+  photo?: File
 }
 
 export interface CropIssueResponse {
@@ -28,4 +32,8 @@ export interface CropIssueResponse {
   reviewedAt?: string
   /** The reviewing officer's own note on the latest advisory, if they left one. */
   reviewNote?: string
+  /** Status of the latest advisory; null before one exists. */
+  advisoryStatus?: AdvisoryStatus | null
+  /** Whether the farmer attached a photo to the report. */
+  hasPhoto: boolean
 }

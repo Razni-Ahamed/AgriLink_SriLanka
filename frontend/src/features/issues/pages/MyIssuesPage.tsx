@@ -1,5 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom'
-import { Plus, FirstAidKit } from '@phosphor-icons/react'
+import { Camera, Plus, FirstAidKit } from '@phosphor-icons/react'
 import { useTranslation } from 'react-i18next'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
@@ -22,13 +22,16 @@ const statusVariant: Record<IssueStatus, 'success' | 'warning' | 'danger' | 'inf
 }
 
 function IssueCard({ issue }: { issue: CropIssueResponse }) {
+  const { t } = useTranslation('issues')
   const statusLabel = useStatusLabel()
 
   // The AI advisory starts out Draft until an officer reviews it, and the backend
   // hides Draft advisories from the farmer who filed the issue (404s them) — so we
-  // only link through once the issue has actually been decided.
+  // only link through once the issue has been decided, or once preliminary advice from
+  // a photo diagnosis has been released to the farmer.
   const isReviewed = issue.status === 'Resolved' || issue.status === 'Rejected'
-  const canLink = isReviewed && Boolean(issue.advisoryId)
+  const hasPreliminaryAdvice = issue.advisoryStatus === 'Preliminary'
+  const canLink = (isReviewed || hasPreliminaryAdvice) && Boolean(issue.advisoryId)
 
   const content = (
     <Card interactive={canLink} className="flex flex-col gap-3">
@@ -49,8 +52,18 @@ function IssueCard({ issue }: { issue: CropIssueResponse }) {
         <SeverityBadge severity={issue.severity} />
       </div>
       <p className="line-clamp-2 text-sm text-text-secondary">{issue.description}</p>
-      <div className="flex items-center justify-between">
-        <Badge variant={statusVariant[issue.status]}>{statusLabel('issue', issue.status)}</Badge>
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center gap-1.5">
+          <Badge variant={statusVariant[issue.status]}>{statusLabel('issue', issue.status)}</Badge>
+          {hasPreliminaryAdvice && (
+            <Badge variant="info">{statusLabel('advisory', 'Preliminary')}</Badge>
+          )}
+          {issue.hasPhoto && (
+            <span title={t('mine.hasPhoto')} className="text-text-secondary">
+              <Camera size={16} weight="duotone" aria-label={t('mine.hasPhoto')} />
+            </span>
+          )}
+        </div>
         <span className="text-xs text-text-secondary">{formatDate(issue.createdAt)}</span>
       </div>
     </Card>
