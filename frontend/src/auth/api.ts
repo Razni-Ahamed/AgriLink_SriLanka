@@ -22,12 +22,32 @@ export interface LoginRequest {
   password: string
 }
 
-export interface RegisterRequest {
+interface RegisterRequestBase {
   fullName: string
   email: string
   password: string
   nic: string
   district: string
+}
+
+export interface FarmerRegisterRequest extends RegisterRequestBase {
+  role: 'Farmer'
+  fieldPlotNumber: string
+  phoneNumber: string
+}
+
+export interface BuyerRegisterRequest extends RegisterRequestBase {
+  role: 'Buyer'
+  businessRegistrationNumber: string
+  businessPhone: string
+  legalBusinessName: string
+}
+
+export type RegisterRequest = FarmerRegisterRequest | BuyerRegisterRequest
+
+export interface RegisterResponse {
+  message: string
+  status: 'Pending'
 }
 
 export async function login(request: LoginRequest): Promise<AuthResponse> {
@@ -44,8 +64,8 @@ export async function adminLogin(request: LoginRequest): Promise<AuthResponse> {
   return data
 }
 
-export async function register(request: RegisterRequest): Promise<AuthResponse> {
-  const { data } = await apiClient.post<AuthResponse>('/api/auth/register', request)
+export async function register(request: RegisterRequest): Promise<RegisterResponse> {
+  const { data } = await apiClient.post<RegisterResponse>('/api/auth/register', request)
   return data
 }
 
