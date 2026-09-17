@@ -1,7 +1,9 @@
 using System.Text.Json;
 using AgriLink.API.Data;
 using AgriLink.API.Models;
+using AgriLink.API.Services.Agents.ImageClassification;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace AgriLink.API.Services.Agents;
 
@@ -13,6 +15,9 @@ public class AgentOrchestrator : IAgentOrchestrator
     private readonly ICropAnalysisAgent _cropAgent;
     private readonly IWeatherAgent _weatherAgent;
     private readonly IValidationAgent _validationAgent;
+    private readonly IImageClassifier _classifier;
+    private readonly IDiseaseKnowledgeBase _diseases;
+    private readonly ImageClassificationOptions _imageOptions;
     private readonly ILogger<AgentOrchestrator> _logger;
 
     public AgentOrchestrator(
@@ -22,6 +27,9 @@ public class AgentOrchestrator : IAgentOrchestrator
         ICropAnalysisAgent cropAgent,
         IWeatherAgent weatherAgent,
         IValidationAgent validationAgent,
+        IImageClassifier classifier,
+        IDiseaseKnowledgeBase diseases,
+        IOptions<ImageClassificationOptions> imageOptions,
         ILogger<AgentOrchestrator> logger)
     {
         _db = db;
@@ -30,6 +38,9 @@ public class AgentOrchestrator : IAgentOrchestrator
         _cropAgent = cropAgent;
         _weatherAgent = weatherAgent;
         _validationAgent = validationAgent;
+        _classifier = classifier;
+        _diseases = diseases;
+        _imageOptions = imageOptions.Value;
         _logger = logger;
     }
 
@@ -37,6 +48,7 @@ public class AgentOrchestrator : IAgentOrchestrator
         CropIssue issue,
         Crop crop,
         IReadOnlyList<CropActivity> recentActivities,
+        byte[]? photo,
         CancellationToken cancellationToken)
     {
         var context = new AgentContext
@@ -68,14 +80,45 @@ public class AgentOrchestrator : IAgentOrchestrator
 
         try
         {
+            // The photo model runs only for a photo of a crop it covers, and before the planner, so
+            // the plan can use the diagnosis. Any failure (timeout, unreadable photo) leaves
+            // ImageFindings null and the issue goes through the text-only agents as before.
+            if (photo is not null && _classifier.SupportsCrop(context.CropType))
+            {
+                var findings = await ExecuteStepAsync(
+                    workflow, "ImageClassificationAgent",
+                    new { context.CropType, PhotoBytes = photo.Length },
+                    ct => _classifier.ClassifyAsync(context.CropType, photo, ct), cancellationToken);
+                context = context with { ImageFindings = findings };
+            }
+
             var plan = await ExecuteStepAsync(
                 workflow, "PlannerAgent",
-                new { context.IssueTitle, Severity = context.Severity.ToString(), context.CropType },
+                new { context.IssueTitle, Severity = context.Severity.ToString(), context.CropType, HasPhotoDiagnosis = context.ImageFindings is not null },
                 ct => _planner.CreatePlanAsync(context, ct), cancellationToken)
-                ?? new PlannerPlan { UseCropAgent = true, UseWeatherAgent = false, Reasoning = "Planner failed; defaulting to crop-only analysis." };
+                ?? new PlannerPlan
+                {
+                    UseCropAgent = context.ImageFindings is null,
+                    UseWeatherAgent = false,
+                    Reasoning = "Planner failed; defaulting to crop-only analysis.",
+                };
 
             CropFindings? cropFindings = null;
-            if (plan.UseCropAgent)
+            PhotoTriageResult? triage = null;
+            if (context.ImageFindings is { } image)
+            {
+                var disease = _diseases.Find(context.CropType, image.Top.Key);
+                triage = await ExecuteStepAsync(
+                    workflow, "PhotoTriageAgent",
+                    new { image.Top.Key, image.Top.Probability, image.AutoReleaseThreshold },
+                    _ => Task.FromResult(PhotoTriage.Decide(
+                        image, disease, _diseases.ForCrop(context.CropType),
+                        $"{context.IssueTitle} {context.IssueDescription}", _imageOptions.AutoReleaseEnabled)),
+                    cancellationToken);
+                cropFindings = FindingsFromPhoto(image, disease, triage);
+                RecordPhotoDiagnosis(advisory, image, triage);
+            }
+            else if (plan.UseCropAgent)
             {
                 cropFindings = await ExecuteStepAsync(
                     workflow, "CropAnalysisAgent",
@@ -107,6 +150,13 @@ public class AgentOrchestrator : IAgentOrchestrator
                 ApplySafeFallback(advisory, context);
             }
 
+            // Released to the farmer only when triage found no reason to hold it — and even then the
+            // officer still reviews it afterwards.
+            if (validation is not null && triage?.AutoRelease == true)
+            {
+                advisory.Status = AdvisoryStatus.Preliminary;
+            }
+
             advisory.RequiresApproval = true; // hard rule: officer sign-off is always required
             workflow.Status = WorkflowStatus.Completed;
         }
@@ -123,6 +173,40 @@ public class AgentOrchestrator : IAgentOrchestrator
 
         await NotifyOfficersAsync(context, cancellationToken);
         return advisory;
+    }
+
+    // The photo diagnosis in the shape ValidationAgent already reconciles with weather. Treatment is
+    // only passed on when triage allowed releasing it; otherwise the officer decides the treatment.
+    private static CropFindings FindingsFromPhoto(ImageFindings image, DiseaseKnowledgeEntry? disease, PhotoTriageResult? triage)
+    {
+        var name = disease?.DisplayName ?? image.Top.Name;
+        var cause = disease?.IsHealthy == true
+            ? $"No disease visible in the photo ({image.Top.Probability:P0} model confidence)"
+            : $"{name} (identified from the photo with {image.Top.Probability:P0} model confidence)";
+
+        var releasable = triage?.AutoRelease == true && !string.IsNullOrWhiteSpace(disease?.Treatment);
+
+        return new CropFindings
+        {
+            PossibleCauses = new[] { cause },
+            RecommendedActions = releasable ? new[] { disease!.Treatment! } : Array.Empty<string>(),
+            Confidence = (float)image.Top.Probability,
+            Notes = triage is null
+                ? "Photo triage did not complete; an officer must review this diagnosis."
+                : triage.AutoRelease
+                    ? "Confident photo diagnosis of a known, minor disease with officer-approved advice."
+                    : $"Needs officer review: {string.Join(", ", triage.EscalationReasons)}.",
+        };
+    }
+
+    private static void RecordPhotoDiagnosis(AIAdvisory advisory, ImageFindings image, PhotoTriageResult? triage)
+    {
+        advisory.PredictedDiseaseKey = image.Top.Key;
+        advisory.ModelConfidence = (float)image.Top.Probability;
+        advisory.ModelVersion = image.ModelVersion;
+        advisory.EscalationReasons = triage is null
+            ? "TriageFailed"
+            : triage.EscalationReasons.Count > 0 ? string.Join(",", triage.EscalationReasons) : null;
     }
 
     private static void ApplySafeFallback(AIAdvisory advisory, AgentContext context)

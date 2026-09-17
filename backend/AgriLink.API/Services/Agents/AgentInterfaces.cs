@@ -32,5 +32,6 @@ public interface IAgentOrchestrator
         CropIssue issue,
         Crop crop,
         IReadOnlyList<CropActivity> recentActivities,
+        byte[]? photo,
         CancellationToken cancellationToken);
 }

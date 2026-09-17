@@ -33,7 +33,7 @@ public class IssuesControllerCreatePhotoTests
     {
         _orchestrator
             .Setup(o => o.RunPipelineAsync(It.IsAny<CropIssue>(), It.IsAny<Crop>(),
-                It.IsAny<IReadOnlyList<CropActivity>>(), It.IsAny<CancellationToken>()))
+                It.IsAny<IReadOnlyList<CropActivity>>(), It.IsAny<byte[]?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(() => new AIAdvisory { Status = AdvisoryStatus.Draft, Recommendation = "Inspect the leaves." });
 
         _storage
@@ -116,6 +116,9 @@ public class IssuesControllerCreatePhotoTests
         Assert.Single(db.CropIssues);
         Assert.Empty(db.IssueImages);
         _storage.VerifyNoOtherCalls();
+        _orchestrator.Verify(o => o.RunPipelineAsync(
+            It.IsAny<CropIssue>(), It.IsAny<Crop>(), It.IsAny<IReadOnlyList<CropActivity>>(),
+            null, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -129,6 +132,11 @@ public class IssuesControllerCreatePhotoTests
         _storage.Verify(s => s.SaveAsync(
             It.Is<byte[]>(bytes => bytes[0] == 0xFF && bytes[1] == 0xD8),
             "image/jpeg",
+            It.IsAny<CancellationToken>()), Times.Once);
+        // The agents classify the same processed JPEG that was stored, not the raw upload.
+        _orchestrator.Verify(o => o.RunPipelineAsync(
+            It.IsAny<CropIssue>(), It.IsAny<Crop>(), It.IsAny<IReadOnlyList<CropActivity>>(),
+            It.Is<byte[]?>(bytes => bytes != null && bytes[0] == 0xFF && bytes[1] == 0xD8),
             It.IsAny<CancellationToken>()), Times.Once);
 
         var image = Assert.Single(db.IssueImages);
@@ -197,7 +205,7 @@ public class IssuesControllerCreatePhotoTests
         var db = SeedFarmerWithCrop();
         _orchestrator
             .Setup(o => o.RunPipelineAsync(It.IsAny<CropIssue>(), It.IsAny<Crop>(),
-                It.IsAny<IReadOnlyList<CropActivity>>(), It.IsAny<CancellationToken>()))
+                It.IsAny<IReadOnlyList<CropActivity>>(), It.IsAny<byte[]?>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new OperationCanceledException());
 
         await Assert.ThrowsAsync<OperationCanceledException>(() => CreateController(db).CreateWithPhoto(Request(PngPhoto())));
