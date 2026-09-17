@@ -1,0 +1,23 @@
+{
+  "crop": "Cassava",
+  "version": 1,
+  "classes": [
+    { "id": 0, "key": "cassava_bacterial_blight", "name": "Cassava bacterial blight (CBB)" },
+    { "id": 1, "key": "cassava_brown_streak_disease", "name": "Cassava brown streak disease (CBSD)" },
+    { "id": 2, "key": "cassava_green_mottle", "name": "Cassava green mottle (CGM)" },
+    { "id": 3, "key": "cassava_mosaic_disease", "name": "Cassava mosaic disease (CMD)" },
+    { "id": 4, "key": "healthy", "name": "Healthy" }
+  ],
+  "sources": {
+    "kaggle-cassava-2020": {
+      "description": "Kaggle competition 'Cassava Leaf Disease Classification' — train.csv label numbers, as defined in label_num_to_disease_map.json.",
+      "labelMap": {
+        "0": "cassava_bacterial_blight",
+        "1": "cassava_brown_streak_disease",
+        "2": "cassava_green_mottle",
+        "3": "cassava_mosaic_disease",
+        "4": "healthy"
+      }
+    }
+  }
+}
