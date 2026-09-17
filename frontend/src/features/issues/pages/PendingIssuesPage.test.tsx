@@ -7,6 +7,11 @@ import { usePendingIssues } from '../hooks/useIssues'
 import { PendingIssuesPage } from './PendingIssuesPage'
 
 vi.mock('../hooks/useIssues', () => ({ usePendingIssues: vi.fn() }))
+// The real store pulls in the API client, whose settings check throws where no .env exists (CI).
+vi.mock('@/auth/authStore', () => ({
+  useAuthStore: <T,>(selector: (state: { role: string; user: { district: string } }) => T) =>
+    selector({ role: 'Officer', user: { district: 'Kandy' } }),
+}))
 
 function issue(overrides: Partial<CropIssueResponse>): CropIssueResponse {
   return {
@@ -59,6 +64,7 @@ describe('PendingIssuesPage', () => {
       </MemoryRouter>,
     )
 
+    expect(screen.getByText('Showing issues in Kandy')).toBeInTheDocument()
     const heldBack = screen.getByRole('link', { name: /Held back/ })
     expect(within(heldBack).getByText('Needs your decision')).toBeInTheDocument()
     expect(within(heldBack).getByLabelText('Photo attached')).toBeInTheDocument()
