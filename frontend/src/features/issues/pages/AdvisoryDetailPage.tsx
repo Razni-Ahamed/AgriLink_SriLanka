@@ -11,6 +11,7 @@ import { useAuthStore } from '@/auth/authStore'
 import { AdvisoryPanel } from '../components/AdvisoryPanel'
 import { AgentTracePanel } from '../components/AgentTracePanel'
 import { ApproveRejectControls } from '../components/ApproveRejectControls'
+import { PhotoDiagnosisReviewPanel } from '../components/PhotoDiagnosisReviewPanel'
 import { PreviousIssuesList } from '../components/PreviousIssuesList'
 import { useAdvisory } from '../hooks/useAdvisories'
 
@@ -45,7 +46,10 @@ export function AdvisoryDetailPage() {
     )
   }
 
-  const canReview = (role === 'Officer' || role === 'Admin') && advisory.status === 'Draft'
+  // Preliminary advice has already reached the farmer but still awaits the officer's decision.
+  const canReview =
+    (role === 'Officer' || role === 'Admin') &&
+    (advisory.status === 'Draft' || advisory.status === 'Preliminary')
   const showControls = canReview || justRejected
 
   return (
@@ -83,6 +87,8 @@ export function AdvisoryDetailPage() {
               audience={role === 'Farmer' ? 'farmer' : 'reviewer'}
             />
 
+            {role !== 'Farmer' && <PhotoDiagnosisReviewPanel advisory={advisory} />}
+
             {/* Present only for the Officer/Admin caller the backend actually returned this
                 to — absent entirely on a farmer's own view of their own advisory. */}
             {advisory.previousIssues && <PreviousIssuesList issues={advisory.previousIssues} />}
@@ -97,7 +103,7 @@ export function AdvisoryDetailPage() {
                   transition={{ duration: 0.3 }}
                 >
                   <ApproveRejectControls
-                    advisoryId={advisory.advisoryId}
+                    advisory={advisory}
                     shakeTrigger={shakeTrigger}
                     onApproved={() => setApproveFlash((flag) => !flag)}
                     onRejected={() => {

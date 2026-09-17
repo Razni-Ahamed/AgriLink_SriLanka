@@ -46,7 +46,10 @@
     "empty": "No issues are awaiting review right now.",
     "cropAndDate": "{{crop}} · {{date}}",
     "scopedToDistrict": "Showing issues in {{district}}",
-    "reportedBy": "Reported by {{name}}"
+    "reportedBy": "Reported by {{name}}",
+    "needsDecision": "Needs your decision",
+    "adviceSent": "Advice sent — confirm",
+    "hasPhoto": "Photo attached"
   },
   "all": {
     "title": "All Issues",
@@ -83,7 +86,21 @@
     "officerAdvice": "Officer's advice",
     "photos": "Photos",
     "photoAlt": "Photo attached to this report",
-    "photoUnavailable": "Photo unavailable"
+    "photoUnavailable": "Photo unavailable",
+    "review": {
+      "confirmDiagnosis": "Confirm diagnosis",
+      "correctDiagnosis": "Correct diagnosis",
+      "treatmentLabelRequired": "Treatment for the farmer",
+      "treatmentLabelOptional": "Treatment for the farmer (optional — replaces the preliminary advice)",
+      "treatmentPlaceholder": "What should the farmer do? This is sent to them as your advice.",
+      "correctDiseaseLabel": "Correct disease (only if the photo diagnosis is wrong)",
+      "correctDiseasePlaceholder": "Choose the correct disease",
+      "treatmentRequired": "Add the treatment the farmer should follow.",
+      "diseaseRequired": "Choose the correct disease to correct the diagnosis.",
+      "useCorrectToChange": "To change the diagnosis, use Correct diagnosis.",
+      "confirmed": "Diagnosis confirmed.",
+      "corrected": "Diagnosis corrected. The farmer will be told to follow your advice."
+    }
   },
   "previousIssues": {
     "title": "Previous issues on this crop ({{count}})",
@@ -109,6 +126,24 @@
     "outcome": {
       "Resolved": "Approved",
       "Rejected": "Rejected"
+    }
+  },
+  "photoReview": {
+    "title": "Photo diagnosis",
+    "disease": "Identified: {{disease}}",
+    "modelConfidence": "{{value}}% model confidence",
+    "modelVersion": "Model {{version}}",
+    "reasonsTitle": "Why this needs your review",
+    "adviceAlreadySent": "Preliminary advice has already been sent to the farmer. Confirm it, or correct it — the farmer will be told to follow your advice instead.",
+    "reasons": {
+      "UnknownDisease": "The model predicted a disease the system has no information about.",
+      "SeriousDisease": "This disease is marked serious and always needs an officer.",
+      "NoApprovedTreatment": "There is no officer-approved treatment for this disease yet.",
+      "ModelNeverAutoReleases": "The model is not reliable enough on this disease to advise farmers on its own.",
+      "LowConfidence": "The model's confidence is below the level needed to advise the farmer automatically.",
+      "DescriptionMismatch": "The farmer's description names a different disease than the photo shows.",
+      "AutoReleaseDisabled": "Automatic advice is switched off, so every photo diagnosis waits for an officer.",
+      "TriageFailed": "The automatic check of this diagnosis did not complete."
     }
   }
 }
