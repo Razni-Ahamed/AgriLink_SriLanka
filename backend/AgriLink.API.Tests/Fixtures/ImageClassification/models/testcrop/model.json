@@ -1,0 +1,50 @@
+{
+  "crop": "TestCrop",
+  "labelsVersion": 1,
+  "modelVersion": "testcrop-fixture",
+  "input": {
+    "name": "image",
+    "layout": "NCHW",
+    "width": 32,
+    "height": 32,
+    "colorOrder": "RGB",
+    "resize": "stretch",
+    "interpolation": "bilinear",
+    "scale": 0.00392156862745098,
+    "mean": [
+      0.485,
+      0.456,
+      0.406
+    ],
+    "std": [
+      0.229,
+      0.224,
+      0.225
+    ]
+  },
+  "output": {
+    "name": "probabilities"
+  },
+  "classes": [
+    {
+      "id": 0,
+      "key": "red_disease",
+      "name": "Red disease",
+      "autoReleaseThreshold": 0.9
+    },
+    {
+      "id": 1,
+      "key": "green_disease",
+      "name": "Green disease",
+      "autoReleaseThreshold": null
+    },
+    {
+      "id": 2,
+      "key": "blue_disease",
+      "name": "Blue disease",
+      "autoReleaseThreshold": 0.5
+    }
+  ],
+  "temperature": 1.0,
+  "targetPrecision": 0.95
+}

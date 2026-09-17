@@ -35,3 +35,5 @@
 *.pdf binary
 *.zip binary
 *.apk binary
+*.onnx binary
+*.bin binary
