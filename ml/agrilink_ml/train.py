@@ -254,7 +254,8 @@ def write_report(path: Path, metadata: dict, labels_file: CropLabels) -> None:
         f"- Architecture: `{metadata['training']['architecture']}` at {metadata['input']['width']}px, "
         f"best epoch {metadata['training']['bestEpoch']} of {metadata['training']['epochs']}",
         f"- Temperature: {metadata['temperature']:.3f}",
-        f"- Auto-release: per-class confidence thresholds chosen on the validation split for "
+        f"- Auto-release: per-class confidence thresholds chosen on the validation split "
+        f"({'all datasets' if metadata['thresholdSources'] == 'all' else 'only ' + ', '.join(metadata['thresholdSources'])}) for "
         f"{metadata['targetPrecision']:.0%} precision; a class without one always goes to an officer",
         "",
         "| Class | Auto-release threshold |",
@@ -284,7 +285,43 @@ def write_report(path: Path, metadata: dict, labels_file: CropLabels) -> None:
         lines += ["", "Confusion matrix (rows = true class, columns = predicted, in class id order):", "", "```"]
         lines += ["  ".join(f"{v:6d}" for v in row) for row in m["confusionMatrix"]]
         lines += ["```", ""]
+
+    by_source = metadata["metrics"].get("testBySource")
+    if by_source:
+        lines += [
+            "## Test, by dataset",
+            "",
+            "Lab photos and field photos can score very differently; field photos are closer to what farmers send.",
+            "",
+            "| Dataset | Photos | Accuracy | Macro F1 | Auto-released | Auto-release precision |",
+            "|---|---:|---:|---:|---:|---:|",
+        ]
+        for source, m in sorted(by_source.items()):
+            released = m["autoRelease"]
+            precision = f"{released['precision']:.2%}" if released["count"] else "-"
+            lines.append(f"| {source} | {m['count']} | {m['accuracy']:.2%} | {m['macroF1']:.3f} "
+                         f"| {released['count']} ({released['coverage']:.1%}) | {precision} |")
+        lines.append("")
     path.write_text("\n".join(lines), encoding="utf-8")
+
+
+def metrics_by_source(probs: np.ndarray, labels: np.ndarray, sources: list[str], labels_file: CropLabels,
+                      thresholds: list[float | None]) -> dict:
+    """Test metrics per dataset, only worth reporting when a crop mixes datasets."""
+    if len(set(sources)) < 2:
+        return {}
+    source_array = np.array(sources)
+    result = {}
+    for source in sorted(set(sources)):
+        mask = source_array == source
+        summary = metric_summary(probs[mask], labels[mask], labels_file, thresholds)
+        result[source] = {
+            "count": int(mask.sum()),
+            "accuracy": summary["accuracy"],
+            "macroF1": summary["macroF1"],
+            "autoRelease": summary["autoRelease"],
+        }
+    return result
 
 
 def train_network(network: nn.Module, args, samples: dict[str, list[Sample]], roots: dict[str, Path],
@@ -372,6 +409,10 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--workers", type=int, default=8)
     parser.add_argument("--target-precision", type=float, default=0.95)
     parser.add_argument("--seed", type=int, default=13)
+    parser.add_argument("--threshold-source", action="append", metavar="NAME",
+                        help="Choose auto-release thresholds only from validation photos of this dataset "
+                             "(repeatable). Use the field-photo dataset when a crop mixes lab and field photos: "
+                             "thresholds set on lab photos did not hold on field photos.")
     parser.add_argument("--skip-training", action="store_true",
                         help="Reuse best.pt and history.csv already in the output folder; only calibrate, "
                              "evaluate and export.")
@@ -420,7 +461,14 @@ def main(argv: list[str] | None = None) -> int:
     val_logits, val_labels = predict_logits(network, eval_loader(VALIDATION), device)
     temperature = fit_temperature(val_logits, val_labels)
     val_probs = softmax(val_logits, temperature)
-    thresholds = choose_class_thresholds(val_probs, val_labels, args.target_precision)
+    threshold_mask = np.ones(len(val_labels), dtype=bool)
+    if args.threshold_source:
+        unknown = set(args.threshold_source) - {s.source for s in samples[VALIDATION]}
+        if unknown:
+            raise ValueError(f"--threshold-source names datasets with no validation photos: {sorted(unknown)}")
+        threshold_mask = np.isin([s.source for s in samples[VALIDATION]], args.threshold_source)
+    print(f"Choosing auto-release thresholds from {int(threshold_mask.sum())} validation photos")
+    thresholds = choose_class_thresholds(val_probs[threshold_mask], val_labels[threshold_mask], args.target_precision)
 
     test_loader = eval_loader(TEST)
     test_logits, test_labels = predict_logits(network, test_loader, device)
@@ -449,9 +497,13 @@ def main(argv: list[str] | None = None) -> int:
                     for c in labels_file.classes],
         "temperature": temperature,
         "targetPrecision": args.target_precision,
+        "thresholdSources": sorted(args.threshold_source) if args.threshold_source else "all",
         "metrics": {
             "validation": metric_summary(val_probs, val_labels, labels_file, thresholds),
             "test": metric_summary(test_probs, test_labels, labels_file, thresholds),
+            # The test loader is not shuffled, so predictions line up with the manifest's test rows.
+            "testBySource": metrics_by_source(test_probs, test_labels, [s.source for s in samples[TEST]],
+                                              labels_file, thresholds),
         },
         "training": {
             "architecture": args.architecture, "pretrained": not args.no_pretrained,

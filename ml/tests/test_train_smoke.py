@@ -41,4 +41,5 @@ def test_training_writes_a_verified_onnx_model_and_complete_metadata(tmp_path):
         threshold = label_class["autoReleaseThreshold"]
         assert threshold is None or 0 < threshold <= 1
     assert metadata["training"]["onnxMaxDifference"] <= 1e-4
-    assert set(metadata["metrics"]) == {"validation", "test"}
+    assert set(metadata["metrics"]) == {"validation", "test", "testBySource"}
+    assert metadata["metrics"]["testBySource"] == {}  # one dataset only: no per-dataset breakdown
