@@ -33,6 +33,24 @@ public partial class LocalImageStorageService : IImageStorageService
         return key;
     }
 
+    public Task<Stream> OpenReadAsync(string storageKey, CancellationToken cancellationToken)
+    {
+        var path = ResolvePath(storageKey);
+        if (!File.Exists(path))
+        {
+            throw new FileNotFoundException("No stored photo for this key.", storageKey);
+        }
+
+        try
+        {
+            return Task.FromResult<Stream>(new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, 81920, useAsync: true));
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            throw new ImageStorageException("Reading the photo from local storage failed.", ex);
+        }
+    }
+
     public Task DeleteAsync(string storageKey, CancellationToken cancellationToken)
     {
         var path = ResolvePath(storageKey);

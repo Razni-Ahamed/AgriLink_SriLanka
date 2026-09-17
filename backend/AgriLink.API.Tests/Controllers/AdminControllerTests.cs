@@ -353,6 +353,29 @@ public class AdminControllerTests
         Assert.Equal(1, metrics.IssuesResolved);
     }
 
+    [Fact]
+    public async Task Metrics_IssuesPending_CountsPreliminaryAdviceAwaitingConfirmation()
+    {
+        var (controller, db, _, farmer) = await SeedIssueFixtureAsync();
+        var farmerProfile = await db.FarmerProfiles.SingleAsync(f => f.UserId == farmer.Id);
+        db.CropIssues.Add(new CropIssue
+        {
+            IssueId = 3,
+            CropId = 1,
+            FarmerProfileId = farmerProfile.FarmerProfileId,
+            Title = "Advice sent, awaiting confirmation",
+            Description = "d",
+            Status = IssueStatus.AwaitingReview,
+            Advisories = { new AIAdvisory { AdvisoryId = 3, IssueId = 3, Status = AdvisoryStatus.Preliminary } },
+        });
+        await db.SaveChangesAsync();
+
+        var result = await controller.Metrics();
+
+        var metrics = Assert.IsType<AdminMetricsResponse>(Assert.IsType<OkObjectResult>(result.Result).Value);
+        Assert.Equal(2, metrics.IssuesPending);
+    }
+
     private static async Task<(AdminController Controller, AgriLinkDbContext Db, UserManager<ApplicationUser> Users, ApplicationUser Farmer)> SeedIssueFixtureAsync()
     {
         var (controller, db, users, _) = await CreateAsync();

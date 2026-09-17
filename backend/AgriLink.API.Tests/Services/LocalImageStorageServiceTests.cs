@@ -43,6 +43,26 @@ public sealed class LocalImageStorageServiceTests : IDisposable
         Assert.False(File.Exists(Path.Combine(_root, key.Replace('/', Path.DirectorySeparatorChar))));
     }
 
+    [Fact]
+    public async Task OpenReadAsync_ReturnsTheStoredBytes()
+    {
+        var content = new byte[] { 9, 8, 7, 6 };
+        var key = await _storage.SaveAsync(content, "image/jpeg", CancellationToken.None);
+
+        await using var stream = await _storage.OpenReadAsync(key, CancellationToken.None);
+        using var copy = new MemoryStream();
+        await stream.CopyToAsync(copy);
+
+        Assert.Equal(content, copy.ToArray());
+    }
+
+    [Fact]
+    public async Task OpenReadAsync_MissingPhoto_ThrowsFileNotFound()
+    {
+        await Assert.ThrowsAsync<FileNotFoundException>(
+            () => _storage.OpenReadAsync("issues/0123456789abcdef0123456789abcdef.jpg", CancellationToken.None));
+    }
+
     [Theory]
     [InlineData("../outside.jpg")]
     [InlineData("issues/../../outside.jpg")]

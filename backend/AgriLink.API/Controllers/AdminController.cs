@@ -371,9 +371,11 @@ public class AdminController : ControllerBase
         var totalFarms = await _db.Farms.CountAsync();
         var totalCrops = await _db.Crops.CountAsync();
         var issuesReported = await _db.CropIssues.CountAsync();
-        // Matches IssuesController.Pending()'s own definition of "pending" exactly (an issue
-        // whose latest advisory is still Draft), so this number and that queue never disagree.
-        var issuesPending = await _db.CropIssues.CountAsync(i => i.Advisories.Any(a => a.Status == AdvisoryStatus.Draft));
+        // Matches IssuesController.Pending()'s own definition of "pending" exactly (an issue with
+        // an advisory still awaiting review: Draft, or Preliminary advice not yet confirmed), so
+        // this number and that queue never disagree.
+        var issuesPending = await _db.CropIssues.CountAsync(i =>
+            i.Advisories.Any(a => a.Status == AdvisoryStatus.Draft || a.Status == AdvisoryStatus.Preliminary));
         var issuesResolved = await _db.CropIssues.CountAsync(i => i.Status == IssueStatus.Resolved);
         var harvestVolumeSoldThisMonth = await _db.Orders
             .Where(o => o.Status == OrderStatus.Completed

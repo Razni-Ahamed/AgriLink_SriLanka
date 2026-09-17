@@ -7,6 +7,12 @@ public interface IImageStorageService
     /// <exception cref="ImageStorageException">The provider could not store the image.</exception>
     Task<string> SaveAsync(byte[] content, string contentType, CancellationToken cancellationToken);
 
+    /// <summary>Opens a stored image for reading. The API streams photos itself rather than handing
+    /// out provider URLs, so who may see a farmer's photo is decided in one place.</summary>
+    /// <exception cref="FileNotFoundException">No image is stored under the key.</exception>
+    /// <exception cref="ImageStorageException">The provider could not be read from.</exception>
+    Task<Stream> OpenReadAsync(string storageKey, CancellationToken cancellationToken);
+
     /// <summary>Deletes a stored image. Deleting an image that no longer exists is not an error.</summary>
     /// <exception cref="ImageStorageException">The provider could not delete the image.</exception>
     Task DeleteAsync(string storageKey, CancellationToken cancellationToken);

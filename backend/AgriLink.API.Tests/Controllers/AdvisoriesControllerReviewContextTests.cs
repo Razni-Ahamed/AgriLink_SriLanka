@@ -4,6 +4,7 @@ using AgriLink.API.Data;
 using AgriLink.API.DTOs.Advisories;
 using AgriLink.API.Models;
 using AgriLink.API.Services;
+using AgriLink.API.Services.Agents;
 using AgriLink.API.Tests.TestSupport;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -129,7 +130,8 @@ public class AdvisoriesControllerReviewContextTests
         db,
         new CurrentUserService(db),
         new AuditLogService(db),
-        (notifications ?? new Mock<INotificationService>()).Object)
+        (notifications ?? new Mock<INotificationService>()).Object,
+        new DiseaseKnowledgeBase())
     {
         ControllerContext = new ControllerContext
         {

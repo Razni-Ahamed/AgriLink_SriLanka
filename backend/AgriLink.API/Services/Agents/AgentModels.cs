@@ -21,6 +21,10 @@ public record AgentContext
     /// <summary>What the photo model saw, when the farmer attached a photo of a crop that has a
     /// model and classification succeeded. Null means the text-only agents handle the issue.</summary>
     public ImageFindings? ImageFindings { get; init; }
+
+    /// <summary>True when photo triage allowed this advice to reach the farmer before an officer
+    /// reviews it, so the recommendation must not tell them to wait for approval.</summary>
+    public bool AdviceReleasedBeforeReview { get; init; }
 }
 
 public record PlannerPlan

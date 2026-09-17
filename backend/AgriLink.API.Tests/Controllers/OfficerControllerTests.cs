@@ -42,6 +42,34 @@ public class OfficerControllerTests
     }
 
     [Fact]
+    public async Task Metrics_PendingInDistrict_CountsPreliminaryAdviceAwaitingConfirmation()
+    {
+        var db = CreateDb();
+        db.Users.Add(new ApplicationUser { Id = FarmerUserId, UserName = "f@test.com", Email = "f@test.com", FullName = "Farmer" });
+        db.FarmerProfiles.Add(new FarmerProfile { FarmerProfileId = 1, UserId = FarmerUserId, NIC = "1", District = "Kandy" });
+        db.Departments.Add(new Department { DepartmentId = 1, Name = "Plant Protection" });
+        db.OfficerProfiles.Add(new OfficerProfile { OfficerProfileId = 1, UserId = OfficerUserId, DepartmentId = 1, District = "Kandy" });
+        db.Crops.Add(new Crop { CropId = 1, CropType = "Cassava", Field = new Field { FieldId = 1, Name = "F1", Farm = new Farm { FarmId = 1, Name = "Farm1", District = "Kandy", FarmerProfileId = 1 } } });
+        db.CropIssues.AddRange(
+            new CropIssue
+            {
+                IssueId = 1, CropId = 1, FarmerProfileId = 1, Title = "Held for inspection", Description = "d",
+                Status = IssueStatus.AwaitingReview, Advisories = { new AIAdvisory { AdvisoryId = 1, Status = AdvisoryStatus.Draft } },
+            },
+            new CropIssue
+            {
+                IssueId = 2, CropId = 1, FarmerProfileId = 1, Title = "Advice sent, awaiting confirmation", Description = "d",
+                Status = IssueStatus.AwaitingReview, Advisories = { new AIAdvisory { AdvisoryId = 2, Status = AdvisoryStatus.Preliminary } },
+            });
+        await db.SaveChangesAsync();
+
+        var result = await CreateController(db, OfficerUserId).Metrics();
+
+        var response = Assert.IsType<OfficerMetricsResponse>(Assert.IsType<OkObjectResult>(result.Result).Value);
+        Assert.Equal(2, response.PendingInDistrict);
+    }
+
+    [Fact]
     public async Task Metrics_ReturnsDistrictDepartmentAndCounts()
     {
         var db = CreateDb();

@@ -4,6 +4,7 @@ using AgriLink.API.DTOs.Advisories;
 using AgriLink.API.DTOs.Issues;
 using AgriLink.API.Models;
 using AgriLink.API.Services;
+using AgriLink.API.Services.Agents;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -19,17 +20,20 @@ public class AdvisoriesController : ControllerBase
     private readonly ICurrentUserService _currentUser;
     private readonly IAuditLogService _auditLog;
     private readonly INotificationService _notifications;
+    private readonly IDiseaseKnowledgeBase _diseases;
 
     public AdvisoriesController(
         AgriLinkDbContext db,
         ICurrentUserService currentUser,
         IAuditLogService auditLog,
-        INotificationService notifications)
+        INotificationService notifications,
+        IDiseaseKnowledgeBase diseases)
     {
         _db = db;
         _currentUser = currentUser;
         _auditLog = auditLog;
         _notifications = notifications;
+        _diseases = diseases;
     }
 
     [HttpGet("{id:int}")]
@@ -38,6 +42,7 @@ public class AdvisoriesController : ControllerBase
         var advisory = await _db.AIAdvisories
             .Include(a => a.Issue).ThenInclude(i => i.Crop).ThenInclude(c => c.Field).ThenInclude(f => f.Farm)
             .Include(a => a.Issue).ThenInclude(i => i.FarmerProfile).ThenInclude(fp => fp.User)
+            .Include(a => a.Issue).ThenInclude(i => i.Images)
             .Include(a => a.ReviewedByUser)
             .Include(a => a.Workflows).ThenInclude(w => w.Executions)
             .FirstOrDefaultAsync(a => a.AdvisoryId == id);
@@ -57,6 +62,8 @@ public class AdvisoriesController : ControllerBase
                 return Forbid();
             }
 
+            // A Draft has not been released to the farmer. A Preliminary advisory has: it carries
+            // advice from a confident photo diagnosis while the officer's confirmation is pending.
             if (advisory.Status == AdvisoryStatus.Draft)
             {
                 return NotFound();
@@ -93,19 +100,30 @@ public class AdvisoriesController : ControllerBase
     [HttpPost("{id:int}/approve")]
     [Authorize(Roles = "Officer,Admin")]
     public Task<ActionResult<AdvisoryResponse>> Approve(int id, ReviewAdvisoryRequest? request = null) =>
-        Review(id, AdvisoryStatus.Approved, IssueStatus.Resolved, request);
+        Review(id, approve: true, request);
 
     [HttpPost("{id:int}/reject")]
     [Authorize(Roles = "Officer,Admin")]
     public Task<ActionResult<AdvisoryResponse>> Reject(int id, ReviewAdvisoryRequest? request = null) =>
-        Review(id, AdvisoryStatus.Rejected, IssueStatus.Rejected, request);
+        Review(id, approve: false, request);
 
-    private async Task<ActionResult<AdvisoryResponse>> Review(
-        int id, AdvisoryStatus newStatus, IssueStatus issueStatus, ReviewAdvisoryRequest? request)
+    /// <summary>
+    /// Approve or reject an advisory awaiting review (Draft, or Preliminary advice already shown to
+    /// the farmer). For a photo diagnosis the officer decides the treatment:
+    /// <list type="bullet">
+    /// <item>Approve confirms the predicted disease. When the advice was held back (Draft) the farmer
+    /// has had none yet, so a treatment is required.</item>
+    /// <item>Reject corrects the diagnosis: the correct disease (one of the crop's classes or "other")
+    /// and a treatment are both required.</item>
+    /// </list>
+    /// Advisories without a photo diagnosis behave as before; a treatment is optional for them.
+    /// </summary>
+    private async Task<ActionResult<AdvisoryResponse>> Review(int id, bool approve, ReviewAdvisoryRequest? request)
     {
         var advisory = await _db.AIAdvisories
             .Include(a => a.Issue).ThenInclude(i => i.Crop).ThenInclude(c => c.Field).ThenInclude(f => f.Farm)
             .Include(a => a.Issue).ThenInclude(i => i.FarmerProfile).ThenInclude(fp => fp.User)
+            .Include(a => a.Issue).ThenInclude(i => i.Images)
             .Include(a => a.ReviewedByUser)
             .FirstOrDefaultAsync(a => a.AdvisoryId == id);
 
@@ -114,25 +132,44 @@ public class AdvisoriesController : ControllerBase
             return NotFound();
         }
 
-        if (advisory.Status != AdvisoryStatus.Draft)
+        var previousStatus = advisory.Status;
+        if (previousStatus is not (AdvisoryStatus.Draft or AdvisoryStatus.Preliminary))
         {
-            return BadRequest(new { message = "Only draft advisories can be reviewed." });
+            return BadRequest(new { message = "Only advisories awaiting review can be reviewed." });
         }
 
-        var note = string.IsNullOrWhiteSpace(request?.Note) ? null : request.Note.Trim();
+        var note = Trimmed(request?.Note);
+        var treatment = Trimmed(request?.Treatment);
+        var diseaseKey = Trimmed(request?.DiseaseKey);
+        var isPhotoDiagnosis = advisory.PredictedDiseaseKey is not null;
+        var wasPreliminary = previousStatus == AdvisoryStatus.Preliminary;
 
+        if (isPhotoDiagnosis)
+        {
+            var error = ValidatePhotoReview(advisory, approve, wasPreliminary, diseaseKey, treatment);
+            if (error is not null)
+            {
+                return BadRequest(new { message = error });
+            }
+
+            advisory.ConfirmedDiseaseKey = approve ? advisory.PredictedDiseaseKey : diseaseKey;
+        }
+
+        var newStatus = approve ? AdvisoryStatus.Approved : AdvisoryStatus.Rejected;
         advisory.Status = newStatus;
         advisory.ReviewedByFK = _currentUser.GetUserId(User);
         advisory.ReviewedAt = DateTime.UtcNow;
         advisory.ReviewNote = note;
-        advisory.Issue.Status = issueStatus;
+        advisory.OfficerTreatment = treatment;
+        // A rejection that comes with the officer's own treatment still resolves the farmer's issue.
+        advisory.Issue.Status = approve || treatment is not null ? IssueStatus.Resolved : IssueStatus.Rejected;
 
         _auditLog.Record(
             advisory.ReviewedByFK.Value,
-            newStatus == AdvisoryStatus.Approved ? "AdvisoryApproved" : "AdvisoryRejected",
+            approve ? "AdvisoryApproved" : "AdvisoryRejected",
             "AIAdvisory",
             advisory.AdvisoryId,
-            AdvisoryStatus.Draft.ToString(),
+            previousStatus.ToString(),
             newStatus.ToString());
 
         await _db.SaveChangesAsync();
@@ -143,10 +180,7 @@ public class AdvisoriesController : ControllerBase
         var farmerUserId = advisory.Issue.FarmerProfile?.UserId;
         if (farmerUserId is int recipientId)
         {
-            var title = newStatus == AdvisoryStatus.Approved
-                ? "Your crop issue advisory was approved"
-                : "Your crop issue advisory was rejected";
-            var message = $"\"{advisory.Issue.Title}\" has been reviewed.";
+            var (title, message) = FarmerNotification(advisory, approve, wasPreliminary, treatment);
             if (note is not null)
             {
                 message += $" Officer's note: {note}";
@@ -159,38 +193,137 @@ public class AdvisoriesController : ControllerBase
         // above needs a fresh lookup rather than trusting the (still-null) navigation property.
         var reviewer = await _db.Users.FindAsync(advisory.ReviewedByFK);
 
-        return Ok(ToResponse(advisory, reviewerOverride: reviewer));
+        return Ok(ToResponse(advisory, reviewerOverride: reviewer, includeReviewerContext: true));
     }
 
-    private static AdvisoryResponse ToResponse(
+    private string? ValidatePhotoReview(AIAdvisory advisory, bool approve, bool wasPreliminary, string? diseaseKey, string? treatment)
+    {
+        if (approve)
+        {
+            if (diseaseKey is not null && diseaseKey != advisory.PredictedDiseaseKey)
+            {
+                return "To change the diagnosis, reject it and choose the correct disease.";
+            }
+
+            return !wasPreliminary && treatment is null
+                ? "The farmer has not received any advice for this photo yet — add the treatment to approve it."
+                : null;
+        }
+
+        if (diseaseKey is null)
+        {
+            return "Choose the correct disease to reject this photo diagnosis.";
+        }
+
+        var crop = advisory.Issue.Crop.CropType;
+        if (diseaseKey != DiseaseKnowledgeEntry.OtherKey && _diseases.Find(crop, diseaseKey) is null)
+        {
+            return $"'{diseaseKey}' is not a known disease for {crop}.";
+        }
+
+        return treatment is null ? "Add the treatment the farmer should follow instead." : null;
+    }
+
+    private (string Title, string Message) FarmerNotification(AIAdvisory advisory, bool approve, bool wasPreliminary, string? treatment)
+    {
+        var issueTitle = advisory.Issue.Title;
+
+        if (wasPreliminary)
+        {
+            return approve && treatment is null
+                ? ("Your crop advice was confirmed by an officer",
+                   $"An agricultural officer confirmed the advice for \"{issueTitle}\".")
+                : ("An officer updated the advice for your crop",
+                   $"An agricultural officer reviewed \"{issueTitle}\" and changed the advice. " +
+                   "Please follow the officer's advice instead of the earlier suggestion.");
+        }
+
+        return approve
+            ? ("Your crop issue advisory was approved", $"\"{issueTitle}\" has been reviewed.")
+            : treatment is not null
+                ? ("Your crop issue has been reviewed", $"\"{issueTitle}\" has been reviewed and an officer has added advice.")
+                : ("Your crop issue advisory was rejected", $"\"{issueTitle}\" has been reviewed.");
+    }
+
+    private static string? Trimmed(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+
+    private AdvisoryResponse ToResponse(
         AIAdvisory advisory,
         ApplicationUser? reviewerOverride = null,
         bool includeReviewerContext = false,
-        List<PreviousIssueSummary>? previousIssues = null) => new()
+        List<PreviousIssueSummary>? previousIssues = null)
     {
-        AdvisoryId = advisory.AdvisoryId,
-        IssueId = advisory.IssueId,
-        IssueTitle = advisory.Issue.Title,
-        Status = advisory.Status.ToString(),
-        RiskLevel = advisory.RiskLevel.ToString(),
-        Recommendation = advisory.Recommendation,
-        ConfidenceScore = advisory.ConfidenceScore,
-        RequiresApproval = advisory.RequiresApproval,
-        ReviewedByFK = advisory.ReviewedByFK,
-        ReviewedByName = (reviewerOverride ?? advisory.ReviewedByUser)?.FullName,
-        ReviewedAt = advisory.ReviewedAt,
-        ReviewNote = advisory.ReviewNote,
-        IssueDescription = advisory.Issue.Description,
-        IssueSeverity = advisory.Issue.Severity.ToString(),
-        IssueStatus = advisory.Issue.Status.ToString(),
-        IssueCreatedAt = advisory.Issue.CreatedAt,
-        CropType = advisory.Issue.Crop?.CropType ?? string.Empty,
-        Variety = advisory.Issue.Crop?.Variety ?? string.Empty,
-        District = advisory.Issue.Crop?.Field?.Farm?.District ?? string.Empty,
-        ReporterName = advisory.Issue.FarmerProfile?.User?.FullName ?? string.Empty,
-        PreviousIssues = previousIssues,
-        AgentTrace = includeReviewerContext ? BuildAgentTrace(advisory) : null,
-    };
+        var crop = advisory.Issue.Crop?.CropType ?? string.Empty;
+
+        return new AdvisoryResponse
+        {
+            AdvisoryId = advisory.AdvisoryId,
+            IssueId = advisory.IssueId,
+            IssueTitle = advisory.Issue.Title,
+            Status = advisory.Status.ToString(),
+            RiskLevel = advisory.RiskLevel.ToString(),
+            Recommendation = advisory.Recommendation,
+            ConfidenceScore = advisory.ConfidenceScore,
+            RequiresApproval = advisory.RequiresApproval,
+            ReviewedByFK = advisory.ReviewedByFK,
+            ReviewedByName = (reviewerOverride ?? advisory.ReviewedByUser)?.FullName,
+            ReviewedAt = advisory.ReviewedAt,
+            ReviewNote = advisory.ReviewNote,
+            IssueDescription = advisory.Issue.Description,
+            IssueSeverity = advisory.Issue.Severity.ToString(),
+            IssueStatus = advisory.Issue.Status.ToString(),
+            IssueCreatedAt = advisory.Issue.CreatedAt,
+            CropType = crop,
+            Variety = advisory.Issue.Crop?.Variety ?? string.Empty,
+            District = advisory.Issue.Crop?.Field?.Farm?.District ?? string.Empty,
+            ReporterName = advisory.Issue.FarmerProfile?.User?.FullName ?? string.Empty,
+            PreviousIssues = previousIssues,
+            AgentTrace = includeReviewerContext ? BuildAgentTrace(advisory) : null,
+            PhotoDiagnosis = BuildPhotoDiagnosis(advisory, crop, includeReviewerContext),
+            ConfirmedDiseaseKey = advisory.ConfirmedDiseaseKey,
+            ConfirmedDiseaseName = advisory.ConfirmedDiseaseKey is { } confirmed ? _diseases.DisplayName(crop, confirmed) : null,
+            OfficerTreatment = advisory.OfficerTreatment,
+            Photos = advisory.Issue.Images
+                .OrderBy(i => i.ImageId)
+                .Select(i => new IssuePhotoResponse
+                {
+                    ImageId = i.ImageId,
+                    Url = $"/api/issues/{advisory.IssueId}/images/{i.ImageId}",
+                    Width = i.Width,
+                    Height = i.Height,
+                })
+                .ToList(),
+        };
+    }
+
+    private PhotoDiagnosisResponse? BuildPhotoDiagnosis(AIAdvisory advisory, string crop, bool includeReviewerContext)
+    {
+        if (advisory.PredictedDiseaseKey is not { } key)
+        {
+            return null;
+        }
+
+        var response = new PhotoDiagnosisResponse
+        {
+            DiseaseKey = key,
+            DiseaseName = _diseases.DisplayName(crop, key),
+        };
+
+        if (includeReviewerContext)
+        {
+            response.ModelConfidence = advisory.ModelConfidence;
+            response.ModelVersion = advisory.ModelVersion;
+            response.EscalationReasons = advisory.EscalationReasons?
+                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .ToList() ?? new List<string>();
+            response.DiseaseOptions = _diseases.ForCrop(crop)
+                .Select(d => new DiseaseOptionResponse { Key = d.Key, Name = d.DisplayName })
+                .Append(new DiseaseOptionResponse { Key = DiseaseKnowledgeEntry.OtherKey, Name = DiseaseKnowledgeEntry.OtherDisplayName })
+                .ToList();
+        }
+
+        return response;
+    }
 
     private static AgentTraceResponse? BuildAgentTrace(AIAdvisory advisory)
     {

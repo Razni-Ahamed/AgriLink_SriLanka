@@ -10,6 +10,9 @@ public class CloudinaryImageStorageService : IImageStorageService
     private const string FolderPrefix = "agrilink/issues";
     private const string DeliveryType = "authenticated";
 
+    // One client for the service's lifetime (it is registered as a singleton).
+    private static readonly HttpClient DownloadClient = new() { Timeout = TimeSpan.FromSeconds(15) };
+
     private readonly Cloudinary _cloudinary;
 
     public CloudinaryImageStorageService(CloudinaryOptions options)
@@ -56,6 +59,36 @@ public class CloudinaryImageStorageService : IImageStorageService
         }
 
         return result.PublicId;
+    }
+
+    public async Task<Stream> OpenReadAsync(string storageKey, CancellationToken cancellationToken)
+    {
+        // A signed delivery URL is required for "authenticated" assets. It is fetched here, server
+        // side, and never given to the browser: on Cloudinary's free plan signed URLs do not expire.
+        var url = _cloudinary.Api.UrlImgUp.Secure(true).Type(DeliveryType).Signed(true).BuildUrl(storageKey);
+
+        try
+        {
+            using var response = await DownloadClient.GetAsync(url, cancellationToken);
+            if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                throw new FileNotFoundException("No stored photo for this key.", storageKey);
+            }
+
+            if (!response.IsSuccessStatusCode)
+            {
+                throw new ImageStorageException($"Cloudinary returned HTTP {(int)response.StatusCode} for the photo.");
+            }
+
+            var buffer = new MemoryStream();
+            await response.Content.CopyToAsync(buffer, cancellationToken);
+            buffer.Position = 0;
+            return buffer;
+        }
+        catch (HttpRequestException ex)
+        {
+            throw new ImageStorageException("Cloudinary could not be reached to read the photo.", ex);
+        }
     }
 
     public async Task DeleteAsync(string storageKey, CancellationToken cancellationToken)

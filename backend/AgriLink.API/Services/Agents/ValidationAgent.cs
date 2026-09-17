@@ -11,6 +11,11 @@ public class ValidationAgent : IValidationAgent
     private const string ClosingDisclaimer =
         "This is an AI-generated suggestion pending review by an agricultural officer — do not apply any treatment until it has been approved.";
 
+    // For advice triage released to the farmer straight away: telling them to wait for approval
+    // would contradict the advice they have just been given.
+    private const string PreliminaryClosing =
+        "This advice was identified automatically from your photo and is still to be confirmed by an agricultural officer, who may update it. If the problem spreads or gets worse, contact your officer.";
+
     private static readonly string[] NutrientDeficiencyKeywords = { "nitrogen", "nutrient deficiency" };
     private static readonly string[] FertilizerKeywords = { "fertiliz", "fertilis" };
     private static readonly string[] FungalKeywords = { "fungal", "fungus", "mold", "mould", "rot", "blight", "mildew" };
@@ -80,7 +85,8 @@ public class ValidationAgent : IValidationAgent
 
         confidence = Math.Clamp(confidence, 0.05f, 0.95f);
 
-        var recommendation = ComposeRecommendation(cropFindings, weatherFindings, notes);
+        var closing = context.AdviceReleasedBeforeReview ? PreliminaryClosing : ClosingDisclaimer;
+        var recommendation = ComposeRecommendation(cropFindings, weatherFindings, notes, closing);
 
         var result = new ValidationResult
         {
@@ -161,7 +167,8 @@ public class ValidationAgent : IValidationAgent
         return false;
     }
 
-    private static string ComposeRecommendation(CropFindings? cropFindings, WeatherFindings? weatherFindings, IReadOnlyList<string> notes)
+    private static string ComposeRecommendation(
+        CropFindings? cropFindings, WeatherFindings? weatherFindings, IReadOnlyList<string> notes, string closing)
     {
         var sb = new StringBuilder();
 
@@ -191,7 +198,7 @@ public class ValidationAgent : IValidationAgent
             sb.Append(note).Append(' ');
         }
 
-        sb.Append(ClosingDisclaimer);
+        sb.Append(closing);
 
         return sb.ToString();
     }

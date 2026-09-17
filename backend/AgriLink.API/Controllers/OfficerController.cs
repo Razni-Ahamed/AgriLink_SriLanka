@@ -43,7 +43,7 @@ public class OfficerController : ControllerBase
         }
 
         var pendingInDistrict = await _db.CropIssues
-            .Where(i => i.Advisories.Any(a => a.Status == AdvisoryStatus.Draft))
+            .Where(i => i.Advisories.Any(a => a.Status == AdvisoryStatus.Draft || a.Status == AdvisoryStatus.Preliminary))
             .Where(i => i.Crop.Field.Farm.District == profile.District)
             .CountAsync();
 
