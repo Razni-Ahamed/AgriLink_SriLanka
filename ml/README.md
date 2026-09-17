@@ -8,11 +8,11 @@ Training code for the models that identify crop diseases from a farmer's photo. 
 
 ```
 ml/
-  agrilink_ml/  data preparation package (dataset adapters, de-duplication, splitting)
+  agrilink_ml/  data preparation, training, evaluation and ONNX export
   data/         raw datasets (gitignored — see "Datasets" below)
   labels/       one label file per crop — the class ids and keys shared by Python and C#
   manifests/    per-crop image lists with their class and split (committed)
-  training/     the training notebook
+  training/     reserved for notebooks and experiments
   models/       exported .onnx models + metadata (gitignored)
   tests/        pytest tests for agrilink_ml
 ```
@@ -49,8 +49,14 @@ py -3.12 -m venv ml/.venv
 ml/.venv/Scripts/pip install -r ml/requirements.txt
 ```
 
-`requirements.txt` covers data preparation and tests. Training itself runs on a free GPU (Kaggle or
-Colab); install `requirements-train.txt` locally only to train or inspect models on this machine.
+`requirements.txt` covers data preparation and tests. To train, also install PyTorch with CUDA and
+the training requirements. PyPI's Windows PyTorch build is CPU-only, so install it from PyTorch's
+own index first (CUDA 13.0 shown; RTX 50-series GPUs need CUDA 12.8 or newer):
+
+```bash
+ml/.venv/Scripts/pip install torch torchvision --index-url https://download.pytorch.org/whl/cu130
+ml/.venv/Scripts/pip install -r ml/requirements-train.txt onnxscript
+```
 
 Run the tests from the `ml/` folder:
 
@@ -88,6 +94,35 @@ This writes `manifests/<crop>.csv` and `manifests/<crop>_summary.md`. The script
 
 Commit both files: every training run, local or on Kaggle/Colab, reads the split from the manifest.
 Manifest paths are relative to the dataset root, so they work wherever the dataset is mounted.
+
+## Training a crop's model
+
+From the `ml/` folder, with the same `--source` arguments as preparation:
+
+```bash
+.venv/Scripts/python -m agrilink_ml.train --crop cassava --source kaggle-cassava-2020=C:/Users/you/Downloads/cassava-leaf-disease-classification.zip
+```
+
+It fine-tunes a pretrained EfficientNet-B0 (384px) on the manifest's train split, keeps the epoch
+with the best validation macro F1, then:
+
+1. **calibrates** confidence with temperature scaling on the validation split,
+2. **chooses an auto-release threshold per class** on the validation split: the lowest confidence
+   at which we can be ~95% statistically confident that at least 95% of released predictions are
+   correct (Wilson lower bound). A class that cannot show that gets no threshold, and every case of
+   it goes to an officer,
+3. **evaluates** on the untouched test split,
+4. **exports** `model.onnx` with the calibration built in, and fails if ONNX Runtime's output
+   differs from PyTorch's.
+
+Output goes to `models/<crop>/` (gitignored): `model.onnx`, `model.json` (preprocessing, classes
+with their `autoReleaseThreshold`, metrics), `report.md`, `history.csv` and `best.pt`.
+`--skip-training` re-runs steps 1–4 from an existing `best.pt`.
+
+Why per-class and statistically bounded thresholds: on Cassava, one global threshold reached 95%
+overall while confident "healthy" predictions were right only ~81% of the time (diseased plants
+reported as healthy), and a threshold resting on 30 validation photos held up at only 82% on the
+test photos.
 
 Adding a dataset means writing its adapter from the dataset's real folder structure and adding its
 label mapping to the crop's label file. Before changing `--near-duplicate-distance` for a new
