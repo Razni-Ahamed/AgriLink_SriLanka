@@ -1,0 +1,19 @@
+# Datasets are several GB and have their own licences — download them with the steps in
+# README.md instead of committing them.
+data/
+
+# Trained model artifacts are produced by training runs and shipped separately from git.
+models/**
+!models/.gitkeep
+
+# Python environment and tooling
+.venv/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+# Training run output (checkpoints, logs, experiment trackers)
+runs/
+checkpoints/
+lightning_logs/
+wandb/
