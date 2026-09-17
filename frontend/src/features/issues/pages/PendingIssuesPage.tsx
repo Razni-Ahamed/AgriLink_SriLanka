@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { MapPin } from '@phosphor-icons/react'
+import { Camera, MapPin } from '@phosphor-icons/react'
+import { Badge } from '@/components/ui/Badge'
 import { Card } from '@/components/ui/Card'
 import { CropIcon } from '@/components/ui/CropIcon'
 import { IconBadge } from '@/components/ui/IconBadge'
@@ -77,7 +78,23 @@ export function PendingIssuesPage() {
                         )}
                       </div>
                     </div>
-                    <SeverityBadge severity={issue.severity} />
+                    <div className="flex shrink-0 flex-col items-end gap-1.5">
+                      <SeverityBadge severity={issue.severity} />
+                      <div className="flex items-center gap-1.5">
+                        {issue.hasPhoto && (
+                          <span title={t('pending.hasPhoto')} className="text-text-secondary">
+                            <Camera size={16} weight="duotone" aria-label={t('pending.hasPhoto')} />
+                          </span>
+                        )}
+                        {/* The backend lists cases the farmer has had no advice on first;
+                            preliminary advice already reached them and only needs confirming. */}
+                        {issue.advisoryStatus === 'Preliminary' ? (
+                          <Badge variant="info">{t('pending.adviceSent')}</Badge>
+                        ) : (
+                          <Badge variant="warning">{t('pending.needsDecision')}</Badge>
+                        )}
+                      </div>
+                    </div>
                   </Card>
                 </Link>
               </StaggerList.Item>
