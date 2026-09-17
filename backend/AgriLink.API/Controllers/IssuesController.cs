@@ -198,6 +198,7 @@ public class IssuesController : ControllerBase
 
         var issues = await _db.CropIssues
             .Include(i => i.Advisories)
+            .Include(i => i.Images)
             .Include(i => i.Crop).ThenInclude(c => c.Field).ThenInclude(f => f.Farm)
             .Where(i => i.FarmerProfileId == farmerProfileId)
             .OrderByDescending(i => i.CreatedAt)
@@ -212,9 +213,10 @@ public class IssuesController : ControllerBase
     {
         var query = _db.CropIssues
             .Include(i => i.Advisories)
+            .Include(i => i.Images)
             .Include(i => i.Crop).ThenInclude(c => c.Field).ThenInclude(f => f.Farm)
             .Include(i => i.FarmerProfile).ThenInclude(fp => fp.User)
-            .Where(i => i.Advisories.Any(a => a.Status == AdvisoryStatus.Draft));
+            .Where(i => i.Advisories.Any(a => a.Status == AdvisoryStatus.Draft || a.Status == AdvisoryStatus.Preliminary));
 
         // Scoped to the calling officer's own district — the same district
         // AgentOrchestrator.NotifyOfficersAsync already used to decide who gets notified about
@@ -229,7 +231,54 @@ public class IssuesController : ControllerBase
 
         var issues = await query.OrderBy(i => i.CreatedAt).ToListAsync();
 
-        return Ok(issues.Select(i => ToResponse(i, includeReporter: true)));
+        // Cases the farmer has had no advice on yet (Draft) come first; Preliminary advice has
+        // already reached the farmer and is waiting for confirmation. Oldest first within each.
+        var ordered = issues.OrderBy(i => LatestAdvisory(i)?.Status == AdvisoryStatus.Preliminary ? 1 : 0);
+
+        return Ok(ordered.Select(i => ToResponse(i, includeReporter: true)));
+    }
+
+    /// <summary>
+    /// A photo attached to an issue, streamed from storage. Only the reporting farmer and
+    /// officers/admins may see it; the response is an image, not a public link.
+    /// </summary>
+    [HttpGet("{issueId:int}/images/{imageId:int}")]
+    public async Task<IActionResult> GetImage(int issueId, int imageId)
+    {
+        var image = await _db.IssueImages
+            .Include(i => i.Issue)
+            .FirstOrDefaultAsync(i => i.ImageId == imageId && i.IssueId == issueId);
+        if (image is null)
+        {
+            return NotFound();
+        }
+
+        if (!User.IsInRole("Officer") && !User.IsInRole("Admin"))
+        {
+            var farmerProfileId = await _currentUser.GetFarmerProfileIdAsync(User);
+            if (farmerProfileId is null || image.Issue.FarmerProfileId != farmerProfileId)
+            {
+                return Forbid();
+            }
+        }
+
+        try
+        {
+            var content = await _imageStorage.OpenReadAsync(image.StorageKey, HttpContext.RequestAborted);
+            // Photos never change once stored; private so shared caches never hold a farmer's photo.
+            Response.Headers.CacheControl = "private, max-age=86400";
+            return File(content, image.ContentType);
+        }
+        catch (FileNotFoundException)
+        {
+            _logger.LogWarning("Issue photo {ImageId} is recorded but missing from storage", imageId);
+            return NotFound();
+        }
+        catch (ImageStorageException ex)
+        {
+            _logger.LogError(ex, "Reading issue photo {ImageId} failed", imageId);
+            return StatusCode(StatusCodes.Status503ServiceUnavailable, new { message = "The photo could not be loaded right now." });
+        }
     }
 
     /// <summary>
@@ -246,6 +295,7 @@ public class IssuesController : ControllerBase
 
         var issues = await _db.CropIssues
             .Include(i => i.Advisories)
+            .Include(i => i.Images)
             .Include(i => i.Crop).ThenInclude(c => c.Field).ThenInclude(f => f.Farm)
             .Include(i => i.FarmerProfile).ThenInclude(fp => fp.User)
             .Where(i => i.Advisories.Any(a => a.ReviewedByFK == userId))
@@ -270,6 +320,7 @@ public class IssuesController : ControllerBase
     {
         var issues = await _db.CropIssues
             .Include(i => i.Advisories)
+            .Include(i => i.Images)
             .Include(i => i.Crop).ThenInclude(c => c.Field).ThenInclude(f => f.Farm)
             .Include(i => i.FarmerProfile).ThenInclude(fp => fp.User)
             .OrderByDescending(i => i.CreatedAt)
@@ -278,9 +329,12 @@ public class IssuesController : ControllerBase
         return Ok(issues.Select(i => ToResponse(i, includeReporter: true)));
     }
 
+    private static AIAdvisory? LatestAdvisory(CropIssue issue) =>
+        issue.Advisories.OrderByDescending(a => a.AdvisoryId).FirstOrDefault();
+
     private static CropIssueResponse ToResponse(CropIssue issue, bool includeReporter = false)
     {
-        var latestAdvisory = issue.Advisories.OrderByDescending(a => a.AdvisoryId).FirstOrDefault();
+        var latestAdvisory = LatestAdvisory(issue);
 
         return new CropIssueResponse
         {
@@ -298,6 +352,8 @@ public class IssuesController : ControllerBase
             AdvisoryId = latestAdvisory?.AdvisoryId,
             ReviewedAt = latestAdvisory?.ReviewedAt,
             ReviewNote = latestAdvisory?.ReviewNote,
+            AdvisoryStatus = latestAdvisory?.Status.ToString(),
+            HasPhoto = issue.Images.Count > 0,
         };
     }
 }

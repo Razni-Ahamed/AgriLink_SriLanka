@@ -30,4 +30,11 @@ public class CropIssueResponse
 
     /// <summary>The reviewing officer's own note on the latest advisory, if they left one.</summary>
     public string? ReviewNote { get; set; }
+
+    /// <summary>Status of the latest advisory (Draft, Preliminary, Approved, Rejected); null before
+    /// one exists. Lets the review queue tell cases needing inspection from advice already sent.</summary>
+    public string? AdvisoryStatus { get; set; }
+
+    /// <summary>Whether the farmer attached a photo to the report.</summary>
+    public bool HasPhoto { get; set; }
 }
