@@ -15,7 +15,8 @@
     "departments": "துறைகள்",
     "auditLog": "தணிக்கைப் பதிவு",
     "myReviews": "எனது மதிப்பாய்வுகள்",
-    "officerDashboard": "டாஷ்போர்டு"
+    "officerDashboard": "டாஷ்போர்டு",
+    "pendingRegistrations": "நிலுவையிலுள்ள பதிவுகள்"
   },
   "actions": {
     "saving": "சேமிக்கிறது…",
@@ -61,6 +62,11 @@
     "role": "பங்கு",
     "department": "துறை",
     "businessName": "வணிகப் பெயர்",
+    "fieldPlotNumber": "நில/காணி எண்",
+    "phoneNumber": "தொலைபேசி எண்",
+    "businessRegistrationNumber": "வணிகப் பதிவு எண்",
+    "businessPhone": "வணிகத் தொலைபேசி எண்",
+    "legalBusinessName": "சட்டப்பூர்வ வணிகப் பெயர்",
     "status": "நிலை",
     "location": "இடம்",
     "quantity": "அளவு",
@@ -132,7 +138,12 @@
     "onlyAvailable": "{{max}} மட்டுமே உள்ளது",
     "departmentRequiredOfficer": "அலுவலர் கணக்குகளுக்குத் துறை தேவை",
     "businessNameRequiredBuyer": "வாங்குபவர் கணக்குகளுக்கு வணிகப் பெயர் தேவை",
-    "cropRequired": "இது எந்தப் பயிருக்கானது என்பதைத் தேர்ந்தெடுக்கவும்."
+    "cropRequired": "இது எந்தப் பயிருக்கானது என்பதைத் தேர்ந்தெடுக்கவும்.",
+    "fieldPlotNumberRequired": "நில/காணி எண் தேவை",
+    "phoneNumberRequired": "தொலைபேசி எண் தேவை",
+    "businessRegistrationNumberRequired": "வணிகப் பதிவு எண் தேவை",
+    "businessPhoneRequired": "வணிகத் தொலைபேசி எண் தேவை",
+    "legalBusinessNameRequired": "சட்டப்பூர்வ வணிகப் பெயர் தேவை"
   },
   "severity": {
     "Low": "குறைவு",

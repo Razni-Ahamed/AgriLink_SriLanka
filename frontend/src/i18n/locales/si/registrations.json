@@ -1,0 +1,23 @@
+{
+  "pending": {
+    "title": "අපේක්ෂිත ලියාපදිංචි කිරීම්",
+    "scopedToDistrict": "{{district}} හි ගොවි අයදුම්පත් පෙන්වයි",
+    "empty": "දැනට සමාලෝචනයට අයදුම්පත් නොමැත.",
+    "farmerLabel": "ගොවි අයදුම්පත",
+    "buyerLabel": "ගැනුම්කරු අයදුම්පත",
+    "appliedOn": "අයදුම් කළේ {{date}}",
+    "district": "දිස්ත්‍රික්කය: {{district}}",
+    "nic": "ජා.හැ.අංකය: {{nic}}",
+    "fieldPlot": "කුඹුර/ඉඩම: {{plot}}",
+    "phone": "දුරකථනය: {{phone}}",
+    "legalName": "ව්‍යාපාරය: {{name}}",
+    "businessReg": "ලියාපදිංචි අංකය: {{value}}",
+    "businessPhone": "ව්‍යාපාර දුරකථනය: {{value}}",
+    "approve": "අනුමත කරන්න",
+    "reject": "ප්‍රතික්ෂේප කරන්න",
+    "rejectPrompt": "ප්‍රතික්ෂේප කිරීමට හේතුව",
+    "rejectPlaceholder": "මෙම අයදුම්පත ප්‍රතික්ෂේප කරන්නේ මන්දැයි පැහැදිලි කරන්න",
+    "rejectSubmit": "අයදුම්පත ප්‍රතික්ෂේප කරන්න",
+    "cancel": "අවලංගු කරන්න"
+  }
+}

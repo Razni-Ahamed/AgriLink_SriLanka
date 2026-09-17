@@ -24,6 +24,7 @@ export type NavLabelKey =
   | 'nav.manageUsers'
   | 'nav.departments'
   | 'nav.auditLog'
+  | 'nav.pendingRegistrations'
 
 export interface NavItem {
   labelKey: NavLabelKey

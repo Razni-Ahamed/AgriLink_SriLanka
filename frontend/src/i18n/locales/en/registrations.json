@@ -1,0 +1,23 @@
+{
+  "pending": {
+    "title": "Pending Registrations",
+    "scopedToDistrict": "Showing Farmer applications in {{district}}",
+    "empty": "No applications are waiting for review right now.",
+    "farmerLabel": "Farmer application",
+    "buyerLabel": "Buyer application",
+    "appliedOn": "Applied {{date}}",
+    "district": "District: {{district}}",
+    "nic": "NIC: {{nic}}",
+    "fieldPlot": "Plot: {{plot}}",
+    "phone": "Phone: {{phone}}",
+    "legalName": "Business: {{name}}",
+    "businessReg": "Reg. no: {{value}}",
+    "businessPhone": "Business phone: {{value}}",
+    "approve": "Approve",
+    "reject": "Reject",
+    "rejectPrompt": "Reason for rejection",
+    "rejectPlaceholder": "Explain why this application is being rejected",
+    "rejectSubmit": "Reject application",
+    "cancel": "Cancel"
+  }
+}

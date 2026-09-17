@@ -15,7 +15,8 @@
     "departments": "Departments",
     "auditLog": "Audit Log",
     "myReviews": "My Reviews",
-    "officerDashboard": "Dashboard"
+    "officerDashboard": "Dashboard",
+    "pendingRegistrations": "Pending Registrations"
   },
   "actions": {
     "saving": "Saving…",
@@ -61,6 +62,11 @@
     "role": "Role",
     "department": "Department",
     "businessName": "Business name",
+    "fieldPlotNumber": "Field/plot number",
+    "phoneNumber": "Phone number",
+    "businessRegistrationNumber": "Business registration number",
+    "businessPhone": "Business phone",
+    "legalBusinessName": "Legal business name",
     "status": "Status",
     "location": "Location",
     "quantity": "Quantity",
@@ -132,7 +138,12 @@
     "onlyAvailable": "Only {{max}} available",
     "departmentRequiredOfficer": "Department is required for Officer accounts",
     "businessNameRequiredBuyer": "Business name is required for Buyer accounts",
-    "cropRequired": "Choose which crop this is for."
+    "cropRequired": "Choose which crop this is for.",
+    "fieldPlotNumberRequired": "Field/plot number is required",
+    "phoneNumberRequired": "Phone number is required",
+    "businessRegistrationNumberRequired": "Business registration number is required",
+    "businessPhoneRequired": "Business phone is required",
+    "legalBusinessNameRequired": "Legal business name is required"
   },
   "severity": {
     "Low": "Low",
