@@ -1,0 +1,8 @@
+# Training and ONNX export. Kaggle and Colab GPU images already include most of these; install
+# locally only if you want to train or inspect exported models on this machine.
+-r requirements.txt
+torch>=2.4
+torchvision>=0.19
+timm>=1.0
+onnx>=1.16
+onnxruntime>=1.19
