@@ -4,6 +4,7 @@ using AgriLink.API.Data;
 using AgriLink.API.Models;
 using AgriLink.API.Services;
 using AgriLink.API.Services.Agents;
+using AgriLink.API.Services.Images;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -83,6 +84,38 @@ builder.Services.AddHttpClient<IWeatherAgent, WeatherAgent>((sp, client) =>
     var options = sp.GetRequiredService<IOptions<WeatherOptions>>().Value;
     client.Timeout = TimeSpan.FromSeconds(options.TimeoutSeconds);
 });
+
+// ----- Issue photos -----
+builder.Services.AddSingleton<IIssuePhotoProcessor, IssuePhotoProcessor>();
+
+// Cloudinary when its credentials are configured (user-secrets locally, environment variables on a
+// host); otherwise a local folder, which is only suitable for development.
+var cloudinaryOptions = builder.Configuration.GetSection(CloudinaryOptions.SectionName).Get<CloudinaryOptions>()
+    ?? new CloudinaryOptions();
+if (cloudinaryOptions.IsConfigured)
+{
+    builder.Services.AddSingleton<IImageStorageService>(new CloudinaryImageStorageService(cloudinaryOptions));
+}
+else
+{
+    builder.Services.AddSingleton<IImageStorageService>(sp =>
+    {
+        var env = sp.GetRequiredService<IWebHostEnvironment>();
+        var configuredRoot = builder.Configuration.GetSection(ImageStorageOptions.SectionName)
+            .Get<ImageStorageOptions>()?.LocalRoot;
+        var root = Path.Combine(env.ContentRootPath, configuredRoot ?? Path.Combine("App_Data", "issue-images"));
+
+        var logger = sp.GetRequiredService<ILogger<LocalImageStorageService>>();
+        if (!env.IsDevelopment())
+        {
+            logger.LogWarning(
+                "Cloudinary is not configured; issue photos are being stored on local disk at {Root}, which is not durable outside development.",
+                root);
+        }
+
+        return new LocalImageStorageService(root);
+    });
+}
 
 // ----- CORS (dev-only placeholder; tighten to real frontend origins before deploy) -----
 builder.Services.AddCors(options =>

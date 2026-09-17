@@ -37,3 +37,5 @@ frontend-agent-prompts/
 03_WEATHER_AGENT_PROMPT.md
 04_VALIDATION_AGENT_PROMPT.md
 SECURITY_FIXES_SUMMARY.md
+# ===== Issue photos stored locally when Cloudinary is not configured =====
+backend/AgriLink.API/App_Data/
