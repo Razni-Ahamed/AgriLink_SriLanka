@@ -4,10 +4,12 @@ using AgriLink.API.DTOs.Issues;
 using AgriLink.API.Models;
 using AgriLink.API.Services;
 using AgriLink.API.Services.Agents;
+using AgriLink.API.Services.Images;
 using AgriLink.API.Tests.TestSupport;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 
 namespace AgriLink.API.Tests.Controllers;
@@ -86,7 +88,13 @@ public class IssuesControllerOfficerScopeTests
     }
 
     private static IssuesController CreateController(AgriLinkDbContext db, int actingUserId, string role) =>
-        new(db, new CurrentUserService(db), Mock.Of<IAgentOrchestrator>())
+        new(
+            db,
+            new CurrentUserService(db),
+            Mock.Of<IAgentOrchestrator>(),
+            Mock.Of<IIssuePhotoProcessor>(),
+            Mock.Of<IImageStorageService>(),
+            NullLogger<IssuesController>.Instance)
         {
             ControllerContext = new ControllerContext
             {

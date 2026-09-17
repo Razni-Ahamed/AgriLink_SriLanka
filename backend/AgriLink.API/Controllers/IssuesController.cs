@@ -3,6 +3,7 @@ using AgriLink.API.DTOs.Issues;
 using AgriLink.API.Models;
 using AgriLink.API.Services;
 using AgriLink.API.Services.Agents;
+using AgriLink.API.Services.Images;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -14,20 +15,51 @@ namespace AgriLink.API.Controllers;
 [Authorize]
 public class IssuesController : ControllerBase
 {
+    // The 5 MB photo plus the text fields and multipart framing.
+    private const long MultipartRequestLimitBytes = IssuePhotoProcessor.MaxUploadBytes + 64 * 1024;
+
     private readonly AgriLinkDbContext _db;
     private readonly ICurrentUserService _currentUser;
     private readonly IAgentOrchestrator _orchestrator;
+    private readonly IIssuePhotoProcessor _photoProcessor;
+    private readonly IImageStorageService _imageStorage;
+    private readonly ILogger<IssuesController> _logger;
 
-    public IssuesController(AgriLinkDbContext db, ICurrentUserService currentUser, IAgentOrchestrator orchestrator)
+    public IssuesController(
+        AgriLinkDbContext db,
+        ICurrentUserService currentUser,
+        IAgentOrchestrator orchestrator,
+        IIssuePhotoProcessor photoProcessor,
+        IImageStorageService imageStorage,
+        ILogger<IssuesController> logger)
     {
         _db = db;
         _currentUser = currentUser;
         _orchestrator = orchestrator;
+        _photoProcessor = photoProcessor;
+        _imageStorage = imageStorage;
+        _logger = logger;
     }
 
     [HttpPost]
     [Authorize(Roles = "Farmer")]
-    public async Task<ActionResult<CropIssueResponse>> Create(CreateCropIssueRequest request)
+    public Task<ActionResult<CropIssueResponse>> Create([FromBody] CreateCropIssueRequest request) =>
+        CreateIssueAsync(request, photo: null);
+
+    /// <summary>
+    /// Same as <see cref="Create"/>, sent as multipart/form-data so a photo can be attached. The
+    /// JSON endpoint stays so clients that never send photos keep working unchanged. It has its own
+    /// path because OpenAPI (and so Swagger) cannot describe two POST actions on one path.
+    /// </summary>
+    [HttpPost("with-photo")]
+    [Authorize(Roles = "Farmer")]
+    [Consumes("multipart/form-data")]
+    [RequestSizeLimit(MultipartRequestLimitBytes)]
+    [RequestFormLimits(MultipartBodyLengthLimit = MultipartRequestLimitBytes)]
+    public Task<ActionResult<CropIssueResponse>> CreateWithPhoto([FromForm] CreateCropIssueWithPhotoRequest request) =>
+        CreateIssueAsync(request, request.Photo);
+
+    private async Task<ActionResult<CropIssueResponse>> CreateIssueAsync(CreateCropIssueRequest request, IFormFile? photo)
     {
         var farmerProfileId = await _currentUser.GetFarmerProfileIdAsync(User);
         if (farmerProfileId is null)
@@ -50,6 +82,25 @@ public class IssuesController : ControllerBase
             return Forbid();
         }
 
+        ProcessedPhoto? processedPhoto = null;
+        if (photo is not null)
+        {
+            // Checked before reading, so an oversized upload is never buffered into memory.
+            if (photo.Length > IssuePhotoProcessor.MaxUploadBytes)
+            {
+                return BadRequest(new { message = "The photo is larger than 5 MB." });
+            }
+
+            try
+            {
+                processedPhoto = _photoProcessor.Process(await ReadAllBytesAsync(photo, HttpContext.RequestAborted));
+            }
+            catch (InvalidPhotoException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
         var since = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-30));
         var recentActivities = await _db.CropActivities
             .Where(a => a.CropId == request.CropId && a.ActivityDate >= since)
@@ -65,14 +116,73 @@ public class IssuesController : ControllerBase
             Status = IssueStatus.AwaitingReview,
         };
 
-        var advisory = await _orchestrator.RunPipelineAsync(issue, crop, recentActivities, HttpContext.RequestAborted);
-        issue.Advisories.Add(advisory);
+        string? storageKey = null;
+        if (processedPhoto is not null)
+        {
+            try
+            {
+                storageKey = await _imageStorage.SaveAsync(
+                    processedPhoto.Content, processedPhoto.ContentType, HttpContext.RequestAborted);
+            }
+            catch (ImageStorageException ex)
+            {
+                // A storage outage is not the farmer's fault; say so, and offer the no-photo path.
+                _logger.LogError(ex, "Storing an issue photo failed");
+                return StatusCode(StatusCodes.Status503ServiceUnavailable, new
+                {
+                    message = "The photo could not be uploaded right now. Please try again, or submit the report without a photo.",
+                });
+            }
 
-        issue.Crop = crop;
-        _db.CropIssues.Add(issue);
-        await _db.SaveChangesAsync();
+            issue.Images.Add(new IssueImage
+            {
+                StorageKey = storageKey,
+                ContentType = processedPhoto.ContentType,
+                SizeBytes = processedPhoto.Content.Length,
+                Width = processedPhoto.Width,
+                Height = processedPhoto.Height,
+            });
+        }
+
+        try
+        {
+            var advisory = await _orchestrator.RunPipelineAsync(issue, crop, recentActivities, HttpContext.RequestAborted);
+            issue.Advisories.Add(advisory);
+
+            issue.Crop = crop;
+            _db.CropIssues.Add(issue);
+            await _db.SaveChangesAsync();
+        }
+        catch (Exception) when (storageKey is not null)
+        {
+            // The photo is already stored but no issue will reference it — remove it rather than
+            // leave an orphan in storage, then let the original failure surface as before.
+            await DeleteOrphanedPhotoAsync(storageKey);
+            throw;
+        }
 
         return StatusCode(StatusCodes.Status201Created, ToResponse(issue));
+    }
+
+    private static async Task<byte[]> ReadAllBytesAsync(IFormFile file, CancellationToken cancellationToken)
+    {
+        await using var source = file.OpenReadStream();
+        using var buffer = new MemoryStream((int)file.Length);
+        await source.CopyToAsync(buffer, cancellationToken);
+        return buffer.ToArray();
+    }
+
+    private async Task DeleteOrphanedPhotoAsync(string storageKey)
+    {
+        try
+        {
+            // Not tied to the request: this also runs when the farmer's request was aborted.
+            await _imageStorage.DeleteAsync(storageKey, CancellationToken.None);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Could not delete orphaned issue photo {StorageKey}", storageKey);
+        }
     }
 
     [HttpGet("mine")]
