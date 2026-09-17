@@ -3,7 +3,8 @@
     "title": "My Issues",
     "empty": "You haven't reported any crop issues yet. Report one from a crop's detail page.",
     "reportIssue": "Report an Issue",
-    "emptyHint": "Report a problem with one of your crops and an officer will review the advisory."
+    "emptyHint": "Report a problem with one of your crops and an officer will review the advisory.",
+    "hasPhoto": "Photo attached"
   },
   "new": {
     "title": "Report an Issue",
@@ -14,7 +15,9 @@
     "reported": "Issue reported.",
     "reportError": "Could not report the issue. Try again.",
     "whichCrop": "Which crop has the problem?",
-    "pickCropFirst": "Choose a crop above to describe the problem."
+    "pickCropFirst": "Choose a crop above to describe the problem.",
+    "photoRejected": "The photo couldn't be used. Try a different photo, or report without one.",
+    "photoUploadUnavailable": "The photo couldn't be uploaded right now. Try again, or report without a photo."
   },
   "form": {
     "title": "Title",
@@ -23,7 +26,20 @@
     "submit": "Report Issue",
     "submitting": "Reporting…",
     "titleRequired": "Title is required",
-    "descriptionRequired": "Description is required"
+    "descriptionRequired": "Description is required",
+    "photo": {
+      "label": "Photo (optional)",
+      "hint": "A clear, close-up photo of the affected leaves helps identify the problem faster.",
+      "add": "Add a photo",
+      "change": "Change photo",
+      "remove": "Remove photo",
+      "processing": "Preparing photo…",
+      "previewAlt": "Photo of the affected crop",
+      "notAnImage": "That file isn't a photo. Choose a JPEG, PNG or WebP image.",
+      "unsupported": "This photo format can't be used. Choose a JPEG, PNG or WebP photo, or take the photo again.",
+      "tooLarge": "This photo is too large even after shrinking it. Choose a smaller photo."
+    },
+    "submittingWithPhoto": "Analysing photo…"
   },
   "pending": {
     "title": "Pending Issues",
@@ -59,7 +75,15 @@
     "rejected": "Advisory rejected.",
     "rejectError": "Could not reject the advisory.",
     "reviewNoteLabel": "Add a note (optional)",
-    "reviewNotePlaceholder": "e.g. why you're rejecting this, or extra advice for the farmer beyond the AI's recommendation"
+    "reviewNotePlaceholder": "e.g. why you're rejecting this, or extra advice for the farmer beyond the AI's recommendation",
+    "preliminaryTitle": "Preliminary advice",
+    "preliminaryBody": "This advice was identified automatically from your photo. An agricultural officer will confirm it and may update it. If the problem spreads or gets worse, contact your officer.",
+    "photoDiagnosis": "Identified from the photo: {{disease}}",
+    "confirmedDiagnosis": "Officer's diagnosis: {{disease}}",
+    "officerAdvice": "Officer's advice",
+    "photos": "Photos",
+    "photoAlt": "Photo attached to this report",
+    "photoUnavailable": "Photo unavailable"
   },
   "previousIssues": {
     "title": "Previous issues on this crop ({{count}})",

@@ -14,6 +14,7 @@ import { useUiStore } from '@/lib/useUiStore'
 import { useMyCrops } from '@/features/farms/hooks/useCrops'
 import { IssueForm } from '../components/IssueForm'
 import { useCreateIssue } from '../hooks/useIssues'
+import { reportErrorKey } from '../lib/reportErrorKey'
 
 export function NewIssuePage() {
   const { t } = useTranslation(['issues', 'common'])
@@ -106,8 +107,11 @@ export function NewIssuePage() {
                       addToast({ type: 'success', message: t('issues:new.reported') })
                       setTimeout(() => navigate('/issues/mine'), 500)
                     },
-                    onError: () =>
-                      addToast({ type: 'error', message: t('issues:new.reportError') }),
+                    onError: (error) =>
+                      addToast({
+                        type: 'error',
+                        message: t(reportErrorKey(error, Boolean(values.photo))),
+                      }),
                   })
                 }
               />

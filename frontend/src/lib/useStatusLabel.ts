@@ -36,6 +36,7 @@ const STATUS_KEYS = {
   },
   advisory: {
     Draft: 'status.advisory.Draft',
+    Preliminary: 'status.advisory.Preliminary',
     Approved: 'status.advisory.Approved',
     Rejected: 'status.advisory.Rejected',
   },
