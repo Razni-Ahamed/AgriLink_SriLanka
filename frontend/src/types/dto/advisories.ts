@@ -1,6 +1,8 @@
 import type { IssueSeverity, IssueStatus } from './issues'
 
-export type AdvisoryStatus = 'Draft' | 'Approved' | 'Rejected'
+/** Preliminary: advice from a confident photo diagnosis, already shown to the farmer and still
+ *  awaiting an officer's confirmation. */
+export type AdvisoryStatus = 'Draft' | 'Preliminary' | 'Approved' | 'Rejected'
 export type RiskLevel = 'Low' | 'Medium' | 'High'
 
 /** One prior issue on the same crop — triage context: "has this crop had this before?" */
@@ -63,4 +65,39 @@ export interface AdvisoryResponse {
   previousIssues?: PreviousIssueSummary[]
   /** Present only for an Officer/Admin caller. */
   agentTrace?: AgentTrace
+
+  /** What the photo model identified; absent when the report had no photo diagnosis. */
+  photoDiagnosis?: PhotoDiagnosis | null
+  /** The disease the reviewing officer confirmed, or corrected the diagnosis to. */
+  confirmedDiseaseKey?: string | null
+  confirmedDiseaseName?: string | null
+  /** The officer's own treatment; when present it replaces the AI-drafted advice. */
+  officerTreatment?: string | null
+  /** Photos the farmer attached. Each url is an authenticated API path — fetch it with the API client. */
+  photos: IssuePhoto[]
+}
+
+export interface PhotoDiagnosis {
+  diseaseKey: string
+  diseaseName: string
+  /** Officer/Admin only: the model's calibrated probability for the predicted disease. */
+  modelConfidence?: number | null
+  /** Officer/Admin only. */
+  modelVersion?: string | null
+  /** Officer/Admin only: codes for why the diagnosis was held for an officer. */
+  escalationReasons?: string[] | null
+  /** Officer/Admin only: what the diagnosis can be corrected to. */
+  diseaseOptions?: DiseaseOption[] | null
+}
+
+export interface DiseaseOption {
+  key: string
+  name: string
+}
+
+export interface IssuePhoto {
+  imageId: number
+  url: string
+  width: number
+  height: number
 }
