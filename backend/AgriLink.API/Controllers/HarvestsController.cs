@@ -151,6 +151,16 @@ public class HarvestsController : ControllerBase
             }
         }
 
+        if (request.PricePerUnit is <= 0)
+        {
+            return BadRequest(new { message = "Price per unit must be greater than zero." });
+        }
+
+        if (request.Status == HarvestStatus.Active && listing.AvailableQuantity <= 0)
+        {
+            return BadRequest(new { message = "A listing with no quantity left cannot be reopened." });
+        }
+
         var oldStatus = listing.Status;
 
         if (request.Status.HasValue)

@@ -126,18 +126,26 @@ public class AdvisoriesControllerReviewContextTests
     }
 
     private static AdvisoriesController CreateController(
-        AgriLinkDbContext db, int actingUserId, string role, Mock<INotificationService>? notifications = null) => new(
-        db,
-        new CurrentUserService(db),
-        new AuditLogService(db),
-        (notifications ?? new Mock<INotificationService>()).Object,
-        new DiseaseKnowledgeBase())
+        AgriLinkDbContext db, int actingUserId, string role, Mock<INotificationService>? notifications = null)
     {
-        ControllerContext = new ControllerContext
+        if (role == "Officer")
         {
-            HttpContext = new DefaultHttpContext { User = ClaimsPrincipalTestHelpers.BuildPrincipal(actingUserId, role) },
-        },
-    };
+            OfficerTestSeeding.EnsureOfficerProfile(db, actingUserId);
+        }
+
+        return new(
+            db,
+            new CurrentUserService(db),
+            new AuditLogService(db),
+            (notifications ?? new Mock<INotificationService>()).Object,
+            new DiseaseKnowledgeBase())
+        {
+            ControllerContext = new ControllerContext
+            {
+                HttpContext = new DefaultHttpContext { User = ClaimsPrincipalTestHelpers.BuildPrincipal(actingUserId, role) },
+            },
+        };
+    }
 
     [Fact]
     public async Task GetById_Officer_IncludesPreviousIssuesAndAgentTrace()

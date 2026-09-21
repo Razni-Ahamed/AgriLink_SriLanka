@@ -64,18 +64,23 @@ public class AdvisoriesControllerTests
         return advisory;
     }
 
-    private static AdvisoriesController CreateController(AgriLinkDbContext db, int officerUserId) => new(
-        db,
-        new CurrentUserService(db),
-        new AuditLogService(db),
-        Mock.Of<INotificationService>(),
-        new DiseaseKnowledgeBase())
+    private static AdvisoriesController CreateController(AgriLinkDbContext db, int officerUserId)
     {
-        ControllerContext = new ControllerContext
+        OfficerTestSeeding.EnsureOfficerProfile(db, officerUserId);
+
+        return new(
+            db,
+            new CurrentUserService(db),
+            new AuditLogService(db),
+            Mock.Of<INotificationService>(),
+            new DiseaseKnowledgeBase())
         {
-            HttpContext = new DefaultHttpContext { User = ClaimsPrincipalTestHelpers.BuildPrincipal(officerUserId, "Officer") },
-        },
-    };
+            ControllerContext = new ControllerContext
+            {
+                HttpContext = new DefaultHttpContext { User = ClaimsPrincipalTestHelpers.BuildPrincipal(officerUserId, "Officer") },
+            },
+        };
+    }
 
     [Fact]
     public async Task Approve_DraftAdvisory_RecordsAuditLogWithReviewer()
@@ -131,5 +136,30 @@ public class AdvisoriesControllerTests
         Assert.Equal("Tomato", response.CropType);
         Assert.Equal("Kandy", response.District);
         Assert.Equal("Leaves turning yellow.", response.IssueDescription);
+    }
+
+    [Fact]
+    public async Task Approve_OfficerFromAnotherDistrict_IsForbiddenAndLeavesAdvisoryUntouched()
+    {
+        using var db = CreateDb();
+        var advisory = SeedDraftAdvisory(db);
+        OfficerTestSeeding.EnsureOfficerProfile(db, 77, district: "Galle");
+
+        var result = await CreateController(db, officerUserId: 77).Approve(advisory.AdvisoryId);
+
+        Assert.IsType<ForbidResult>(result.Result);
+        Assert.Equal(AdvisoryStatus.Draft, (await db.AIAdvisories.SingleAsync()).Status);
+    }
+
+    [Fact]
+    public async Task GetById_OfficerFromAnotherDistrict_IsForbidden()
+    {
+        using var db = CreateDb();
+        var advisory = SeedDraftAdvisory(db);
+        OfficerTestSeeding.EnsureOfficerProfile(db, 77, district: "Galle");
+
+        var result = await CreateController(db, officerUserId: 77).GetById(advisory.AdvisoryId);
+
+        Assert.IsType<ForbidResult>(result.Result);
     }
 }

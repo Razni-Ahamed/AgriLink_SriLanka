@@ -10,5 +10,6 @@ public class CreatePurchaseRequestRequest
     [Required, Range(0.01, double.MaxValue)]
     public decimal RequestedQuantity { get; set; }
 
+    [MaxLength(500)]
     public string? Message { get; set; }
 }

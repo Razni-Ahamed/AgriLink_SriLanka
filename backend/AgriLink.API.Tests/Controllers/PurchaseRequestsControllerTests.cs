@@ -67,7 +67,8 @@ public class PurchaseRequestsControllerTests
     private static PurchaseRequestsController CreateController(AgriLinkDbContext db, int actingUserId, string role = "Farmer") => new(
         db,
         new CurrentUserService(db),
-        new AuditLogService(db))
+        new AuditLogService(db),
+        new NotificationService(db))
     {
         ControllerContext = new ControllerContext
         {
@@ -176,5 +177,30 @@ public class PurchaseRequestsControllerTests
         Assert.Equal(ownRequest.RequestId, only.RequestId);
         Assert.Equal(nameof(PurchaseRequestStatus.Declined), only.Status);
         Assert.Equal("Tomato", only.CropType);
+    }
+
+    [Fact]
+    public async Task Respond_Accept_NotifiesTheBuyer()
+    {
+        using var db = CreateDb();
+        var request = SeedPendingRequest(db, farmerUserId: 10, buyerUserId: 20);
+
+        await CreateController(db, actingUserId: 10).Respond(request.RequestId, new RespondPurchaseRequestRequest { Action = "accept" });
+
+        Assert.Contains(await db.Notifications.ToListAsync(), n => n.UserId == 20 && n.Title == "Purchase request accepted");
+    }
+
+    [Fact]
+    public async Task Respond_Accept_OnCancelledListing_IsRejected()
+    {
+        using var db = CreateDb();
+        var request = SeedPendingRequest(db, farmerUserId: 10);
+        request.Harvest.Status = HarvestStatus.Cancelled;
+        db.SaveChanges();
+
+        var result = await CreateController(db, actingUserId: 10).Respond(request.RequestId, new RespondPurchaseRequestRequest { Action = "accept" });
+
+        Assert.IsType<BadRequestObjectResult>(result.Result);
+        Assert.Empty(await db.Orders.ToListAsync());
     }
 }

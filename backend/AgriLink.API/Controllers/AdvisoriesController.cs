@@ -69,6 +69,10 @@ public class AdvisoriesController : ControllerBase
                 return NotFound();
             }
         }
+        else if (!await ReviewerMayAccessAsync(advisory, allowOwnPastReview: true))
+        {
+            return Forbid();
+        }
 
         // The agent trace and this crop's other issues are diagnostic context for the person
         // deciding whether to trust the AI's recommendation — a farmer viewing their own,
@@ -130,6 +134,11 @@ public class AdvisoriesController : ControllerBase
         if (advisory is null)
         {
             return NotFound();
+        }
+
+        if (!await ReviewerMayAccessAsync(advisory, allowOwnPastReview: false))
+        {
+            return Forbid();
         }
 
         var previousStatus = advisory.Status;
@@ -194,6 +203,29 @@ public class AdvisoriesController : ControllerBase
         var reviewer = await _db.Users.FindAsync(advisory.ReviewedByFK);
 
         return Ok(ToResponse(advisory, reviewerOverride: reviewer, includeReviewerContext: true));
+    }
+
+    /// <summary>
+    /// Officers work their own district's queue (IssuesController.Pending), and the same boundary
+    /// applies to opening or deciding a single advisory — otherwise any officer could approve any
+    /// district's case by id. An officer may still reopen an advisory they reviewed themselves
+    /// (their "reviewed" history). Admin is unscoped.
+    /// </summary>
+    private async Task<bool> ReviewerMayAccessAsync(AIAdvisory advisory, bool allowOwnPastReview)
+    {
+        if (_currentUser.IsAdmin(User))
+        {
+            return true;
+        }
+
+        if (allowOwnPastReview && advisory.ReviewedByFK == _currentUser.GetUserId(User))
+        {
+            return true;
+        }
+
+        var district = await _currentUser.GetOfficerDistrictAsync(User);
+        return district is not null
+            && string.Equals(advisory.Issue.Crop?.Field?.Farm?.District, district, StringComparison.Ordinal);
     }
 
     private string? ValidatePhotoReview(AIAdvisory advisory, bool approve, bool wasPreliminary, string? diseaseKey, string? treatment)

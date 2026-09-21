@@ -133,6 +133,7 @@
     "cropIdRequired": "Crop ID is required",
     "plantingDateRequired": "Planting date is required",
     "expectedHarvestDateRequired": "Expected harvest date is required",
+    "harvestAfterPlanting": "Expected harvest date must be after the planting date",
     "harvestDateRequired": "Harvest date is required",
     "locationRequired": "Location is required",
     "onlyAvailable": "Only {{max}} available",

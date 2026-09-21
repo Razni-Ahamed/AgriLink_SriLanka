@@ -149,4 +149,32 @@ public class HarvestsControllerTests
         Assert.Equal(ownListing.HarvestId, onlyListing.HarvestId);
         Assert.Equal(nameof(HarvestStatus.Sold), onlyListing.Status);
     }
+
+    [Fact]
+    public async Task Update_ReopeningASoldOutListing_IsRejected()
+    {
+        using var db = CreateDb();
+        var listing = SeedListing(db, farmerProfileId: 1, farmerUserId: 10);
+        listing.AvailableQuantity = 0;
+        listing.Status = HarvestStatus.Sold;
+        db.SaveChanges();
+
+        var result = await CreateController(db, actingUserId: 10, role: "Farmer")
+            .Update(listing.HarvestId, new UpdateHarvestListingRequest { Status = HarvestStatus.Active });
+
+        Assert.IsType<BadRequestObjectResult>(result.Result);
+        Assert.Equal(HarvestStatus.Sold, (await db.HarvestListings.SingleAsync()).Status);
+    }
+
+    [Fact]
+    public async Task Update_NonPositivePrice_IsRejected()
+    {
+        using var db = CreateDb();
+        var listing = SeedListing(db, farmerProfileId: 1, farmerUserId: 10);
+
+        var result = await CreateController(db, actingUserId: 10, role: "Farmer")
+            .Update(listing.HarvestId, new UpdateHarvestListingRequest { PricePerUnit = 0 });
+
+        Assert.IsType<BadRequestObjectResult>(result.Result);
+    }
 }

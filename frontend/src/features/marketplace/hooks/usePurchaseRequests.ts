@@ -37,6 +37,8 @@ export function useRespondToPurchaseRequest() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: incomingRequestsKey })
       queryClient.invalidateQueries({ queryKey: ['harvests'] })
+      // Accepting creates an order, so the orders list is stale too.
+      queryClient.invalidateQueries({ queryKey: ['orders'] })
     },
   })
 }

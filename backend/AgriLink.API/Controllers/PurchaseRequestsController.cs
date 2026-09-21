@@ -16,12 +16,18 @@ public class PurchaseRequestsController : ControllerBase
     private readonly AgriLinkDbContext _db;
     private readonly ICurrentUserService _currentUser;
     private readonly IAuditLogService _auditLog;
+    private readonly INotificationService _notifications;
 
-    public PurchaseRequestsController(AgriLinkDbContext db, ICurrentUserService currentUser, IAuditLogService auditLog)
+    public PurchaseRequestsController(
+        AgriLinkDbContext db,
+        ICurrentUserService currentUser,
+        IAuditLogService auditLog,
+        INotificationService notifications)
     {
         _db = db;
         _currentUser = currentUser;
         _auditLog = auditLog;
+        _notifications = notifications;
     }
 
     [HttpPost]
@@ -64,6 +70,18 @@ public class PurchaseRequestsController : ControllerBase
 
         _db.PurchaseRequests.Add(purchaseRequest);
         await _db.SaveChangesAsync();
+
+        var farmerUserId = await _db.FarmerProfiles
+            .Where(f => f.FarmerProfileId == listing.FarmerProfileId)
+            .Select(f => (int?)f.UserId)
+            .FirstOrDefaultAsync();
+        if (farmerUserId is int recipientId)
+        {
+            await _notifications.NotifyAsync(
+                recipientId,
+                "New purchase request",
+                $"A buyer has requested {purchaseRequest.RequestedQuantity:0.##} kg of your {listing.Crop.CropType} listing.");
+        }
 
         return StatusCode(StatusCodes.Status201Created, ToResponse(purchaseRequest));
     }
@@ -154,10 +172,16 @@ public class PurchaseRequestsController : ControllerBase
                 PurchaseRequestStatus.Pending.ToString(),
                 PurchaseRequestStatus.Declined.ToString());
             await _db.SaveChangesAsync();
+            await NotifyBuyerAsync(purchaseRequest, accepted: false);
             return Ok(ToResponse(purchaseRequest));
         }
 
         var listing = purchaseRequest.Harvest;
+        if (listing.Status == HarvestStatus.Cancelled)
+        {
+            return BadRequest(new { message = "This listing has been cancelled, so its requests can only be declined." });
+        }
+
         if (purchaseRequest.RequestedQuantity > listing.AvailableQuantity)
         {
             return BadRequest(new { message = "Not enough available quantity to accept this request." });
@@ -192,8 +216,29 @@ public class PurchaseRequestsController : ControllerBase
             PurchaseRequestStatus.Accepted.ToString());
 
         await _db.SaveChangesAsync();
+        await NotifyBuyerAsync(purchaseRequest, accepted: true);
 
         return Ok(ToResponse(purchaseRequest));
+    }
+
+    private async Task NotifyBuyerAsync(PurchaseRequest purchaseRequest, bool accepted)
+    {
+        var buyerUserId = await _db.BuyerProfiles
+            .Where(b => b.BuyerProfileId == purchaseRequest.BuyerProfileId)
+            .Select(b => (int?)b.UserId)
+            .FirstOrDefaultAsync();
+        if (buyerUserId is not int recipientId)
+        {
+            return;
+        }
+
+        var crop = purchaseRequest.Harvest.Crop.CropType;
+        await _notifications.NotifyAsync(
+            recipientId,
+            accepted ? "Purchase request accepted" : "Purchase request declined",
+            accepted
+                ? $"The farmer accepted your request for {purchaseRequest.RequestedQuantity:0.##} kg of {crop}. An order has been created."
+                : $"The farmer declined your request for {purchaseRequest.RequestedQuantity:0.##} kg of {crop}.");
     }
 
     private static PurchaseRequestResponse ToResponse(PurchaseRequest request) => new()

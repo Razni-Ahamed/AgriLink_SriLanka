@@ -62,6 +62,24 @@ builder.Services.AddAuthentication(options =>
             RoleClaimType = System.Security.Claims.ClaimTypes.Role,
             NameClaimType = System.Security.Claims.ClaimTypes.NameIdentifier,
         };
+
+        // A token outlives the account state it was issued for (8 hours), so deactivating a user
+        // only took effect at their next login. Re-check the account on every request instead.
+        options.Events = new JwtBearerEvents
+        {
+            OnTokenValidated = async context =>
+            {
+                var userIdValue = context.Principal?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                var db = context.HttpContext.RequestServices.GetRequiredService<AgriLinkDbContext>();
+                var isUsable = int.TryParse(userIdValue, out var userId)
+                    && await db.Users.AsNoTracking().AnyAsync(u =>
+                        u.Id == userId && u.IsActive && u.RegistrationStatus == RegistrationStatus.Approved);
+                if (!isUsable)
+                {
+                    context.Fail("This account is no longer active.");
+                }
+            },
+        };
     });
 
 builder.Services.AddAuthorization();
