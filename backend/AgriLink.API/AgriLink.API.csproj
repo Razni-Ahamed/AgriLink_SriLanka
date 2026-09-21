@@ -22,4 +22,18 @@
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
   </ItemGroup>
 
+  <!-- appsettings.Development.json is gitignored and holds local secrets; never ship it in a publish. -->
+  <ItemGroup>
+    <Content Update="appsettings.Development.json" CopyToPublishDirectory="Never" />
+  </ItemGroup>
+
+  <!-- ml/models is gitignored, so a host can't get the photo models from the repo. Bundle the two files
+       the classifier reads per crop into <publish>/models/<crop>/ (see appsettings.Production.json). -->
+  <ItemGroup>
+    <Content Include="..\..\ml\models\**\model.onnx;..\..\ml\models\**\model.json"
+             Link="models\%(RecursiveDir)%(Filename)%(Extension)"
+             CopyToOutputDirectory="Never"
+             CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

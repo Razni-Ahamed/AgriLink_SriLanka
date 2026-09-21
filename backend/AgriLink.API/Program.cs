@@ -15,7 +15,7 @@ using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
-const string DevCorsPolicy = "DevCorsPolicy";
+const string FrontendCorsPolicy = "FrontendCorsPolicy";
 
 // ----- Database -----
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
@@ -132,12 +132,23 @@ else
     });
 }
 
-// ----- CORS (dev-only placeholder; tighten to real frontend origins before deploy) -----
+// ----- CORS -----
+// Cors:AllowedOrigins is a comma-separated list (env var Cors__AllowedOrigins on a host); with none
+// configured, only the local dev servers are allowed.
+var allowedOrigins = (builder.Configuration["Cors:AllowedOrigins"] ?? string.Empty)
+    .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+    .Select(origin => origin.TrimEnd('/'))
+    .ToArray();
+if (allowedOrigins.Length == 0)
+{
+    allowedOrigins = ["http://localhost:3000", "http://localhost:5173"];
+}
+
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy(DevCorsPolicy, policy =>
+    options.AddPolicy(FrontendCorsPolicy, policy =>
     {
-        policy.WithOrigins("http://localhost:3000", "http://localhost:5173")
+        policy.WithOrigins(allowedOrigins)
             .AllowAnyHeader()
             .AllowAnyMethod();
     });
@@ -167,9 +178,11 @@ builder.Services.AddSwaggerGen(options =>
 
 var app = builder.Build();
 
-// ----- Seed roles and the bootstrap admin on startup -----
+// ----- Apply migrations, then seed roles and the bootstrap admin on startup -----
 using (var scope = app.Services.CreateScope())
 {
+    await scope.ServiceProvider.GetRequiredService<AgriLinkDbContext>().Database.MigrateAsync();
+
     var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole<int>>>();
     await RoleSeeder.SeedAsync(roleManager);
 
@@ -184,7 +197,8 @@ using (var scope = app.Services.CreateScope())
 app.Services.GetRequiredService<IImageClassifier>();
 
 // ----- Middleware pipeline -----
-if (app.Environment.IsDevelopment())
+// Swagger is on in development, and on a host when Swagger__Enabled=true (handy for a demo).
+if (app.Environment.IsDevelopment() || app.Configuration.GetValue<bool>("Swagger:Enabled"))
 {
     app.UseSwagger();
     app.UseSwaggerUI();
@@ -192,7 +206,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-app.UseCors(DevCorsPolicy);
+app.UseCors(FrontendCorsPolicy);
 
 app.UseAuthentication();
 app.UseAuthorization();
