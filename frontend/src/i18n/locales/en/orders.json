@@ -16,7 +16,13 @@
     "totalAmount": "Total amount",
     "farmer": "Farmer",
     "buyer": "Buyer",
-    "completedOn": "Completed {{date}}"
+    "completedOn": "Completed {{date}}",
+    "markCompleted": "Mark as completed",
+    "cancelOrder": "Cancel order",
+    "cancelConfirm": "Cancel this order? The quantity goes back on the listing.",
+    "completed": "Order marked as completed.",
+    "cancelled": "Order cancelled.",
+    "transitionError": "Could not update this order. Please try again."
   },
   "notifications": {
     "title": "Notifications",

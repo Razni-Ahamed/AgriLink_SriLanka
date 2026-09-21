@@ -133,6 +133,7 @@
     "cropIdRequired": "பயிர் இலக்கம் தேவை",
     "plantingDateRequired": "நடவு செய்த திகதி தேவை",
     "expectedHarvestDateRequired": "எதிர்பார்க்கப்படும் அறுவடை திகதி தேவை",
+    "harvestAfterPlanting": "எதிர்பார்க்கப்படும் அறுவடை திகதி நடவு திகதிக்குப் பின்னர் இருக்க வேண்டும்",
     "harvestDateRequired": "அறுவடை திகதி தேவை",
     "locationRequired": "இடம் தேவை",
     "onlyAvailable": "{{max}} மட்டுமே உள்ளது",

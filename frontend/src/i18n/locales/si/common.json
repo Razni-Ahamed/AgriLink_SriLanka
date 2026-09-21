@@ -133,6 +133,7 @@
     "cropIdRequired": "බෝග අංකය අවශ්‍යයි",
     "plantingDateRequired": "වගා කළ දිනය අවශ්‍යයි",
     "expectedHarvestDateRequired": "අපේක්ෂිත අස්වනු දිනය අවශ්‍යයි",
+    "harvestAfterPlanting": "අපේක්ෂිත අස්වනු දිනය රෝපණ දිනයට පසුව විය යුතුයි",
     "harvestDateRequired": "අස්වනු දිනය අවශ්‍යයි",
     "locationRequired": "ස්ථානය අවශ්‍යයි",
     "onlyAvailable": "තිබෙන්නේ {{max}}ක් පමණි",

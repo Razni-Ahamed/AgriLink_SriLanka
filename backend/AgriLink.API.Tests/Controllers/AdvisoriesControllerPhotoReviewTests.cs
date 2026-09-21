@@ -79,18 +79,26 @@ public class AdvisoriesControllerPhotoReviewTests
         return db;
     }
 
-    private AdvisoriesController CreateController(AgriLinkDbContext db, int userId = OfficerUserId, string role = "Officer") => new(
-        db,
-        new CurrentUserService(db),
-        new AuditLogService(db),
-        _notifications.Object,
-        new DiseaseKnowledgeBase())
+    private AdvisoriesController CreateController(AgriLinkDbContext db, int userId = OfficerUserId, string role = "Officer")
     {
-        ControllerContext = new ControllerContext
+        if (role == "Officer")
         {
-            HttpContext = new DefaultHttpContext { User = ClaimsPrincipalTestHelpers.BuildPrincipal(userId, role) },
-        },
-    };
+            OfficerTestSeeding.EnsureOfficerProfile(db, userId);
+        }
+
+        return new(
+            db,
+            new CurrentUserService(db),
+            new AuditLogService(db),
+            _notifications.Object,
+            new DiseaseKnowledgeBase())
+        {
+            ControllerContext = new ControllerContext
+            {
+                HttpContext = new DefaultHttpContext { User = ClaimsPrincipalTestHelpers.BuildPrincipal(userId, role) },
+            },
+        };
+    }
 
     private static string Message(ActionResult<AdvisoryResponse> result)
     {

@@ -246,14 +246,27 @@ public class IssuesController : ControllerBase
     public async Task<IActionResult> GetImage(int issueId, int imageId)
     {
         var image = await _db.IssueImages
-            .Include(i => i.Issue)
+            .Include(i => i.Issue).ThenInclude(issue => issue.Crop).ThenInclude(c => c.Field).ThenInclude(f => f.Farm)
+            .Include(i => i.Issue).ThenInclude(issue => issue.Advisories)
             .FirstOrDefaultAsync(i => i.ImageId == imageId && i.IssueId == issueId);
         if (image is null)
         {
             return NotFound();
         }
 
-        if (!User.IsInRole("Officer") && !User.IsInRole("Admin"))
+        if (User.IsInRole("Officer") && !_currentUser.IsAdmin(User))
+        {
+            // Same boundary as AdvisoriesController: the officer's own district, or a case they
+            // reviewed themselves.
+            var userId = _currentUser.GetUserId(User);
+            var district = await _currentUser.GetOfficerDistrictAsync(User);
+            var inDistrict = district is not null && image.Issue.Crop.Field.Farm.District == district;
+            if (!inDistrict && !image.Issue.Advisories.Any(a => a.ReviewedByFK == userId))
+            {
+                return Forbid();
+            }
+        }
+        else if (!User.IsInRole("Admin"))
         {
             var farmerProfileId = await _currentUser.GetFarmerProfileIdAsync(User);
             if (farmerProfileId is null || image.Issue.FarmerProfileId != farmerProfileId)

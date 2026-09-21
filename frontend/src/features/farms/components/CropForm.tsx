@@ -30,6 +30,11 @@ export function CropForm({ submitLabel, isSubmitting, onSubmit }: CropFormProps)
           .number()
           .min(0.01, t('common:validation.quantityMin'))
           .max(1000000),
+      })
+      // ISO yyyy-mm-dd strings compare correctly as text; the API enforces the same rule.
+      .refine((values) => values.expectedHarvestDate > values.plantingDate, {
+        message: t('common:validation.harvestAfterPlanting'),
+        path: ['expectedHarvestDate'],
       }),
     [t],
   )

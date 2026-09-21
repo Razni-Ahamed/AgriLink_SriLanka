@@ -1,3 +1,4 @@
+import { isAxiosError } from 'axios'
 import { create } from 'zustand'
 import type { Role } from '@/types/common'
 import { getCurrentUser, type UserProfileResponse } from './api'
@@ -65,9 +66,14 @@ export const useAuthStore = create<AuthState>((set) => ({
     set({ token: session.token, role: session.role, isHydrated: true })
     void getCurrentUser()
       .then((user) => set({ user }))
-      .catch(() => {
-        writeStoredSession(null)
-        set({ token: null, role: null, user: null })
+      .catch((error: unknown) => {
+        // Only a rejected session ends it. A network error or a slow cold start on the API host
+        // must not log the user out; a 401 is already handled by the apiClient interceptor.
+        const status = isAxiosError(error) ? error.response?.status : undefined
+        if (status === 401 || status === 403 || status === 404) {
+          writeStoredSession(null)
+          set({ token: null, role: null, user: null })
+        }
       })
   },
 }))

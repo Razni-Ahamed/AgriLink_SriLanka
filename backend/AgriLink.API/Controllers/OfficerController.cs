@@ -49,8 +49,11 @@ public class OfficerController : ControllerBase
 
         var reviewedByMe = _db.AIAdvisories.Where(a => a.ReviewedByFK == userId);
 
-        var todayUtc = DateTime.UtcNow.Date;
-        var reviewedToday = await reviewedByMe.CountAsync(a => a.ReviewedAt >= todayUtc);
+        // "Today" is the officer's day in Sri Lanka (UTC+05:30, no daylight saving), not the UTC
+        // day, which would otherwise roll over at 05:30 local time.
+        var sriLankaOffset = TimeSpan.FromMinutes(330);
+        var todayStartUtc = (DateTime.UtcNow + sriLankaOffset).Date - sriLankaOffset;
+        var reviewedToday = await reviewedByMe.CountAsync(a => a.ReviewedAt >= todayStartUtc);
         var reviewedTotal = await reviewedByMe.CountAsync();
         var approvedTotal = await reviewedByMe.CountAsync(a => a.Status == AdvisoryStatus.Approved);
         var rejectedTotal = await reviewedByMe.CountAsync(a => a.Status == AdvisoryStatus.Rejected);

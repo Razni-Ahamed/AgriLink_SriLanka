@@ -57,6 +57,11 @@ public class CropsController : ControllerBase
             return BadRequest(new { message = "Crop type must be one of the supported crop types." });
         }
 
+        if (request.ExpectedHarvestDate <= request.PlantingDate)
+        {
+            return BadRequest(new { message = "Expected harvest date must be after the planting date." });
+        }
+
         var crop = new Crop
         {
             FieldId = field.FieldId,
