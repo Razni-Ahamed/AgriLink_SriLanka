@@ -37,6 +37,9 @@ export interface AdminUserSummary {
   userId: number
   fullName: string
   email: string
+  username: string
+  /** Public https URL; null shows the role's default avatar. */
+  profilePhotoUrl?: string | null
   role: ManagedRole
   district?: string | null
   /** Populated only for Officer accounts. */

@@ -346,6 +346,24 @@ public class AdminControllerTests
     }
 
     [Fact]
+    public async Task GetUsers_IncludesUsernameAndProfilePhoto()
+    {
+        var (controller, db, users, _) = await CreateAsync();
+        var farmer = await CreateFarmerAsync(users, db);
+        farmer.UserName = "test.farmer";
+        farmer.ProfilePhotoUrl = "https://res.cloudinary.com/demo/image/upload/f.jpg";
+        await db.SaveChangesAsync();
+
+        var result = await controller.GetUsers();
+
+        var summaries = Assert.IsType<List<AdminUserSummary>>(Assert.IsType<OkObjectResult>(result.Result).Value);
+        var summary = summaries.Single(s => s.UserId == farmer.Id);
+        Assert.Equal("test.farmer", summary.Username);
+        Assert.Equal("https://res.cloudinary.com/demo/image/upload/f.jpg", summary.ProfilePhotoUrl);
+        Assert.Null(summaries.Single(s => s.Role == "Admin").ProfilePhotoUrl);
+    }
+
+    [Fact]
     public async Task UpdateUserRole_OfficerToBuyer_SwapsProfileAndRecordsAudit()
     {
         var (controller, db, users, _) = await CreateAsync();

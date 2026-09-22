@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Skeleton } from '@/components/ui/Skeleton'
+import { UserAvatar } from '@/components/ui/UserAvatar'
 import { formatDate, formatQuantity } from '@/lib/utils'
 import { useStatusLabel } from '@/lib/useStatusLabel'
 import { useUiStore } from '@/lib/useUiStore'
@@ -19,6 +20,8 @@ const statusVariant: Record<OrderStatus, 'warning' | 'success' | 'danger'> = {
 
 interface ContactCardProps {
   title: string
+  role: 'Farmer' | 'Buyer'
+  photoUrl?: string | null
   name: string
   business?: string
   district: string
@@ -27,13 +30,16 @@ interface ContactCardProps {
 }
 
 /** Phone and email as tappable tel:/mailto: links; when a phone is missing, email only. */
-function ContactCard({ title, name, business, district, phone, email }: ContactCardProps) {
+function ContactCard({ title, role, photoUrl, name, business, district, phone, email }: ContactCardProps) {
   const { t } = useTranslation('orders')
 
   return (
     <Card className="flex flex-col gap-2">
       <p className="text-xs text-text-secondary">{title}</p>
-      <p className="font-display text-base text-text-primary">{name}</p>
+      <div className="flex items-center gap-3">
+        <UserAvatar photoUrl={photoUrl} role={role} name={name} size="md" />
+        <p className="font-display text-base text-text-primary">{name}</p>
+      </div>
       {business && <p className="text-sm text-text-secondary">{business}</p>}
       <p className="text-sm text-text-secondary">{district}</p>
       <div className="mt-1 flex flex-col gap-1 text-sm">
@@ -70,6 +76,8 @@ function OrderContacts({ order }: { order: OrderResponse }) {
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
       <ContactCard
         title={t('detail.farmer')}
+        role="Farmer"
+        photoUrl={order.farmerPhotoUrl}
         name={order.farmerName}
         district={order.farmerDistrict}
         phone={order.farmerPhone}
@@ -77,6 +85,8 @@ function OrderContacts({ order }: { order: OrderResponse }) {
       />
       <ContactCard
         title={t('detail.buyer')}
+        role="Buyer"
+        photoUrl={order.buyerPhotoUrl}
         name={order.buyerName}
         business={order.buyerBusinessName}
         district={order.buyerDistrict}

@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Badge } from '@/components/ui/Badge'
 import { Card } from '@/components/ui/Card'
 import { IconBadge } from '@/components/ui/IconBadge'
+import { UserAvatar } from '@/components/ui/UserAvatar'
 import { OrderTruckIcon } from '@/components/ui/icons/custom'
 import { formatDate, formatQuantity } from '@/lib/utils'
 import { useStatusLabel } from '@/lib/useStatusLabel'
@@ -23,6 +24,8 @@ export function OrderCard({ order, role }: { order: OrderResponse; role: Role | 
   // a farmer sees the buyer who ordered from them.
   const counterpartName = role === 'Buyer' ? order.farmerName : order.buyerName
   const counterpartBusiness = role === 'Buyer' ? undefined : order.buyerBusinessName
+  const counterpartRole = role === 'Buyer' ? 'Farmer' : 'Buyer'
+  const counterpartPhotoUrl = role === 'Buyer' ? order.farmerPhotoUrl : order.buyerPhotoUrl
 
   return (
     <Link to={`/orders/${order.orderId}`}>
@@ -38,8 +41,11 @@ export function OrderCard({ order, role }: { order: OrderResponse; role: Role | 
           <h3 className="font-display text-lg text-text-primary">
             {t('orders:card.orderNumber', { id: order.orderId })}
           </h3>
-          <p className="text-sm text-text-secondary">
-            {counterpartBusiness ? `${counterpartName} · ${counterpartBusiness}` : counterpartName}
+          <p className="mt-1 flex items-center gap-2 text-sm text-text-secondary">
+            <UserAvatar photoUrl={counterpartPhotoUrl} role={counterpartRole} name={counterpartName} size="sm" />
+            <span className="min-w-0">
+              {counterpartBusiness ? `${counterpartName} · ${counterpartBusiness}` : counterpartName}
+            </span>
           </p>
           <p className="text-xs text-text-secondary">{order.cropType}</p>
         </div>
