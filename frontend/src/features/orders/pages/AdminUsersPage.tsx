@@ -65,7 +65,11 @@ export function AdminUsersPage() {
               onSuccess: (user) => {
                 setCreateUserError(null)
                 setCreated(
-                  t('orders:admin.userCreated', { name: user.fullName, role: user.role }),
+                  t('orders:admin.userCreatedWithUsername', {
+                    name: user.fullName,
+                    role: user.role,
+                    username: user.username,
+                  }),
                 )
               },
               onError: (error) => {

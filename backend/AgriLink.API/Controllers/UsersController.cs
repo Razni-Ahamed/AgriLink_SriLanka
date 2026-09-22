@@ -3,6 +3,7 @@ using AgriLink.API.DTOs.Auth;
 using AgriLink.API.DTOs.Users;
 using AgriLink.API.Models;
 using AgriLink.API.Services;
+using AgriLink.API.Services.Accounts;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -33,6 +34,21 @@ public class UsersController : ControllerBase
         _currentUser = currentUser;
         _auditLog = auditLog;
         _tokenService = tokenService;
+    }
+
+    /// <summary>
+    /// Live check for the username field. Anonymous so the registration form can use it; a signed-in
+    /// caller's own current username counts as available, so the profile editor doesn't flag it.
+    /// </summary>
+    [HttpGet("username-available")]
+    [AllowAnonymous]
+    public async Task<ActionResult<UsernameAvailabilityResponse>> UsernameAvailable([FromQuery] string? username)
+    {
+        int? callerId = User.Identity?.IsAuthenticated == true ? _currentUser.GetUserId(User) : null;
+        var reason = await UsernameAvailability.ReasonUnavailableAsync(
+            _userManager, UsernamePolicy.Normalize(username), callerId, HttpContext.RequestAborted);
+
+        return Ok(new UsernameAvailabilityResponse { Available = reason is null, Reason = reason });
     }
 
     [HttpGet("me")]

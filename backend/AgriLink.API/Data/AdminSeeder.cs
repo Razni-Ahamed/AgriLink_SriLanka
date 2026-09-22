@@ -1,4 +1,5 @@
 using AgriLink.API.Models;
+using AgriLink.API.Services.Accounts;
 using Microsoft.AspNetCore.Identity;
 
 namespace AgriLink.API.Data;
@@ -38,7 +39,7 @@ public static class AdminSeeder
 
         var admin = new ApplicationUser
         {
-            UserName = options.Email,
+            UserName = await UsernameGenerator.GenerateUniqueAsync(userManager, options.FullName, userId: null),
             Email = options.Email,
             FullName = options.FullName,
             EmailConfirmed = true,

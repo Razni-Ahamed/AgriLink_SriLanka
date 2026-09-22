@@ -31,12 +31,13 @@ function renderPage() {
 
 async function fillCommonFields(
   user: ReturnType<typeof userEvent.setup>,
-  overrides: { password?: string; confirmPassword?: string; nic?: string } = {},
+  overrides: { password?: string; confirmPassword?: string; nic?: string; username?: string } = {},
 ) {
   const password = overrides.password ?? 'Password@123!'
   const confirmPassword = overrides.confirmPassword ?? password
   await user.type(screen.getByLabelText('Full name'), 'Test Applicant')
   await user.type(screen.getByLabelText('Email'), 'applicant@agrilink.lk')
+  await user.type(screen.getByLabelText('Username'), overrides.username ?? 'test.applicant')
   await user.type(screen.getByLabelText('Password'), password)
   await user.type(screen.getByLabelText('Confirm password'), confirmPassword)
   await user.type(screen.getByLabelText('NIC'), overrides.nic ?? '199912345678')
@@ -44,10 +45,17 @@ async function fillCommonFields(
   await user.selectOptions(screen.getByLabelText('District'), 'Kandy')
 }
 
+/** Districts for the district picker; `availability` answers the live username check. */
+function mockGet(availability: { available: boolean; reason?: string }) {
+  return vi.spyOn(apiClient, 'get').mockImplementation((url: string) =>
+    Promise.resolve({ data: url.includes('username-available') ? availability : ['Kandy', 'Galle'] }),
+  )
+}
+
 describe('RegisterPage', () => {
   beforeEach(async () => {
     await i18n.changeLanguage('en')
-    vi.spyOn(apiClient, 'get').mockResolvedValue({ data: ['Kandy', 'Galle'] })
+    mockGet({ available: true })
   })
 
   afterEach(() => {
@@ -216,5 +224,102 @@ describe('RegisterPage', () => {
 
     const alert = await screen.findByRole('alert')
     expect(alert).toHaveTextContent('An account with this email already exists.')
+  })
+
+  describe('username', () => {
+    async function fillFarmerApplication(user: ReturnType<typeof userEvent.setup>, username?: string) {
+      await fillCommonFields(user, { username })
+      await user.type(screen.getByLabelText('Field/plot number'), 'PLOT-42')
+      await user.type(screen.getByLabelText('Phone number'), '0771234567')
+    }
+
+    it('is required', async () => {
+      const post = vi.spyOn(apiClient, 'post')
+      const user = userEvent.setup()
+      renderPage()
+
+      await user.click(screen.getByLabelText('Username'))
+      await user.tab()
+
+      expect(await screen.findByText('Username must be at least 3 characters')).toBeInTheDocument()
+      await user.click(screen.getByRole('button', { name: 'Register' }))
+      expect(post).not.toHaveBeenCalled()
+    })
+
+    it('rejects a badly formed username before asking the server', async () => {
+      const get = mockGet({ available: true })
+      const user = userEvent.setup()
+      renderPage()
+
+      await user.type(screen.getByLabelText('Username'), 'bad..name')
+      await user.tab()
+
+      expect(
+        await screen.findByText(/Use lowercase letters, numbers, dots and underscores/),
+      ).toBeInTheDocument()
+      expect(get.mock.calls.some(([url]) => String(url).includes('username-available'))).toBe(false)
+    })
+
+    it('shows a live "available" result once typing pauses, with the username as a query param', async () => {
+      const get = mockGet({ available: true })
+      const user = userEvent.setup()
+      renderPage()
+
+      await user.type(screen.getByLabelText('Username'), 'Nimal.Perera')
+
+      expect(await screen.findByText('Username is available')).toBeInTheDocument()
+      const call = get.mock.calls.find(([url]) => String(url).includes('username-available'))
+      // Normalized, and passed as axios params so it is encoded rather than concatenated into the URL.
+      expect(call?.[0]).toBe('/api/users/username-available')
+      expect(call?.[1]).toEqual(expect.objectContaining({ params: { username: 'nimal.perera' } }))
+    })
+
+    it('shows "taken" and blocks submission when the username is in use', async () => {
+      mockGet({ available: false, reason: 'taken' })
+      const post = vi.spyOn(apiClient, 'post')
+      const user = userEvent.setup()
+      renderPage()
+
+      await fillFarmerApplication(user, 'nimal.perera')
+      expect(await screen.findByText('That username is taken')).toBeInTheDocument()
+      await user.click(screen.getByRole('button', { name: 'Register' }))
+
+      expect(await screen.findByText('That username is taken.')).toBeInTheDocument()
+      expect(post).not.toHaveBeenCalled()
+    })
+
+    it('sends the username trimmed and lowercased', async () => {
+      const post = vi.spyOn(apiClient, 'post').mockResolvedValue({
+        data: { message: 'Waiting for approval', status: 'Pending' },
+      })
+      const user = userEvent.setup()
+      renderPage()
+
+      await fillFarmerApplication(user, 'Nimal.Perera')
+      await user.click(screen.getByRole('button', { name: 'Register' }))
+
+      expect(await screen.findByText('Application submitted')).toBeInTheDocument()
+      expect(post).toHaveBeenCalledWith(
+        '/api/auth/register',
+        expect.objectContaining({ username: 'nimal.perera', email: 'applicant@agrilink.lk' }),
+      )
+    })
+
+    it('shows the server\'s 409 username clash as "username taken", not "email exists"', async () => {
+      vi.spyOn(apiClient, 'post').mockRejectedValue(
+        axiosErrorWithResponse(409, {
+          errors: [{ code: 'DuplicateUserName', description: 'That username is taken.' }],
+        }),
+      )
+      const user = userEvent.setup()
+      renderPage()
+
+      await fillFarmerApplication(user)
+      await user.click(screen.getByRole('button', { name: 'Register' }))
+
+      const alert = await screen.findByRole('alert')
+      expect(alert).toHaveTextContent('That username is taken.')
+      expect(alert).not.toHaveTextContent('email')
+    })
   })
 })

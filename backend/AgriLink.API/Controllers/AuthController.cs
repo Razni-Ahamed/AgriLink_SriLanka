@@ -3,6 +3,7 @@ using AgriLink.API.Data;
 using AgriLink.API.DTOs.Auth;
 using AgriLink.API.Models;
 using AgriLink.API.Services;
+using AgriLink.API.Services.Accounts;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -42,6 +43,13 @@ public class AuthController : ControllerBase
         }
 
         var email = request.Email.Trim();
+
+        var username = UsernamePolicy.Normalize(request.Username);
+        var usernameCheck = UsernamePolicy.Check(username);
+        if (usernameCheck != UsernameCheck.Valid)
+        {
+            return BadRequest(new { message = UsernamePolicy.MessageFor(usernameCheck) });
+        }
 
         var role = SelfRegisterableRoles.FirstOrDefault(r => string.Equals(r, request.Role, StringComparison.OrdinalIgnoreCase));
         if (role is null)
@@ -108,16 +116,27 @@ public class AuthController : ControllerBase
             return Conflict(new { message = "An account with this email already exists." });
         }
 
+        if (await _userManager.FindByNameAsync(username) is not null)
+        {
+            return Conflict(UsernameErrors.TakenBody);
+        }
+
+        // UsernameChangedAt stays null: the name chosen at sign-up doesn't start the 30-day clock.
         var user = new ApplicationUser
         {
-            UserName = email,
+            UserName = username,
             Email = email,
             FullName = fullName,
             IsActive = false,
             RegistrationStatus = RegistrationStatus.Pending,
         };
 
-        var createResult = await _userManager.CreateAsync(user, request.Password);
+        var createResult = await UsernameErrors.CreateOrNullOnDuplicateAsync(_userManager, user, request.Password);
+        if (createResult is null)
+        {
+            return Conflict(UsernameErrors.TakenBody);
+        }
+
         if (!createResult.Succeeded)
         {
             return BadRequest(new { errors = createResult.Errors.Select(e => new { code = e.Code, description = e.Description }) });

@@ -1,6 +1,8 @@
 export interface CreateUserRequest {
   fullName: string
   email: string
+  /** Optional — the server generates one from the full name when omitted. */
+  username?: string
   password: string
   /** "Officer" or "Buyer" */
   role: 'Officer' | 'Buyer'
@@ -15,6 +17,7 @@ export interface CreateUserResponse {
   userId: number
   fullName: string
   email: string
+  username: string
   role: string
 }
 

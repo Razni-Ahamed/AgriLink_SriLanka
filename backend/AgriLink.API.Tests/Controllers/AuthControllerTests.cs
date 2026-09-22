@@ -13,10 +13,11 @@ namespace AgriLink.API.Tests.Controllers;
 
 public class AuthControllerTests
 {
-    private static RegisterRequest FarmerRequest(string email = "new.farmer@agrilink.lk", string district = "Kandy") => new()
+    private static RegisterRequest FarmerRequest(string email = "new.farmer@agrilink.lk", string district = "Kandy", string username = "new.farmer") => new()
     {
         FullName = "New Farmer",
         Email = email,
+        Username = username,
         Password = "Farmer@AgriLink.2026!",
         NIC = "199912345678",
         District = district,
@@ -25,10 +26,11 @@ public class AuthControllerTests
         PhoneNumber = "0771234567",
     };
 
-    private static RegisterRequest BuyerRequest(string email = "new.buyer@agrilink.lk", string district = "Kandy") => new()
+    private static RegisterRequest BuyerRequest(string email = "new.buyer@agrilink.lk", string district = "Kandy", string username = "new.buyer") => new()
     {
         FullName = "New Buyer",
         Email = email,
+        Username = username,
         Password = "Buyer@AgriLink.2026!",
         NIC = "199912345678",
         District = district,
@@ -350,5 +352,71 @@ public class AuthControllerTests
         Assert.Contains("PasswordTooShort", codes);
         Assert.NotEmpty(descriptions);
         Assert.Empty(db.Users);
+    }
+
+    [Theory]
+    [InlineData("")] // required
+    [InlineData("   ")]
+    [InlineData("ab")]
+    [InlineData("bad..name")]
+    [InlineData("has space")]
+    [InlineData("admin")] // reserved
+    [InlineData("Support")] // reserved, whatever the case
+    public async Task Register_MissingInvalidOrReservedUsername_ReturnsBadRequestAndCreatesNoAccount(string username)
+    {
+        var (controller, db, _) = await CreateAsync();
+
+        var result = await controller.Register(FarmerRequest(username: username));
+
+        Assert.IsType<BadRequestObjectResult>(result.Result);
+        Assert.Empty(db.Users);
+    }
+
+    [Fact]
+    public async Task Register_StoresTheUsernameTrimmedAndLowercased_WithTheChangeTimerUnset()
+    {
+        var (controller, db, _) = await CreateAsync();
+
+        await controller.Register(FarmerRequest(username: "  Nimal.Perera "));
+
+        var user = await db.Users.SingleAsync();
+        Assert.Equal("nimal.perera", user.UserName);
+        Assert.Equal("NIMAL.PERERA", user.NormalizedUserName);
+        Assert.Null(user.UsernameChangedAt);
+        // Login stays by email: the username must not replace it.
+        Assert.Equal("new.farmer@agrilink.lk", user.Email);
+    }
+
+    [Theory]
+    [InlineData("new.farmer")]
+    [InlineData("NEW.Farmer")] // uniqueness is case-insensitive
+    public async Task Register_UsernameAlreadyTaken_Returns409WithDuplicateUserNameCode(string secondUsername)
+    {
+        var (controller, db, _) = await CreateAsync();
+        await controller.Register(FarmerRequest());
+
+        var result = await controller.Register(BuyerRequest(username: secondUsername));
+
+        var conflict = Assert.IsType<ConflictObjectResult>(result.Result);
+        Assert.Contains("DuplicateUserName", ResponseBodyHelpers.ErrorCodes(conflict.Value));
+        Assert.Single(db.Users);
+    }
+
+    [Fact]
+    public async Task Register_UsernameTakenByAnotherRole_IsStillAConflict()
+    {
+        var (controller, db, _) = await CreateAsync();
+        db.Users.Add(new ApplicationUser
+        {
+            UserName = "kandy.officer",
+            NormalizedUserName = "KANDY.OFFICER",
+            Email = "officer@agrilink.lk",
+            FullName = "Kandy Officer",
+        });
+        await db.SaveChangesAsync();
+
+        var result = await controller.Register(FarmerRequest(username: "kandy.officer"));
+
+        Assert.IsType<ConflictObjectResult>(result.Result);
     }
 }

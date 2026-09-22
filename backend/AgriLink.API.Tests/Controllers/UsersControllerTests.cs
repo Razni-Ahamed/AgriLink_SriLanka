@@ -182,4 +182,51 @@ public class UsersControllerTests
 
         Assert.IsType<BadRequestObjectResult>(result.Result);
     }
+
+    private static async Task<UsernameAvailabilityResponse> CheckAvailabilityAsync(UsersController controller, string? username)
+    {
+        var result = await controller.UsernameAvailable(username);
+        return Assert.IsType<UsernameAvailabilityResponse>(Assert.IsType<OkObjectResult>(result.Result).Value);
+    }
+
+    [Fact]
+    public async Task UsernameAvailable_ReportsAllFourOutcomes_ToAnAnonymousCaller()
+    {
+        var (db, users) = await CreateAsync();
+        await CreateUserAsync(users, "nimal.perera", "Nimal Perera", "Farmer");
+        var controller = BuildController(db, users, actingUserId: 0, role: "Farmer");
+        // No token: the registration form calls this before an account exists.
+        controller.ControllerContext.HttpContext = new DefaultHttpContext();
+
+        var free = await CheckAvailabilityAsync(controller, "kumari.silva");
+        Assert.True(free.Available);
+        Assert.Null(free.Reason);
+
+        var taken = await CheckAvailabilityAsync(controller, " Nimal.PERERA ");
+        Assert.False(taken.Available);
+        Assert.Equal("taken", taken.Reason);
+
+        var reserved = await CheckAvailabilityAsync(controller, "admin");
+        Assert.False(reserved.Available);
+        Assert.Equal("reserved", reserved.Reason);
+
+        var invalid = await CheckAvailabilityAsync(controller, "no..dots");
+        Assert.False(invalid.Available);
+        Assert.Equal("invalid", invalid.Reason);
+
+        var missing = await CheckAvailabilityAsync(controller, null);
+        Assert.Equal("invalid", missing.Reason);
+    }
+
+    [Fact]
+    public async Task UsernameAvailable_CallersOwnUsername_CountsAsAvailable()
+    {
+        var (db, users) = await CreateAsync();
+        var user = await CreateUserAsync(users, "nimal.perera", "Nimal Perera", "Farmer");
+        await CreateUserAsync(users, "kumari.silva", "Kumari Silva", "Buyer");
+        var controller = BuildController(db, users, user.Id, "Farmer");
+
+        Assert.True((await CheckAvailabilityAsync(controller, "nimal.perera")).Available);
+        Assert.Equal("taken", (await CheckAvailabilityAsync(controller, "kumari.silva")).Reason);
+    }
 }

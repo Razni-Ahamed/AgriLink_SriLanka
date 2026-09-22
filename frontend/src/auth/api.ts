@@ -25,6 +25,7 @@ export interface LoginRequest {
 interface RegisterRequestBase {
   fullName: string
   email: string
+  username: string
   password: string
   nic: string
   district: string
@@ -66,6 +67,28 @@ export async function adminLogin(request: LoginRequest): Promise<AuthResponse> {
 
 export async function register(request: RegisterRequest): Promise<RegisterResponse> {
   const { data } = await apiClient.post<RegisterResponse>('/api/auth/register', request)
+  return data
+}
+
+export type UsernameUnavailableReason = 'invalid' | 'reserved' | 'taken'
+
+export interface UsernameAvailabilityResponse {
+  available: boolean
+  reason?: UsernameUnavailableReason
+}
+
+/**
+ * Anonymous, so the registration form can use it. Signed in, the caller's own username counts as
+ * available. The username travels as an axios param so it is always URL-encoded.
+ */
+export async function checkUsernameAvailable(
+  username: string,
+  signal?: AbortSignal,
+): Promise<UsernameAvailabilityResponse> {
+  const { data } = await apiClient.get<UsernameAvailabilityResponse>('/api/users/username-available', {
+    params: { username },
+    signal,
+  })
   return data
 }
 

@@ -32,3 +32,59 @@ export function normalizePhone(phone: string): string {
 export function isValidPhone(phone: string): boolean {
   return PHONE_REGEX.test(normalizePhone(phone))
 }
+
+/**
+ * Username rules, mirroring backend Services/Accounts/UsernamePolicy.cs. The server re-checks every
+ * one of these; this copy only lets a form flag a bad username before a round trip.
+ */
+export const USERNAME_MIN_LENGTH = 3
+export const USERNAME_MAX_LENGTH = 30
+
+/** Lowercase letters, digits, `.` and `_`, starting and ending with a letter or digit. */
+export const USERNAME_REGEX = /^[a-z0-9](?:[a-z0-9._]*[a-z0-9])?$/
+
+export const RESERVED_USERNAMES: ReadonlySet<string> = new Set([
+  'admin',
+  'administrator',
+  'agrilink',
+  'support',
+  'system',
+  'root',
+  'officer',
+  'farmer',
+  'buyer',
+  'null',
+  'undefined',
+  'me',
+  'api',
+  'help',
+])
+
+export type UsernameProblem = 'tooShort' | 'tooLong' | 'invalid' | 'reserved'
+
+/** Trims and lowercases, the same normalisation the server applies before checking. */
+export function normalizeUsername(username: string): string {
+  return username.trim().toLowerCase()
+}
+
+/** What is wrong with an already-normalised username, or null when it passes every rule. */
+export function usernameProblem(normalized: string): UsernameProblem | null {
+  if (normalized.length < USERNAME_MIN_LENGTH) {
+    return 'tooShort'
+  }
+  if (normalized.length > USERNAME_MAX_LENGTH) {
+    return 'tooLong'
+  }
+  if (!USERNAME_REGEX.test(normalized) || normalized.includes('..')) {
+    return 'invalid'
+  }
+  if (RESERVED_USERNAMES.has(normalized)) {
+    return 'reserved'
+  }
+  return null
+}
+
+/** Mirrors the display-name column length on the server (ProfileFieldLimits.DisplayName). */
+export const DISPLAY_NAME_MAX_LENGTH = 60
+export const FIELD_PLOT_NUMBER_MAX_LENGTH = 50
+export const BUSINESS_NAME_MAX_LENGTH = 100

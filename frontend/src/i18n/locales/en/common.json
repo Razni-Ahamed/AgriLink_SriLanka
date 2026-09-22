@@ -85,7 +85,9 @@
     "selectCropType": "Select a crop type",
     "crop": "Crop",
     "selectCrop": "Select a crop",
-    "cropLocation": "{{field}} · {{farm}}"
+    "cropLocation": "{{field}} · {{farm}}",
+    "username": "Username",
+    "usernameOptional": "Username (optional)"
   },
   "status": {
     "crop": {
@@ -170,7 +172,12 @@
     "businessPhoneInvalid": "Business phone must be 10 digits",
     "fieldPlotNumberTooLong": "Field/plot number is too long",
     "businessRegistrationNumberTooLong": "Business registration number is too long",
-    "legalBusinessNameTooLong": "Legal business name is too long"
+    "legalBusinessNameTooLong": "Legal business name is too long",
+    "usernameTaken": "That username is taken.",
+    "usernameTooShort": "Username must be at least 3 characters",
+    "usernameTooLong": "Username must be at most 30 characters",
+    "usernameInvalid": "Use lowercase letters, numbers, dots and underscores. Start and end with a letter or number, with no two dots in a row.",
+    "usernameReserved": "That username is reserved. Please choose another."
   },
   "passwordChecklist": {
     "ariaLabel": "Password requirements",
@@ -237,5 +244,13 @@
     "vegetables": "Vegetables",
     "fruit": "Fruit",
     "other": "Other"
+  },
+  "username": {
+    "checking": "Checking availability…",
+    "available": "Username is available",
+    "taken": "That username is taken",
+    "reserved": "That username is reserved",
+    "checkFailed": "Couldn't check availability right now. We'll check again when you save.",
+    "hint": "3–30 characters: lowercase letters, numbers, dots and underscores."
   }
 }

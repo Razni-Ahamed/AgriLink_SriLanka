@@ -3,6 +3,7 @@ using AgriLink.API.Data;
 using AgriLink.API.DTOs.Admin;
 using AgriLink.API.Models;
 using AgriLink.API.Services;
+using AgriLink.API.Services.Accounts;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -72,14 +73,39 @@ public class AdminController : ControllerBase
             return Conflict(new { message = "An account with this email already exists." });
         }
 
+        string username;
+        if (string.IsNullOrWhiteSpace(request.Username))
+        {
+            username = await UsernameGenerator.GenerateUniqueAsync(_userManager, request.FullName, userId: null);
+        }
+        else
+        {
+            username = UsernamePolicy.Normalize(request.Username);
+            var usernameCheck = UsernamePolicy.Check(username);
+            if (usernameCheck != UsernameCheck.Valid)
+            {
+                return BadRequest(new { message = UsernamePolicy.MessageFor(usernameCheck) });
+            }
+
+            if (await _userManager.FindByNameAsync(username) is not null)
+            {
+                return Conflict(UsernameErrors.TakenBody);
+            }
+        }
+
         var user = new ApplicationUser
         {
-            UserName = request.Email,
+            UserName = username,
             Email = request.Email,
             FullName = request.FullName,
         };
 
-        var createResult = await _userManager.CreateAsync(user, request.Password);
+        var createResult = await UsernameErrors.CreateOrNullOnDuplicateAsync(_userManager, user, request.Password);
+        if (createResult is null)
+        {
+            return Conflict(UsernameErrors.TakenBody);
+        }
+
         if (!createResult.Succeeded)
         {
             // Matches AuthController.Register's shape so the frontend's apiErrors helper — used by
@@ -118,6 +144,7 @@ public class AdminController : ControllerBase
             UserId = user.Id,
             FullName = user.FullName,
             Email = user.Email!,
+            Username = user.UserName!,
             Role = role,
         });
     }

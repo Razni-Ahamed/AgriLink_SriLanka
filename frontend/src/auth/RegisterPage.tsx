@@ -9,11 +9,14 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { PasswordInput } from '@/components/ui/PasswordInput'
 import { PasswordChecklist } from '@/components/ui/PasswordChecklist'
+import { UsernameAvailabilityHint } from '@/components/ui/UsernameAvailabilityHint'
 import { DistrictSelect } from '@/components/ui/DistrictSelect'
 import { Card } from '@/components/ui/Card'
 import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
 import { buildPasswordSchema } from '@/lib/passwordSchema'
+import { buildUsernameSchema } from '@/lib/usernameSchema'
+import { useUsernameAvailability } from '@/lib/useUsernameAvailability'
 import { NIC_NEW_FORMAT_REGEX, NIC_OLD_FORMAT_REGEX, PHONE_REGEX, normalizeNic, normalizePhone } from '@/lib/validation'
 import { parseApiError } from '@/lib/apiErrors'
 import { register as registerRequest } from './api'
@@ -26,6 +29,7 @@ export function RegisterPage() {
   const [role, setRole] = useState<Role>('Farmer')
   const [generalErrors, setGeneralErrors] = useState<string[]>([])
   const passwordChecklistId = useId()
+  const usernameHintId = useId()
 
   const baseFields = useMemo(
     () => ({
@@ -40,6 +44,12 @@ export function RegisterPage() {
         .min(1, t('common:validation.emailInvalid'))
         .email(t('common:validation.emailInvalid'))
         .max(256, t('common:validation.emailTooLong')),
+      username: buildUsernameSchema({
+        tooShort: t('common:validation.usernameTooShort'),
+        tooLong: t('common:validation.usernameTooLong'),
+        invalid: t('common:validation.usernameInvalid'),
+        reserved: t('common:validation.usernameReserved'),
+      }),
       // Matches Identity's server-side policy (Program.cs) — the same schema backs the
       // change-password and admin-reset forms.
       password: buildPasswordSchema({
@@ -130,6 +140,7 @@ export function RegisterPage() {
   })
 
   const passwordValue = watch('password') ?? ''
+  const usernameStatus = useUsernameAvailability(watch('username') ?? '')
 
   // The role-specific fields only exist on one branch of the discriminated union, so
   // FieldErrors<FormValues> only ever types the branch common to both — look these up
@@ -155,11 +166,17 @@ export function RegisterPage() {
 
   const onSubmit = handleSubmit((values) => {
     setGeneralErrors([])
+    // The live check already knows; the server would refuse it with a 409 anyway.
+    if (usernameStatus === 'taken') {
+      setError('username', { type: 'server', message: t('common:validation.usernameTaken') })
+      return
+    }
     if (values.role === 'Farmer') {
       mutation.mutate({
         role: 'Farmer',
         fullName: values.fullName,
         email: values.email,
+        username: values.username,
         password: values.password,
         nic: values.nic,
         district: values.district,
@@ -171,6 +188,7 @@ export function RegisterPage() {
         role: 'Buyer',
         fullName: values.fullName,
         email: values.email,
+        username: values.username,
         password: values.password,
         nic: values.nic,
         district: values.district,
@@ -247,6 +265,19 @@ export function RegisterPage() {
               error={errors.email?.message}
               {...registerField('email')}
             />
+            <div>
+              <Input
+                label={t('common:fields.username')}
+                autoComplete="off"
+                autoCapitalize="none"
+                spellCheck={false}
+                maxLength={64}
+                aria-describedby={usernameHintId}
+                error={errors.username?.message}
+                {...registerField('username')}
+              />
+              <UsernameAvailabilityHint id={usernameHintId} status={usernameStatus} />
+            </div>
             <div>
               <PasswordInput
                 label={t('common:fields.password')}
