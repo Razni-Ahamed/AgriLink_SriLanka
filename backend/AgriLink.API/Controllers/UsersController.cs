@@ -1,3 +1,6 @@
+using System.Text.Encodings.Web;
+using System.Text.Json;
+using System.Text.Unicode;
 using AgriLink.API.Data;
 using AgriLink.API.DTOs.Auth;
 using AgriLink.API.DTOs.Users;
@@ -19,6 +22,12 @@ public class UsersController : ControllerBase
 {
     // The 5 MB photo plus multipart framing.
     private const long PhotoRequestLimitBytes = ProfilePhotoProcessor.MaxUploadBytes + 64 * 1024;
+
+    // Keeps Sinhala and Tamil names readable in the audit log instead of \u-escaping every character.
+    private static readonly JsonSerializerOptions AuditJsonOptions = new()
+    {
+        Encoder = JavaScriptEncoder.Create(UnicodeRanges.All),
+    };
 
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly AgriLinkDbContext _db;
@@ -71,6 +80,178 @@ public class UsersController : ControllerBase
         if (user is null)
         {
             return NotFound();
+        }
+
+        return Ok(await BuildProfileAsync(user));
+    }
+
+    /// <summary>
+    /// Updates the fields a user may change about themselves. A field left null (or out of the body)
+    /// keeps its value; an empty display name clears it. Nothing here touches the security stamp, so
+    /// the user's sessions stay signed in.
+    /// </summary>
+    [HttpPut("me/profile")]
+    public async Task<ActionResult<UserProfileResponse>> UpdateProfile(UpdateProfileRequest request)
+    {
+        var userId = _currentUser.GetUserId(User);
+        var user = await _userManager.FindByIdAsync(userId.ToString());
+        if (user is null)
+        {
+            return NotFound();
+        }
+
+        var role = (await _userManager.GetRolesAsync(user)).FirstOrDefault() ?? string.Empty;
+        if (request.FieldPlotNumber is not null && role != "Farmer")
+        {
+            return BadRequest(new { message = "Only farmer accounts have a field or plot number." });
+        }
+
+        if (request.BusinessName is not null && role != "Buyer")
+        {
+            return BadRequest(new { message = "Only buyer accounts have a business name." });
+        }
+
+        // Validate everything before changing anything, so a bad field never leaves a half-applied edit.
+        string? newDisplayName = null;
+        if (request.DisplayName is not null)
+        {
+            var trimmed = request.DisplayName.Trim();
+            if (trimmed.Length > ProfileFieldLimits.DisplayName)
+            {
+                return BadRequest(new { message = $"Display name must be at most {ProfileFieldLimits.DisplayName} characters." });
+            }
+
+            if (trimmed.Any(char.IsControl))
+            {
+                return BadRequest(new { message = "Display name can't contain line breaks or control characters." });
+            }
+
+            newDisplayName = trimmed;
+        }
+
+        var now = DateTime.UtcNow;
+        string? newUsername = null;
+        if (!string.IsNullOrWhiteSpace(request.Username))
+        {
+            var username = UsernamePolicy.Normalize(request.Username);
+            if (username != user.UserName)
+            {
+                var check = UsernamePolicy.Check(username);
+                if (check != UsernameCheck.Valid)
+                {
+                    return BadRequest(new { message = UsernamePolicy.MessageFor(check) });
+                }
+
+                var nextAllowed = UsernamePolicy.NextChangeAllowedAt(user.UsernameChangedAt, now);
+                if (nextAllowed is not null)
+                {
+                    return BadRequest(new
+                    {
+                        message = $"You can change your username again on {nextAllowed:d MMMM yyyy}.",
+                        nextChangeAllowedAt = nextAllowed,
+                    });
+                }
+
+                var unavailable = await UsernameAvailability.ReasonUnavailableAsync(
+                    _userManager, username, userId, HttpContext.RequestAborted);
+                if (unavailable == UsernameAvailability.Taken)
+                {
+                    return Conflict(UsernameErrors.TakenBody);
+                }
+
+                newUsername = username;
+            }
+        }
+
+        // An empty field/plot number or business name means "keep it" (only the display name can be
+        // cleared): both are required details of the account.
+        FarmerProfile? farmerProfile = null;
+        var newFieldPlotNumber = request.FieldPlotNumber?.Trim();
+        if (!string.IsNullOrEmpty(newFieldPlotNumber))
+        {
+            if (newFieldPlotNumber.Length > ProfileFieldLimits.FieldPlotNumber)
+            {
+                return BadRequest(new { message = $"Field/plot number must be at most {ProfileFieldLimits.FieldPlotNumber} characters." });
+            }
+
+            farmerProfile = await _db.FarmerProfiles.FirstOrDefaultAsync(f => f.UserId == userId);
+            if (farmerProfile is null)
+            {
+                return BadRequest(new { message = "This account has no farmer profile to update." });
+            }
+        }
+
+        BuyerProfile? buyerProfile = null;
+        var newBusinessName = request.BusinessName?.Trim();
+        if (!string.IsNullOrEmpty(newBusinessName))
+        {
+            if (newBusinessName.Length > ProfileFieldLimits.BusinessName)
+            {
+                return BadRequest(new { message = $"Business name must be at most {ProfileFieldLimits.BusinessName} characters." });
+            }
+
+            buyerProfile = await _db.BuyerProfiles.FirstOrDefaultAsync(b => b.UserId == userId);
+            if (buyerProfile is null)
+            {
+                return BadRequest(new { message = "This account has no buyer profile to update." });
+            }
+        }
+
+        var oldValues = new Dictionary<string, string?>();
+        var newValues = new Dictionary<string, string?>();
+        void Track(string field, string? oldValue, string? newValue)
+        {
+            oldValues[field] = oldValue;
+            newValues[field] = newValue;
+        }
+
+        if (newDisplayName is not null)
+        {
+            var displayName = newDisplayName.Length == 0 ? null : newDisplayName;
+            if (displayName != user.DisplayName)
+            {
+                Track("displayName", user.DisplayName, displayName);
+                user.DisplayName = displayName;
+            }
+        }
+
+        if (newUsername is not null)
+        {
+            Track("username", user.UserName, newUsername);
+            // Set directly rather than through UserManager.SetUserNameAsync, which would also rotate the
+            // security stamp and sign the user out everywhere for what is only a rename.
+            user.UserName = newUsername;
+            user.NormalizedUserName = _userManager.NormalizeName(newUsername);
+            user.UsernameChangedAt = now;
+        }
+
+        if (farmerProfile is not null && newFieldPlotNumber != farmerProfile.FieldPlotNumber)
+        {
+            Track("fieldPlotNumber", farmerProfile.FieldPlotNumber, newFieldPlotNumber);
+            farmerProfile.FieldPlotNumber = newFieldPlotNumber;
+        }
+
+        if (buyerProfile is not null && newBusinessName != buyerProfile.BusinessName)
+        {
+            Track("businessName", buyerProfile.BusinessName, newBusinessName);
+            buyerProfile.BusinessName = newBusinessName!;
+        }
+
+        if (newValues.Count > 0)
+        {
+            _auditLog.Record(userId, "ProfileUpdated", "User", userId,
+                JsonSerializer.Serialize(oldValues, AuditJsonOptions),
+                JsonSerializer.Serialize(newValues, AuditJsonOptions));
+
+            try
+            {
+                await _db.SaveChangesAsync();
+            }
+            catch (DbUpdateException ex) when (UsernameErrors.IsUniqueViolation(ex))
+            {
+                // Someone else took the username between the check above and this save.
+                return Conflict(UsernameErrors.TakenBody);
+            }
         }
 
         return Ok(await BuildProfileAsync(user));
@@ -226,25 +407,45 @@ public class UsersController : ControllerBase
             FullName = user.FullName,
             Email = user.Email ?? string.Empty,
             Role = role,
+            Username = user.UserName ?? string.Empty,
+            DisplayName = user.DisplayName,
             ProfilePhotoUrl = user.ProfilePhotoUrl,
+            UsernameChangeAvailableAt = UsernamePolicy.NextChangeAllowedAt(user.UsernameChangedAt, DateTime.UtcNow),
+            CreatedAt = user.CreatedAt,
         };
 
+        // Each role keeps its phone number in a different place: farmers and buyers gave theirs at
+        // registration (on their profile row); officers and admins have only Identity's own column.
         if (role == "Farmer")
         {
             var profile = await _db.FarmerProfiles.AsNoTracking().FirstOrDefaultAsync(f => f.UserId == user.Id);
             response.NIC = profile?.NIC;
             response.District = profile?.District;
             response.FarmerProfileId = profile?.FarmerProfileId;
+            response.FieldPlotNumber = profile?.FieldPlotNumber;
+            response.PhoneNumber = profile?.PhoneNumber;
         }
         else if (role == "Officer")
         {
-            var profile = await _db.OfficerProfiles.AsNoTracking().FirstOrDefaultAsync(o => o.UserId == user.Id);
+            var profile = await _db.OfficerProfiles.AsNoTracking()
+                .Include(o => o.Department)
+                .FirstOrDefaultAsync(o => o.UserId == user.Id);
             response.District = profile?.District;
+            response.DepartmentName = profile?.Department.Name;
+            response.PhoneNumber = user.PhoneNumber;
         }
         else if (role == "Buyer")
         {
             var profile = await _db.BuyerProfiles.AsNoTracking().FirstOrDefaultAsync(b => b.UserId == user.Id);
+            response.NIC = profile?.NIC;
             response.District = profile?.District;
+            response.BusinessName = profile?.BusinessName;
+            response.BusinessRegistrationNumber = profile?.BusinessRegistrationNumber;
+            response.PhoneNumber = profile?.BusinessPhone;
+        }
+        else
+        {
+            response.PhoneNumber = user.PhoneNumber;
         }
 
         return response;
