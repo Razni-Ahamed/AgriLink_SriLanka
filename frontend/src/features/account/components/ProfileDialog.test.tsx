@@ -1,11 +1,18 @@
 import { useState } from 'react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import i18n from '@/i18n/config'
-import { farmerProfile } from '@/test/profileFixtures'
+import { useAuthStore } from '@/auth/authStore'
+import { farmerProfile, securitySettings } from '@/test/profileFixtures'
 import { ProfileDialog, type ProfileTab } from './ProfileDialog'
+
+vi.mock('../api/securityApi', async () => {
+  const actual = await vi.importActual<typeof import('../api/securityApi')>('../api/securityApi')
+  return { ...actual, getSecuritySettings: vi.fn() }
+})
+import { getSecuritySettings } from '../api/securityApi'
 
 interface HarnessProps {
   onClose?: () => void
@@ -34,6 +41,12 @@ function renderDialog(props: HarnessProps = {}) {
 describe('ProfileDialog', () => {
   beforeEach(async () => {
     await i18n.changeLanguage('en')
+    useAuthStore.setState({ token: 'jwt', role: 'Farmer', user: farmerProfile(), isHydrated: true })
+    vi.mocked(getSecuritySettings).mockResolvedValue(securitySettings())
+  })
+
+  afterEach(() => {
+    useAuthStore.setState({ token: null, role: null, user: null })
   })
 
   it('is a labelled modal dialog with two tabs, General selected', () => {
@@ -66,8 +79,8 @@ describe('ProfileDialog', () => {
     expect(security).toHaveFocus()
     expect(security).toHaveAttribute('aria-selected', 'true')
     expect(screen.getByRole('tabpanel', { name: 'Security settings' })).toBeInTheDocument()
-    // The Security tab keeps the existing password change working until Part B replaces it.
-    expect(screen.getByLabelText('Current password')).toBeInTheDocument()
+    // The Security tab's real content only appears once its own data has loaded.
+    await waitFor(() => expect(screen.getByText('••••••••')).toBeInTheDocument())
 
     await user.keyboard('{ArrowRight}') // wraps around
     expect(screen.getByRole('tab', { name: 'General settings' })).toHaveFocus()

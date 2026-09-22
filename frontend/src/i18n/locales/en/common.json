@@ -16,8 +16,7 @@
     "auditLog": "Audit Log",
     "myReviews": "My Reviews",
     "officerDashboard": "Dashboard",
-    "pendingRegistrations": "Pending Registrations",
-    "changePassword": "Change Password"
+    "pendingRegistrations": "Approvals"
   },
   "actions": {
     "saving": "Saving…",
