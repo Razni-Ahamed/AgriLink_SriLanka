@@ -152,6 +152,31 @@ else
     });
 }
 
+// ----- Profile photos -----
+// Chosen the same way as issue photos above, but stored publicly: see CloudinaryProfilePhotoStorage.
+builder.Services.AddSingleton<IProfilePhotoProcessor, ProfilePhotoProcessor>();
+builder.Services.AddHttpContextAccessor();
+if (cloudinaryOptions.IsConfigured)
+{
+    builder.Services.AddSingleton<IProfilePhotoStorage>(new CloudinaryProfilePhotoStorage(cloudinaryOptions));
+}
+else
+{
+    builder.Services.AddSingleton<IProfilePhotoStorage>(sp =>
+    {
+        var env = sp.GetRequiredService<IWebHostEnvironment>();
+        var root = Path.Combine(env.ContentRootPath, "App_Data", "avatars");
+        if (!env.IsDevelopment())
+        {
+            sp.GetRequiredService<ILogger<LocalProfilePhotoStorage>>().LogWarning(
+                "Cloudinary is not configured; profile photos are being stored on local disk at {Root}, which is not durable outside development.",
+                root);
+        }
+
+        return new LocalProfilePhotoStorage(root, sp.GetRequiredService<IHttpContextAccessor>());
+    });
+}
+
 // ----- CORS -----
 // Cors:AllowedOrigins is a comma-separated list (env var Cors__AllowedOrigins on a host); with none
 // configured, only the local dev servers are allowed.

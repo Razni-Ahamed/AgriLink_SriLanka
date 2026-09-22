@@ -9,6 +9,9 @@ public class UserProfileResponse
     public string? NIC { get; set; }
     public string? District { get; set; }
 
+    /// <summary>Public https URL of the user's photo; null means the UI shows the role's default avatar.</summary>
+    public string? ProfilePhotoUrl { get; set; }
+
     /// <summary>
     /// The caller's FarmerProfileId when the account is a Farmer, otherwise null. Lets the
     /// client tell whether a harvest listing (which carries a FarmerProfileId) is the

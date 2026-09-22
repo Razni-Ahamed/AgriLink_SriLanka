@@ -4,6 +4,7 @@ using AgriLink.API.DTOs.Users;
 using AgriLink.API.Models;
 using AgriLink.API.Services;
 using AgriLink.API.Services.Accounts;
+using AgriLink.API.Services.Images;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -16,24 +17,36 @@ namespace AgriLink.API.Controllers;
 [Authorize]
 public class UsersController : ControllerBase
 {
+    // The 5 MB photo plus multipart framing.
+    private const long PhotoRequestLimitBytes = ProfilePhotoProcessor.MaxUploadBytes + 64 * 1024;
+
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly AgriLinkDbContext _db;
     private readonly ICurrentUserService _currentUser;
     private readonly IAuditLogService _auditLog;
     private readonly IJwtTokenService _tokenService;
+    private readonly IProfilePhotoProcessor _photoProcessor;
+    private readonly IProfilePhotoStorage _photoStorage;
+    private readonly ILogger<UsersController> _logger;
 
     public UsersController(
         UserManager<ApplicationUser> userManager,
         AgriLinkDbContext db,
         ICurrentUserService currentUser,
         IAuditLogService auditLog,
-        IJwtTokenService tokenService)
+        IJwtTokenService tokenService,
+        IProfilePhotoProcessor photoProcessor,
+        IProfilePhotoStorage photoStorage,
+        ILogger<UsersController> logger)
     {
         _userManager = userManager;
         _db = db;
         _currentUser = currentUser;
         _auditLog = auditLog;
         _tokenService = tokenService;
+        _photoProcessor = photoProcessor;
+        _photoStorage = photoStorage;
+        _logger = logger;
     }
 
     /// <summary>
@@ -54,6 +67,37 @@ public class UsersController : ControllerBase
     [HttpGet("me")]
     public async Task<ActionResult<UserProfileResponse>> Me()
     {
+        var user = await _userManager.FindByIdAsync(_currentUser.GetUserId(User).ToString());
+        if (user is null)
+        {
+            return NotFound();
+        }
+
+        return Ok(await BuildProfileAsync(user));
+    }
+
+    /// <summary>
+    /// Replaces the caller's profile photo. The new photo is stored and recorded before the old one is
+    /// deleted, so a failure part-way through never leaves the account pointing at a missing image.
+    /// </summary>
+    [HttpPost("me/photo")]
+    [Consumes("multipart/form-data")]
+    [RequestSizeLimit(PhotoRequestLimitBytes)]
+    [RequestFormLimits(MultipartBodyLengthLimit = PhotoRequestLimitBytes)]
+    public async Task<ActionResult<UserProfileResponse>> UploadPhoto([FromForm] UploadProfilePhotoRequest request)
+    {
+        var photo = request.Photo;
+        if (photo is null || photo.Length == 0)
+        {
+            return BadRequest(new { message = "Choose a photo to upload." });
+        }
+
+        // Checked before reading, so an oversized upload is never buffered into memory.
+        if (photo.Length > ProfilePhotoProcessor.MaxUploadBytes)
+        {
+            return BadRequest(new { message = "The photo is larger than 5 MB." });
+        }
+
         var userId = _currentUser.GetUserId(User);
         var user = await _userManager.FindByIdAsync(userId.ToString());
         if (user is null)
@@ -61,36 +105,82 @@ public class UsersController : ControllerBase
             return NotFound();
         }
 
-        var roles = await _userManager.GetRolesAsync(user);
-        var role = roles.FirstOrDefault() ?? string.Empty;
-
-        var response = new UserProfileResponse
+        ProcessedPhoto processed;
+        try
         {
-            UserId = user.Id,
-            FullName = user.FullName,
-            Email = user.Email ?? string.Empty,
-            Role = role,
-        };
-
-        if (role == "Farmer")
-        {
-            var profile = await _db.FarmerProfiles.AsNoTracking().FirstOrDefaultAsync(f => f.UserId == user.Id);
-            response.NIC = profile?.NIC;
-            response.District = profile?.District;
-            response.FarmerProfileId = profile?.FarmerProfileId;
+            processed = _photoProcessor.Process(await ReadAllBytesAsync(photo, HttpContext.RequestAborted));
         }
-        else if (role == "Officer")
+        catch (InvalidPhotoException ex)
         {
-            var profile = await _db.OfficerProfiles.AsNoTracking().FirstOrDefaultAsync(o => o.UserId == user.Id);
-            response.District = profile?.District;
-        }
-        else if (role == "Buyer")
-        {
-            var profile = await _db.BuyerProfiles.AsNoTracking().FirstOrDefaultAsync(b => b.UserId == user.Id);
-            response.District = profile?.District;
+            return BadRequest(new { message = ex.Message });
         }
 
-        return Ok(response);
+        StoredProfilePhoto stored;
+        try
+        {
+            stored = await _photoStorage.SaveAsync(processed.Content, HttpContext.RequestAborted);
+        }
+        catch (ImageStorageException ex)
+        {
+            // A storage outage is not the user's fault; say so rather than blame their photo.
+            _logger.LogError(ex, "Storing a profile photo failed");
+            return StatusCode(StatusCodes.Status503ServiceUnavailable, new
+            {
+                message = "Your photo could not be uploaded right now. Please try again in a few minutes.",
+            });
+        }
+
+        var oldUrl = user.ProfilePhotoUrl;
+        var oldKey = user.ProfilePhotoKey;
+        user.ProfilePhotoUrl = stored.Url;
+        user.ProfilePhotoKey = stored.Key;
+        _auditLog.Record(userId, "ProfilePhotoChanged", "User", userId, oldUrl, stored.Url);
+
+        try
+        {
+            await _db.SaveChangesAsync();
+        }
+        catch
+        {
+            // Nothing references the new photo, so don't leave it behind in storage.
+            await DeletePhotoQuietlyAsync(stored.Key);
+            throw;
+        }
+
+        if (oldKey is not null)
+        {
+            await DeletePhotoQuietlyAsync(oldKey);
+        }
+
+        return Ok(await BuildProfileAsync(user));
+    }
+
+    /// <summary>Removes the caller's photo, so they are shown with their role's default picture again.</summary>
+    [HttpDelete("me/photo")]
+    public async Task<ActionResult<UserProfileResponse>> DeletePhoto()
+    {
+        var userId = _currentUser.GetUserId(User);
+        var user = await _userManager.FindByIdAsync(userId.ToString());
+        if (user is null)
+        {
+            return NotFound();
+        }
+
+        var oldKey = user.ProfilePhotoKey;
+        if (oldKey is not null || user.ProfilePhotoUrl is not null)
+        {
+            _auditLog.Record(userId, "ProfilePhotoRemoved", "User", userId, user.ProfilePhotoUrl, null);
+            user.ProfilePhotoUrl = null;
+            user.ProfilePhotoKey = null;
+            await _db.SaveChangesAsync();
+
+            if (oldKey is not null)
+            {
+                await DeletePhotoQuietlyAsync(oldKey);
+            }
+        }
+
+        return Ok(await BuildProfileAsync(user));
     }
 
     /// <summary>
@@ -123,5 +213,66 @@ public class UsersController : ControllerBase
         var roles = await _userManager.GetRolesAsync(user);
         var token = _tokenService.GenerateToken(user, roles);
         return Ok(new AuthResponse { Token = token, Role = roles.FirstOrDefault() ?? string.Empty });
+    }
+
+    private async Task<UserProfileResponse> BuildProfileAsync(ApplicationUser user)
+    {
+        var roles = await _userManager.GetRolesAsync(user);
+        var role = roles.FirstOrDefault() ?? string.Empty;
+
+        var response = new UserProfileResponse
+        {
+            UserId = user.Id,
+            FullName = user.FullName,
+            Email = user.Email ?? string.Empty,
+            Role = role,
+            ProfilePhotoUrl = user.ProfilePhotoUrl,
+        };
+
+        if (role == "Farmer")
+        {
+            var profile = await _db.FarmerProfiles.AsNoTracking().FirstOrDefaultAsync(f => f.UserId == user.Id);
+            response.NIC = profile?.NIC;
+            response.District = profile?.District;
+            response.FarmerProfileId = profile?.FarmerProfileId;
+        }
+        else if (role == "Officer")
+        {
+            var profile = await _db.OfficerProfiles.AsNoTracking().FirstOrDefaultAsync(o => o.UserId == user.Id);
+            response.District = profile?.District;
+        }
+        else if (role == "Buyer")
+        {
+            var profile = await _db.BuyerProfiles.AsNoTracking().FirstOrDefaultAsync(b => b.UserId == user.Id);
+            response.District = profile?.District;
+        }
+
+        return response;
+    }
+
+    private static async Task<byte[]> ReadAllBytesAsync(IFormFile file, CancellationToken cancellationToken)
+    {
+        await using var source = file.OpenReadStream();
+        using var buffer = new MemoryStream((int)file.Length);
+        await source.CopyToAsync(buffer, cancellationToken);
+        return buffer.ToArray();
+    }
+
+    /// <summary>
+    /// Deleting the photo being replaced or removed is housekeeping: the account already points at the
+    /// new state, so a failure is logged for follow-up rather than failing the user's request.
+    /// </summary>
+    private async Task DeletePhotoQuietlyAsync(string key)
+    {
+        try
+        {
+            // Not tied to the request: the user's change is already saved and should be tidied up
+            // even if they navigate away.
+            await _photoStorage.DeleteAsync(key, CancellationToken.None);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Deleting a replaced profile photo from storage failed");
+        }
     }
 }

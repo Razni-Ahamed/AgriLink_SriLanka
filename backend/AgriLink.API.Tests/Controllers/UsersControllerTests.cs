@@ -4,30 +4,41 @@ using AgriLink.API.DTOs.Auth;
 using AgriLink.API.DTOs.Users;
 using AgriLink.API.Models;
 using AgriLink.API.Services;
+using AgriLink.API.Services.Images;
 using AgriLink.API.Tests.TestSupport;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 
 namespace AgriLink.API.Tests.Controllers;
 
 public class UsersControllerTests
 {
-    private static async Task<(AgriLinkDbContext Db, UserManager<ApplicationUser> Users)> CreateAsync()
+    internal static async Task<(AgriLinkDbContext Db, UserManager<ApplicationUser> Users)> CreateAsync()
     {
         var (db, userManager, roleManager) = IdentityTestHarness.Create();
         await IdentityTestHarness.SeedRolesAsync(roleManager);
         return (db, userManager);
     }
 
-    private static UsersController BuildController(
+    internal static UsersController BuildController(
         AgriLinkDbContext db,
         UserManager<ApplicationUser> users,
         int actingUserId,
         string role,
-        IJwtTokenService? tokenService = null) => new(users, db, new CurrentUserService(db), new AuditLogService(db), tokenService ?? Mock.Of<IJwtTokenService>())
+        IJwtTokenService? tokenService = null,
+        IProfilePhotoStorage? photoStorage = null) => new(
+            users,
+            db,
+            new CurrentUserService(db),
+            new AuditLogService(db),
+            tokenService ?? Mock.Of<IJwtTokenService>(),
+            new ProfilePhotoProcessor(),
+            photoStorage ?? Mock.Of<IProfilePhotoStorage>(),
+            NullLogger<UsersController>.Instance)
         {
             ControllerContext = new ControllerContext
             {
@@ -38,7 +49,7 @@ public class UsersControllerTests
             },
         };
 
-    private static async Task<ApplicationUser> CreateUserAsync(
+    internal static async Task<ApplicationUser> CreateUserAsync(
         UserManager<ApplicationUser> users,
         string email,
         string fullName,
