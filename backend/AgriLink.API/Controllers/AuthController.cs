@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using AgriLink.API.Data;
 using AgriLink.API.DTOs.Auth;
 using AgriLink.API.Models;
@@ -34,6 +35,14 @@ public class AuthController : ControllerBase
     [HttpPost("register")]
     public async Task<ActionResult<RegisterResponse>> Register(RegisterRequest request)
     {
+        var fullName = request.FullName.Trim();
+        if (fullName.Length < 2)
+        {
+            return BadRequest(new { message = "Enter your full name." });
+        }
+
+        var email = request.Email.Trim();
+
         var role = SelfRegisterableRoles.FirstOrDefault(r => string.Equals(r, request.Role, StringComparison.OrdinalIgnoreCase));
         if (role is null)
         {
@@ -46,24 +55,54 @@ public class AuthController : ControllerBase
             return BadRequest(new { message = "District must be one of Sri Lanka's 25 administrative districts." });
         }
 
+        var nic = NormalizeNic(request.NIC);
+        if (nic is null)
+        {
+            return BadRequest(new { message = "NIC must be 12 digits, or 9 digits followed by V or X." });
+        }
+
+        string? fieldPlotNumber = null;
+        string? phoneNumber = null;
+        string? businessRegistrationNumber = null;
+        string? businessPhone = null;
+        string? legalBusinessName = null;
+
         if (role == "Farmer")
         {
-            if (string.IsNullOrWhiteSpace(request.FieldPlotNumber) || string.IsNullOrWhiteSpace(request.PhoneNumber))
+            fieldPlotNumber = request.FieldPlotNumber?.Trim();
+            if (string.IsNullOrWhiteSpace(fieldPlotNumber))
             {
-                return BadRequest(new { message = "Field/plot number and phone number are required for a Farmer application." });
+                return BadRequest(new { message = "Enter your field or plot number." });
+            }
+
+            phoneNumber = NormalizePhone(request.PhoneNumber);
+            if (phoneNumber is null)
+            {
+                return BadRequest(new { message = "Phone number must be 10 digits." });
             }
         }
         else
         {
-            if (string.IsNullOrWhiteSpace(request.BusinessRegistrationNumber)
-                || string.IsNullOrWhiteSpace(request.BusinessPhone)
-                || string.IsNullOrWhiteSpace(request.LegalBusinessName))
+            businessRegistrationNumber = request.BusinessRegistrationNumber?.Trim();
+            if (string.IsNullOrWhiteSpace(businessRegistrationNumber))
             {
-                return BadRequest(new { message = "Business registration number, business phone, and legal business name are required for a Buyer application." });
+                return BadRequest(new { message = "Enter your business registration number." });
+            }
+
+            legalBusinessName = request.LegalBusinessName?.Trim();
+            if (string.IsNullOrWhiteSpace(legalBusinessName))
+            {
+                return BadRequest(new { message = "Enter your legal business name." });
+            }
+
+            businessPhone = NormalizePhone(request.BusinessPhone);
+            if (businessPhone is null)
+            {
+                return BadRequest(new { message = "Business phone must be 10 digits." });
             }
         }
 
-        var existing = await _userManager.FindByEmailAsync(request.Email);
+        var existing = await _userManager.FindByEmailAsync(email);
         if (existing is not null)
         {
             return Conflict(new { message = "An account with this email already exists." });
@@ -71,9 +110,9 @@ public class AuthController : ControllerBase
 
         var user = new ApplicationUser
         {
-            UserName = request.Email,
-            Email = request.Email,
-            FullName = request.FullName,
+            UserName = email,
+            Email = email,
+            FullName = fullName,
             IsActive = false,
             RegistrationStatus = RegistrationStatus.Pending,
         };
@@ -81,7 +120,7 @@ public class AuthController : ControllerBase
         var createResult = await _userManager.CreateAsync(user, request.Password);
         if (!createResult.Succeeded)
         {
-            return BadRequest(new { errors = createResult.Errors.Select(e => e.Description) });
+            return BadRequest(new { errors = createResult.Errors.Select(e => new { code = e.Code, description = e.Description }) });
         }
 
         await _userManager.AddToRoleAsync(user, role);
@@ -91,10 +130,10 @@ public class AuthController : ControllerBase
             _db.FarmerProfiles.Add(new FarmerProfile
             {
                 UserId = user.Id,
-                NIC = request.NIC,
+                NIC = nic,
                 District = district,
-                FieldPlotNumber = request.FieldPlotNumber,
-                PhoneNumber = request.PhoneNumber,
+                FieldPlotNumber = fieldPlotNumber!,
+                PhoneNumber = phoneNumber!,
             });
         }
         else
@@ -102,11 +141,11 @@ public class AuthController : ControllerBase
             _db.BuyerProfiles.Add(new BuyerProfile
             {
                 UserId = user.Id,
-                BusinessName = request.LegalBusinessName!,
+                BusinessName = legalBusinessName!,
                 District = district,
-                NIC = request.NIC,
-                BusinessRegistrationNumber = request.BusinessRegistrationNumber,
-                BusinessPhone = request.BusinessPhone,
+                NIC = nic,
+                BusinessRegistrationNumber = businessRegistrationNumber!,
+                BusinessPhone = businessPhone!,
             });
         }
 
@@ -200,5 +239,46 @@ public class AuthController : ControllerBase
 
         var token = _tokenService.GenerateToken(user, roles);
         return Ok(new AuthResponse { Token = token, Role = AdminSeeder.AdminRole });
+    }
+
+    /// <summary>
+    /// Accepts the new 12-digit format and the old 9-digit-plus-letter format, trims surrounding
+    /// whitespace, and uppercases the trailing letter so "901234567v" and "901234567V" are stored
+    /// identically. Returns null when neither format matches.
+    /// </summary>
+    private static string? NormalizeNic(string? nic)
+    {
+        if (string.IsNullOrWhiteSpace(nic))
+        {
+            return null;
+        }
+
+        var trimmed = nic.Trim();
+        if (Regex.IsMatch(trimmed, @"^\d{12}$"))
+        {
+            return trimmed;
+        }
+
+        if (Regex.IsMatch(trimmed, @"^\d{9}[VvXx]$"))
+        {
+            return trimmed[..9] + char.ToUpperInvariant(trimmed[9]);
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Strips spaces and dashes so "077 123 4567" and "077-123-4567" both normalize to
+    /// "0771234567". Returns null unless the result is exactly 10 digits.
+    /// </summary>
+    private static string? NormalizePhone(string? phone)
+    {
+        if (string.IsNullOrWhiteSpace(phone))
+        {
+            return null;
+        }
+
+        var digitsOnly = phone.Replace(" ", string.Empty).Replace("-", string.Empty);
+        return Regex.IsMatch(digitsOnly, @"^\d{10}$") ? digitsOnly : null;
     }
 }

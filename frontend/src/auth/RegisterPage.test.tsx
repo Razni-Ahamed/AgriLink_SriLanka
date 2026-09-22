@@ -2,10 +2,23 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { AxiosError, AxiosHeaders } from 'axios'
 import '@/i18n/config'
 import i18n from '@/i18n/config'
 import { RegisterPage } from './RegisterPage'
 import { apiClient } from '@/lib/apiClient'
+
+function axiosErrorWithResponse(status: number, data: unknown): AxiosError {
+  const error = new AxiosError('Request failed', String(status))
+  error.response = {
+    status,
+    data,
+    statusText: '',
+    headers: {},
+    config: { headers: new AxiosHeaders() },
+  }
+  return error
+}
 
 function renderPage() {
   const client = new QueryClient({ defaultOptions: { mutations: { retry: false } } })
@@ -16,11 +29,17 @@ function renderPage() {
   )
 }
 
-async function fillCommonFields(user: ReturnType<typeof userEvent.setup>) {
+async function fillCommonFields(
+  user: ReturnType<typeof userEvent.setup>,
+  overrides: { password?: string; confirmPassword?: string; nic?: string } = {},
+) {
+  const password = overrides.password ?? 'Password@123!'
+  const confirmPassword = overrides.confirmPassword ?? password
   await user.type(screen.getByLabelText('Full name'), 'Test Applicant')
   await user.type(screen.getByLabelText('Email'), 'applicant@agrilink.lk')
-  await user.type(screen.getByLabelText('Password'), 'Password@123!')
-  await user.type(screen.getByLabelText('NIC'), '199912345678')
+  await user.type(screen.getByLabelText('Password'), password)
+  await user.type(screen.getByLabelText('Confirm password'), confirmPassword)
+  await user.type(screen.getByLabelText('NIC'), overrides.nic ?? '199912345678')
   await screen.findByRole('option', { name: 'Kandy' })
   await user.selectOptions(screen.getByLabelText('District'), 'Kandy')
 }
@@ -55,6 +74,20 @@ describe('RegisterPage', () => {
     expect(screen.queryByLabelText('Field/plot number')).not.toBeInTheDocument()
   })
 
+  it('shows the password checklist and updates it live as the password is typed', async () => {
+    const user = userEvent.setup()
+    renderPage()
+
+    expect(screen.getByRole('list', { name: 'Password requirements' })).toBeInTheDocument()
+    expect(screen.getByText('At least 12 characters').closest('li')).not.toHaveClass('text-state-danger')
+
+    await user.type(screen.getByLabelText('Password'), 'short')
+    expect(screen.getByText('At least 12 characters').closest('li')).toHaveClass('text-state-danger')
+
+    await user.type(screen.getByLabelText('Password'), 'Enough123!!!');
+    expect(screen.getByText('At least 12 characters').closest('li')).toHaveClass('text-state-success')
+  })
+
   it('submits a Farmer application with the role and farmer fields, and shows the pending confirmation', async () => {
     const post = vi.spyOn(apiClient, 'post').mockResolvedValue({
       data: { message: 'Waiting for approval', status: 'Pending' },
@@ -76,6 +109,27 @@ describe('RegisterPage', () => {
         phoneNumber: '0771234567',
       }),
     )
+    // confirmPassword must never be sent to the API.
+    expect(post.mock.calls[0]?.[1]).not.toHaveProperty('confirmPassword')
+  })
+
+  it('normalizes a spaced phone number and a lowercase NIC suffix before sending', async () => {
+    const post = vi.spyOn(apiClient, 'post').mockResolvedValue({
+      data: { message: 'Waiting for approval', status: 'Pending' },
+    })
+    const user = userEvent.setup()
+    renderPage()
+
+    await fillCommonFields(user, { nic: '901234567v' })
+    await user.type(screen.getByLabelText('Field/plot number'), 'PLOT-42')
+    await user.type(screen.getByLabelText('Phone number'), '077 123 4567')
+    await user.click(screen.getByRole('button', { name: 'Register' }))
+
+    expect(await screen.findByText('Application submitted')).toBeInTheDocument()
+    expect(post).toHaveBeenCalledWith(
+      '/api/auth/register',
+      expect.objectContaining({ nic: '901234567V', phoneNumber: '0771234567' }),
+    )
   })
 
   it('requires the business fields before a Buyer application can submit', async () => {
@@ -89,5 +143,78 @@ describe('RegisterPage', () => {
 
     expect(await screen.findByText('Legal business name is required')).toBeInTheDocument()
     expect(post).not.toHaveBeenCalled()
+  })
+
+  it('blocks submission and shows an error when the confirmation does not match the password', async () => {
+    const post = vi.spyOn(apiClient, 'post')
+    const user = userEvent.setup()
+    renderPage()
+
+    await fillCommonFields(user, { password: 'Password@123!', confirmPassword: 'Different@123!' })
+    await user.type(screen.getByLabelText('Field/plot number'), 'PLOT-42')
+    await user.type(screen.getByLabelText('Phone number'), '0771234567')
+    await user.click(screen.getByRole('button', { name: 'Register' }))
+
+    expect(await screen.findByText('Passwords do not match')).toBeInTheDocument()
+    expect(post).not.toHaveBeenCalled()
+  })
+
+  it('toggles password visibility without changing the typed value', async () => {
+    const user = userEvent.setup()
+    renderPage()
+
+    const passwordInput = screen.getByLabelText('Password') as HTMLInputElement
+    await user.type(passwordInput, 'Password@123!')
+    expect(passwordInput.type).toBe('password')
+
+    // Both the password and confirm-password fields have their own toggle with the same
+    // accessible name, so the first one in document order is this field's own.
+    await user.click(screen.getAllByRole('button', { name: 'Show password' })[0])
+    expect(passwordInput.type).toBe('text')
+    expect(passwordInput.value).toBe('Password@123!')
+
+    await user.click(screen.getAllByRole('button', { name: 'Hide password' })[0])
+    expect(passwordInput.type).toBe('password')
+  })
+
+  it('shows a field-specific NIC error on blur without submitting', async () => {
+    const user = userEvent.setup()
+    renderPage()
+
+    await user.type(screen.getByLabelText('NIC'), '90123456V')
+    await user.tab()
+
+    expect(await screen.findByText('NIC must be 12 digits, or 9 digits followed by V or X')).toBeInTheDocument()
+  })
+
+  it('shows the network-error message in an alert box when the API is unreachable', async () => {
+    const networkError = new AxiosError('Network Error')
+    networkError.request = {}
+    vi.spyOn(apiClient, 'post').mockRejectedValue(networkError)
+    const user = userEvent.setup()
+    renderPage()
+
+    await fillCommonFields(user)
+    await user.type(screen.getByLabelText('Field/plot number'), 'PLOT-42')
+    await user.type(screen.getByLabelText('Phone number'), '0771234567')
+    await user.click(screen.getByRole('button', { name: 'Register' }))
+
+    const alert = await screen.findByRole('alert')
+    expect(alert).toHaveTextContent("Can't reach the server. Check your connection and try again.")
+  })
+
+  it('shows a 409 conflict as an account-already-exists message', async () => {
+    const conflict = axiosErrorWithResponse(409, { message: 'An account with this email already exists.' })
+    vi.spyOn(apiClient, 'post').mockRejectedValue(conflict)
+    const user = userEvent.setup()
+    renderPage()
+
+    await fillCommonFields(user)
+    await user.type(screen.getByLabelText('Field/plot number'), 'PLOT-42')
+    await user.type(screen.getByLabelText('Phone number'), '0771234567')
+    await user.click(screen.getByRole('button', { name: 'Register' }))
+
+    const alert = await screen.findByRole('alert')
+    expect(alert).toHaveTextContent('An account with this email already exists.')
   })
 })

@@ -110,6 +110,31 @@ public class AdminControllerTests
     }
 
     [Fact]
+    public async Task CreateUser_WeakPassword_ReturnsIdentityErrorsWithCodes()
+    {
+        var (controller, db, _, _) = await CreateAsync();
+        var departmentId = await EnsureDepartmentAsync(db, "Crop Extension");
+
+        var result = await controller.CreateUser(new CreateUserRequest
+        {
+            FullName = "New Officer",
+            Email = "weak.password@agrilink.lk",
+            Password = "abc",
+            Role = "Officer",
+            District = "Matara",
+            DepartmentId = departmentId,
+        });
+
+        var badRequest = Assert.IsType<BadRequestObjectResult>(result.Result);
+        var errors = (badRequest.Value!.GetType().GetProperty("errors")!.GetValue(badRequest.Value) as IEnumerable<object>)!
+            .ToList();
+        Assert.NotEmpty(errors);
+
+        var codes = errors.Select(e => (string)e.GetType().GetProperty("code")!.GetValue(e)!).ToList();
+        Assert.Contains("PasswordTooShort", codes);
+    }
+
+    [Fact]
     public async Task CreateUser_UnknownRole_ReturnsBadRequest()
     {
         var (controller, _, _, _) = await CreateAsync();

@@ -32,7 +32,9 @@
     "markRead": "කියවූ ලෙස සලකුණු කරන්න",
     "markAllRead": "සියල්ල කියවූ ලෙස සලකුණු කරන්න",
     "loading": "පූරණය වෙමින්",
-    "dismiss": "ඉවත් කරන්න"
+    "dismiss": "ඉවත් කරන්න",
+    "showPassword": "මුරපදය පෙන්වන්න",
+    "hidePassword": "මුරපදය සඟවන්න"
   },
   "pagination": {
     "navigation": "පිටු අංකනය",
@@ -74,6 +76,7 @@
     "businessRegistrationNumber": "ව්‍යාපාර ලියාපදිංචි අංකය",
     "businessPhone": "ව්‍යාපාර දුරකථන අංකය",
     "legalBusinessName": "නීතිමය ව්‍යාපාර නාමය",
+    "confirmPassword": "මුරපදය තහවුරු කරන්න",
     "status": "තත්ත්වය",
     "location": "ස්ථානය",
     "quantity": "ප්‍රමාණය",
@@ -157,7 +160,28 @@
     "phoneNumberRequired": "දුරකථන අංකය අවශ්‍යයි",
     "businessRegistrationNumberRequired": "ව්‍යාපාර ලියාපදිංචි අංකය අවශ්‍යයි",
     "businessPhoneRequired": "ව්‍යාපාර දුරකථන අංකය අවශ්‍යයි",
-    "legalBusinessNameRequired": "නීතිමය ව්‍යාපාර නාමය අවශ්‍යයි"
+    "legalBusinessNameRequired": "නීතිමය ව්‍යාපාර නාමය අවශ්‍යයි",
+    "nameTooLong": "නම දිගින් වැඩිය",
+    "emailTooLong": "විද්‍යුත් තැපැල් ලිපිනය දිගින් වැඩිය",
+    "confirmPasswordRequired": "ඔබගේ මුරපදය තහවුරු කරන්න",
+    "confirmPasswordMismatch": "මුරපද එකිනෙක නොගැලපේ",
+    "nicInvalid": "ජාතික හැඳුනුම්පත් අංකය අංක 12ක් හෝ අංක 9ක් සහ ඉන් පසුව V හෝ X අකුරක් විය යුතුය",
+    "phoneNumberInvalid": "දුරකථන අංකය අංක 10කින් සමන්විත විය යුතුය",
+    "businessPhoneInvalid": "ව්‍යාපාර දුරකථන අංකය අංක 10කින් සමන්විත විය යුතුය",
+    "fieldPlotNumberTooLong": "ඉඩම/කුඹුර අංකය දිගින් වැඩිය",
+    "businessRegistrationNumberTooLong": "ව්‍යාපාර ලියාපදිංචි අංකය දිගින් වැඩිය",
+    "legalBusinessNameTooLong": "නීතිමය ව්‍යාපාර නාමය දිගින් වැඩිය"
+  },
+  "passwordChecklist": {
+    "ariaLabel": "මුරපද අවශ්‍යතා",
+    "met": "සපුරා ඇත",
+    "notMet": "සපුරා නැත",
+    "notChecked": "තවම පරීක්ෂා කර නැත",
+    "length": "අවම වශයෙන් අක්ෂර 12ක්",
+    "lowercase": "කුඩා අකුරක් අඩංගු වේ",
+    "uppercase": "ලොකු අකුරක් අඩංගු වේ",
+    "digit": "අංකයක් අඩංගු වේ",
+    "symbol": "සංකේතයක් අඩංගු වේ (උදා: ! @ # $)"
   },
   "severity": {
     "Low": "අඩු",

@@ -32,7 +32,9 @@
     "markRead": "Mark read",
     "markAllRead": "Mark all read",
     "loading": "Loading",
-    "dismiss": "Dismiss"
+    "dismiss": "Dismiss",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password"
   },
   "pagination": {
     "navigation": "Pagination",
@@ -74,6 +76,7 @@
     "businessRegistrationNumber": "Business registration number",
     "businessPhone": "Business phone",
     "legalBusinessName": "Legal business name",
+    "confirmPassword": "Confirm password",
     "status": "Status",
     "location": "Location",
     "quantity": "Quantity",
@@ -157,7 +160,28 @@
     "phoneNumberRequired": "Phone number is required",
     "businessRegistrationNumberRequired": "Business registration number is required",
     "businessPhoneRequired": "Business phone is required",
-    "legalBusinessNameRequired": "Legal business name is required"
+    "legalBusinessNameRequired": "Legal business name is required",
+    "nameTooLong": "Name is too long",
+    "emailTooLong": "Email address is too long",
+    "confirmPasswordRequired": "Confirm your password",
+    "confirmPasswordMismatch": "Passwords do not match",
+    "nicInvalid": "NIC must be 12 digits, or 9 digits followed by V or X",
+    "phoneNumberInvalid": "Phone number must be 10 digits",
+    "businessPhoneInvalid": "Business phone must be 10 digits",
+    "fieldPlotNumberTooLong": "Field/plot number is too long",
+    "businessRegistrationNumberTooLong": "Business registration number is too long",
+    "legalBusinessNameTooLong": "Legal business name is too long"
+  },
+  "passwordChecklist": {
+    "ariaLabel": "Password requirements",
+    "met": "met",
+    "notMet": "not met",
+    "notChecked": "not yet checked",
+    "length": "At least 12 characters",
+    "lowercase": "Contains a lowercase letter",
+    "uppercase": "Contains an uppercase letter",
+    "digit": "Contains a number",
+    "symbol": "Contains a symbol (e.g. ! @ # $)"
   },
   "severity": {
     "Low": "Low",
