@@ -1,4 +1,5 @@
 using AgriLink.API.Models;
+using AgriLink.API.Services.Accounts;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
@@ -38,6 +39,9 @@ public class AgriLinkDbContext : IdentityDbContext<ApplicationUser, IdentityRole
         {
             entity.Property(u => u.RegistrationStatus).HasConversion<string>().HasMaxLength(20);
             entity.Property(u => u.RejectionReason).HasMaxLength(500);
+            entity.Property(u => u.DisplayName).HasMaxLength(ProfileFieldLimits.DisplayName);
+            entity.Property(u => u.ProfilePhotoUrl).HasMaxLength(ProfileFieldLimits.ProfilePhotoUrl);
+            entity.Property(u => u.ProfilePhotoKey).HasMaxLength(ProfileFieldLimits.ProfilePhotoKey);
         });
 
         builder.Entity<FarmerProfile>(entity =>
@@ -49,7 +53,7 @@ public class AgriLinkDbContext : IdentityDbContext<ApplicationUser, IdentityRole
                 .OnDelete(DeleteBehavior.Cascade);
             entity.Property(f => f.NIC).HasMaxLength(20).IsRequired();
             entity.Property(f => f.District).HasMaxLength(50).IsRequired();
-            entity.Property(f => f.FieldPlotNumber).HasMaxLength(50);
+            entity.Property(f => f.FieldPlotNumber).HasMaxLength(ProfileFieldLimits.FieldPlotNumber);
             entity.Property(f => f.PhoneNumber).HasMaxLength(20);
         });
 
@@ -60,7 +64,7 @@ public class AgriLinkDbContext : IdentityDbContext<ApplicationUser, IdentityRole
                 .WithOne(u => u.BuyerProfile)
                 .HasForeignKey<BuyerProfile>(b => b.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
-            entity.Property(b => b.BusinessName).HasMaxLength(100).IsRequired();
+            entity.Property(b => b.BusinessName).HasMaxLength(ProfileFieldLimits.BusinessName).IsRequired();
             entity.Property(b => b.District).HasMaxLength(50).IsRequired();
             entity.Property(b => b.BusinessRegistrationNumber).HasMaxLength(50);
             entity.Property(b => b.BusinessPhone).HasMaxLength(20);

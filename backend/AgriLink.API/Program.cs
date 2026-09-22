@@ -203,12 +203,17 @@ using (var scope = app.Services.CreateScope())
 {
     await scope.ServiceProvider.GetRequiredService<AgriLinkDbContext>().Database.MigrateAsync();
 
+    var loggerFactory = scope.ServiceProvider.GetRequiredService<ILoggerFactory>();
+    await UsernameBackfill.RunAsync(
+        scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>(),
+        loggerFactory.CreateLogger("UsernameBackfill"));
+
     var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole<int>>>();
     await RoleSeeder.SeedAsync(roleManager);
 
     var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
     var adminSeed = scope.ServiceProvider.GetRequiredService<IOptions<AdminSeedOptions>>().Value;
-    var seedLogger = scope.ServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("AdminSeeder");
+    var seedLogger = loggerFactory.CreateLogger("AdminSeeder");
     await AdminSeeder.SeedAsync(userManager, adminSeed, seedLogger);
 }
 
