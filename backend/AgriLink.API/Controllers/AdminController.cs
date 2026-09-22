@@ -82,7 +82,10 @@ public class AdminController : ControllerBase
         var createResult = await _userManager.CreateAsync(user, request.Password);
         if (!createResult.Succeeded)
         {
-            return BadRequest(new { errors = createResult.Errors.Select(e => e.Description) });
+            // Matches AuthController.Register's shape so the frontend's apiErrors helper — used by
+            // both the public registration form and this admin console form — can map failures to
+            // messages by Identity's stable error code instead of parsing its English description.
+            return BadRequest(new { errors = createResult.Errors.Select(e => new { code = e.Code, description = e.Description }) });
         }
 
         await _userManager.AddToRoleAsync(user, role);

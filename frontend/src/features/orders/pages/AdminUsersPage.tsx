@@ -4,6 +4,7 @@ import { Card } from '@/components/ui/Card'
 import { Modal } from '@/components/ui/Modal'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { useAuthStore } from '@/auth/authStore'
+import { parseApiError } from '@/lib/apiErrors'
 import { useCreateUser } from '../hooks/useAdminMetrics'
 import {
   useAdminResetPassword,
@@ -22,6 +23,7 @@ export function AdminUsersPage() {
   const currentUserId = useAuthStore((state) => state.user?.userId)
   const createUser = useCreateUser()
   const [created, setCreated] = useState<string | null>(null)
+  const [createUserError, setCreateUserError] = useState<string | null>(null)
 
   const { data: users, isLoading: isLoadingUsers, isError: isUsersError } = useAdminUsers()
   const updateRole = useUpdateUserRole()
@@ -60,19 +62,23 @@ export function AdminUsersPage() {
           isSubmitting={createUser.isPending}
           onSubmit={(values) =>
             createUser.mutate(values, {
-              onSuccess: (user) =>
+              onSuccess: (user) => {
+                setCreateUserError(null)
                 setCreated(
                   t('orders:admin.userCreated', { name: user.fullName, role: user.role }),
-                ),
+                )
+              },
+              onError: (error) => {
+                const parsed = parseApiError(error, t, { genericErrorKey: 'orders:admin.createUserError' })
+                setCreateUserError(parsed.generalErrors[0] ?? t('orders:admin.createUserError'))
+              },
             })
           }
         />
       </Card>
 
       {created && <p className="text-sm text-state-success">{created}</p>}
-      {createUser.isError && (
-        <p className="text-sm text-state-danger">{t('orders:admin.createUserError')}</p>
-      )}
+      {createUserError && <p className="text-sm text-state-danger">{createUserError}</p>}
 
       <div className="flex flex-col gap-3">
         <h2 className="font-display text-xl text-text-primary">{t('orders:admin.manageExisting')}</h2>
