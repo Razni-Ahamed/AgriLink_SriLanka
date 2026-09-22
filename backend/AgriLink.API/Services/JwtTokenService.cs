@@ -28,7 +28,11 @@ public class JwtTokenService : IJwtTokenService
             new(ClaimTypes.NameIdentifier, user.Id.ToString()),
             new(ClaimTypes.Email, user.Email ?? string.Empty),
             new(ClaimTypes.Name, user.FullName),
-            new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+            new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+            // Lets a password change or reset invalidate every token issued before it: Identity
+            // rotates SecurityStamp automatically on ChangePasswordAsync/ResetPasswordAsync, and
+            // AccountSessionValidator rejects any token whose stamp claim no longer matches.
+            new("stamp", user.SecurityStamp ?? string.Empty),
         };
 
         claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));

@@ -13,6 +13,7 @@ export {
   WarningCircle,
   UserCircle,
   Gear,
+  LockKey,
   Translate,
   ClipboardText,
   Building,

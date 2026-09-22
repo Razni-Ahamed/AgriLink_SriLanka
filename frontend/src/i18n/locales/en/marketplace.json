@@ -58,6 +58,7 @@
     "title": "Purchase Requests",
     "empty": "No one has requested to buy your listings yet.",
     "requestNumber": "Request #{{id}}",
+    "from": "From {{name}}",
     "unitsRequested": "{{quantity}} units requested",
     "accepted": "Request accepted — order created.",
     "acceptError": "Could not accept the request.",

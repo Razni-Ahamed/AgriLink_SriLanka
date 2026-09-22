@@ -16,4 +16,10 @@ public class PurchaseRequestResponse
     public string CropType { get; set; } = string.Empty;
     public string District { get; set; } = string.Empty;
     public decimal PricePerUnit { get; set; }
+
+    // Who sent it — deliberately no phone/email here (unlike OrderResponse): a purchase
+    // request isn't a deal yet, so the buyer's direct contact details stay withheld until the
+    // farmer accepts it and an order exists.
+    public string BuyerName { get; set; } = string.Empty;
+    public string BuyerBusinessName { get; set; } = string.Empty;
 }

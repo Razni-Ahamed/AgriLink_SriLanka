@@ -16,7 +16,8 @@
     "auditLog": "විගණන සටහන",
     "myReviews": "මගේ සමාලෝචන",
     "officerDashboard": "උපකරණ පුවරුව",
-    "pendingRegistrations": "අපේක්ෂිත ලියාපදිංචි කිරීම්"
+    "pendingRegistrations": "අපේක්ෂිත ලියාපදිංචි කිරීම්",
+    "changePassword": "මුරපදය වෙනස් කරන්න"
   },
   "actions": {
     "saving": "සුරකිමින්…",
@@ -32,6 +33,12 @@
     "markAllRead": "සියල්ල කියවූ ලෙස සලකුණු කරන්න",
     "loading": "පූරණය වෙමින්",
     "dismiss": "ඉවත් කරන්න"
+  },
+  "pagination": {
+    "navigation": "පිටු අංකනය",
+    "previous": "පෙර පිටුව",
+    "next": "ඊළඟ පිටුව",
+    "pageOf": "පිටුව {{page}} න් {{totalPages}}"
   },
   "language": {
     "label": "භාෂාව",
@@ -92,7 +99,7 @@
       "Pending": "අපේක්ෂිතයි",
       "Accepted": "පිළිගෙන ඇත",
       "Declined": "ප්‍රතික්ෂේප කර ඇත",
-      "Cancelled": "අවලංගු කර ඇත"
+      "Cancelled": "වසා ඇත – ලැයිස්තුව නොතිබේ"
     },
     "order": {
       "Confirmed": "තහවුරු කර ඇත",
@@ -124,6 +131,12 @@
     "emailInvalid": "වලංගු විද්‍යුත් තැපැල් ලිපිනයක් ඇතුළත් කරන්න",
     "passwordRequired": "මුරපදය අවශ්‍යයි",
     "passwordMin": "මුරපදය අවම වශයෙන් අක්ෂර 8ක් විය යුතුය",
+    "passwordMin12": "මුරපදය අවම වශයෙන් අක්ෂර 12ක් විය යුතුය",
+    "passwordUppercase": "මුරපදයේ ලොකු අකුරක් තිබිය යුතුය",
+    "passwordLowercase": "මුරපදයේ කුඩා අකුරක් තිබිය යුතුය",
+    "passwordDigit": "මුරපදයේ අංකයක් තිබිය යුතුය",
+    "passwordSymbol": "මුරපදයේ සංකේතයක් තිබිය යුතුය",
+    "passwordsMustMatch": "මුරපද එකිනෙක ගැලපිය යුතුය",
     "districtRequired": "දිස්ත්‍රික්කය අවශ්‍යයි",
     "nicRequired": "ජාතික හැඳුනුම්පත් අංකය අවශ්‍යයි",
     "areaMin": "වර්ග ප්‍රමාණය 0ට වඩා වැඩි විය යුතුය",

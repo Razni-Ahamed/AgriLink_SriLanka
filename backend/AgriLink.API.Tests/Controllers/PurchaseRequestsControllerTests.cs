@@ -19,6 +19,9 @@ public class PurchaseRequestsControllerTests
 
     private static PurchaseRequest SeedPendingRequest(AgriLinkDbContext db, int farmerUserId = 10, int buyerUserId = 20)
     {
+        db.Users.AddRange(
+            new ApplicationUser { Id = farmerUserId, UserName = $"farmer{farmerUserId}@agrilink.lk", Email = $"farmer{farmerUserId}@agrilink.lk", FullName = "Farmer One" },
+            new ApplicationUser { Id = buyerUserId, UserName = $"buyer{buyerUserId}@agrilink.lk", Email = $"buyer{buyerUserId}@agrilink.lk", FullName = "Buyer One" });
         db.FarmerProfiles.Add(new FarmerProfile { FarmerProfileId = 1, UserId = farmerUserId, NIC = "1", District = "Kandy" });
         db.BuyerProfiles.Add(new BuyerProfile { BuyerProfileId = 1, UserId = buyerUserId, BusinessName = "Buyer Co", District = "Colombo" });
 
@@ -116,6 +119,9 @@ public class PurchaseRequestsControllerTests
     public async Task Create_ReturnsResponseEnrichedWithHarvestContext()
     {
         using var db = CreateDb();
+        db.Users.AddRange(
+            new ApplicationUser { Id = 10, UserName = "farmer@agrilink.lk", Email = "farmer@agrilink.lk", FullName = "Farmer One" },
+            new ApplicationUser { Id = 20, UserName = "buyer@agrilink.lk", Email = "buyer@agrilink.lk", FullName = "Buyer One" });
         db.FarmerProfiles.Add(new FarmerProfile { FarmerProfileId = 1, UserId = 10, NIC = "1", District = "Kandy" });
         db.BuyerProfiles.Add(new BuyerProfile { BuyerProfileId = 1, UserId = 20, BusinessName = "Buyer Co", District = "Colombo" });
         var crop = new Crop
@@ -146,6 +152,23 @@ public class PurchaseRequestsControllerTests
         Assert.Equal("Rice", response.CropType);
         Assert.Equal("Kandy", response.District);
         Assert.Equal(75, response.PricePerUnit);
+        Assert.Equal("Buyer One", response.BuyerName);
+        Assert.Equal("Buyer Co", response.BuyerBusinessName);
+    }
+
+    [Fact]
+    public async Task Mine_AsFarmer_IncludesTheRequestingBuyersNameAndBusiness()
+    {
+        using var db = CreateDb();
+        SeedPendingRequest(db, farmerUserId: 10, buyerUserId: 20);
+        var controller = CreateController(db, actingUserId: 10);
+
+        var result = await controller.Mine();
+
+        var requests = Assert.IsType<OkObjectResult>(result.Result).Value as IEnumerable<PurchaseRequestResponse>;
+        var only = Assert.Single(requests!);
+        Assert.Equal("Buyer One", only.BuyerName);
+        Assert.Equal("Buyer Co", only.BuyerBusinessName);
     }
 
     [Fact]
@@ -202,5 +225,99 @@ public class PurchaseRequestsControllerTests
 
         Assert.IsType<BadRequestObjectResult>(result.Result);
         Assert.Empty(await db.Orders.ToListAsync());
+    }
+
+    /// <summary>Seeds one listing with several Pending requests from different buyers, for the
+    /// auto-cancel-on-accept tests below.</summary>
+    private static HarvestListing SeedListingWithMultiplePendingRequests(
+        AgriLinkDbContext db, decimal availableQuantity, params (int RequestId, int BuyerUserId, decimal Quantity)[] requests)
+    {
+        db.Users.Add(new ApplicationUser { Id = 10, UserName = "farmer@agrilink.lk", Email = "farmer@agrilink.lk", FullName = "Farmer One" });
+        db.FarmerProfiles.Add(new FarmerProfile { FarmerProfileId = 1, UserId = 10, NIC = "1", District = "Kandy" });
+
+        var crop = new Crop
+        {
+            CropId = 1,
+            CropType = "Tomato",
+            Field = new Field { FieldId = 1, Name = "Field 1", Farm = new Farm { FarmId = 1, Name = "Farm 1", District = "Kandy", FarmerProfileId = 1 } },
+        };
+        var listing = new HarvestListing
+        {
+            HarvestId = 1,
+            FarmerProfileId = 1,
+            CropId = 1,
+            Crop = crop,
+            Quantity = availableQuantity,
+            AvailableQuantity = availableQuantity,
+            HarvestDate = DateOnly.FromDateTime(DateTime.UtcNow),
+            PricePerUnit = 50,
+            Location = "Kandy Town",
+            Status = HarvestStatus.Active,
+        };
+        db.HarvestListings.Add(listing);
+
+        foreach (var (requestId, buyerUserId, quantity) in requests)
+        {
+            var buyerProfileId = requestId;
+            db.Users.Add(new ApplicationUser { Id = buyerUserId, UserName = $"buyer{buyerUserId}@agrilink.lk", Email = $"buyer{buyerUserId}@agrilink.lk", FullName = $"Buyer {buyerUserId}" });
+            db.BuyerProfiles.Add(new BuyerProfile { BuyerProfileId = buyerProfileId, UserId = buyerUserId, BusinessName = $"Buyer {buyerUserId} Co", District = "Colombo" });
+            db.PurchaseRequests.Add(new PurchaseRequest
+            {
+                RequestId = requestId,
+                HarvestId = 1,
+                Harvest = listing,
+                BuyerProfileId = buyerProfileId,
+                RequestedQuantity = quantity,
+                Status = PurchaseRequestStatus.Pending,
+            });
+        }
+
+        db.SaveChanges();
+        return listing;
+    }
+
+    [Fact]
+    public async Task Respond_Accept_SellsListingOut_CancelsOtherPendingRequestsAndNotifiesTheirBuyers()
+    {
+        using var db = CreateDb();
+        SeedListingWithMultiplePendingRequests(
+            db, availableQuantity: 100,
+            (RequestId: 1, BuyerUserId: 20, Quantity: 100),
+            (RequestId: 2, BuyerUserId: 30, Quantity: 20));
+
+        var result = await CreateController(db, actingUserId: 10).Respond(1, new RespondPurchaseRequestRequest { Action = "accept" });
+
+        Assert.IsType<OkObjectResult>(result.Result);
+        Assert.Equal(PurchaseRequestStatus.Accepted, (await db.PurchaseRequests.SingleAsync(r => r.RequestId == 1)).Status);
+        Assert.Equal(PurchaseRequestStatus.Cancelled, (await db.PurchaseRequests.SingleAsync(r => r.RequestId == 2)).Status);
+        Assert.Equal(HarvestStatus.Sold, (await db.HarvestListings.SingleAsync()).Status);
+
+        Assert.Contains(await db.AuditLogs.ToListAsync(), a => a.Action == "PurchaseRequestAutoCancelled" && a.EntityId == 2);
+        Assert.Contains(await db.Notifications.ToListAsync(), n => n.UserId == 30 && n.Title == "Purchase request closed");
+    }
+
+    [Fact]
+    public async Task Respond_Accept_LeavesOtherPendingRequestsThatStillFitAlone()
+    {
+        using var db = CreateDb();
+        // Accepting the 30 kg request leaves 70 kg — the 50 kg request still fits and stays
+        // Pending; the 90 kg request no longer fits and is auto-cancelled.
+        SeedListingWithMultiplePendingRequests(
+            db, availableQuantity: 100,
+            (RequestId: 1, BuyerUserId: 20, Quantity: 30),
+            (RequestId: 2, BuyerUserId: 30, Quantity: 50),
+            (RequestId: 3, BuyerUserId: 40, Quantity: 90));
+
+        var result = await CreateController(db, actingUserId: 10).Respond(1, new RespondPurchaseRequestRequest { Action = "accept" });
+
+        Assert.IsType<OkObjectResult>(result.Result);
+        Assert.Equal(PurchaseRequestStatus.Accepted, (await db.PurchaseRequests.SingleAsync(r => r.RequestId == 1)).Status);
+        Assert.Equal(PurchaseRequestStatus.Pending, (await db.PurchaseRequests.SingleAsync(r => r.RequestId == 2)).Status);
+        Assert.Equal(PurchaseRequestStatus.Cancelled, (await db.PurchaseRequests.SingleAsync(r => r.RequestId == 3)).Status);
+        Assert.Equal(70, (await db.HarvestListings.SingleAsync()).AvailableQuantity);
+        Assert.Equal(HarvestStatus.Active, (await db.HarvestListings.SingleAsync()).Status);
+
+        Assert.DoesNotContain(await db.Notifications.ToListAsync(), n => n.UserId == 30);
+        Assert.Contains(await db.Notifications.ToListAsync(), n => n.UserId == 40 && n.Title == "Purchase request closed");
     }
 }

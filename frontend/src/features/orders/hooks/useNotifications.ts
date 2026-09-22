@@ -1,12 +1,27 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import * as notificationsApi from '../api/notificationsApi'
 
+// Shared prefix so a mutation can invalidate every page (and the unread count) in one call.
 const notificationsKey = ['notifications'] as const
+const unreadCountKey = ['notifications', 'unread-count'] as const
 
-export function useNotifications(options?: { refetchInterval?: number }) {
+export function useNotifications(
+  page: number,
+  options?: { pageSize?: number; refetchInterval?: number },
+) {
   return useQuery({
-    queryKey: notificationsKey,
-    queryFn: notificationsApi.getMyNotifications,
+    queryKey: [...notificationsKey, 'mine', page, options?.pageSize ?? 'default'],
+    queryFn: () => notificationsApi.getMyNotifications(page, options?.pageSize),
+    placeholderData: keepPreviousData,
+    refetchInterval: options?.refetchInterval,
+  })
+}
+
+/** Backs the header bell's badge — a single count instead of downloading every notification. */
+export function useUnreadNotificationCount(options?: { refetchInterval?: number }) {
+  return useQuery({
+    queryKey: unreadCountKey,
+    queryFn: notificationsApi.getUnreadNotificationCount,
     refetchInterval: options?.refetchInterval,
   })
 }
@@ -19,14 +34,10 @@ export function useMarkNotificationRead() {
   })
 }
 
-// The backend only exposes a per-notification PUT /{id}/read — there's no bulk
-// "mark all read" route — so "mark all" is composed client-side from that.
 export function useMarkAllNotificationsRead() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: async (unreadIds: number[]) => {
-      await Promise.all(unreadIds.map((id) => notificationsApi.markNotificationRead(id)))
-    },
+    mutationFn: notificationsApi.markAllNotificationsRead,
     onSuccess: () => queryClient.invalidateQueries({ queryKey: notificationsKey }),
   })
 }

@@ -73,3 +73,18 @@ export async function getCurrentUser(): Promise<UserProfileResponse> {
   const { data } = await apiClient.get<UserProfileResponse>('/api/users/me')
   return data
 }
+
+export interface ChangePasswordRequest {
+  currentPassword: string
+  newPassword: string
+}
+
+/**
+ * Self-service password change, available to every role. Returns a fresh token: changing the
+ * password rotates the account's security stamp, and the backend rejects any token — including
+ * the caller's own current one — whose stamp claim no longer matches on the very next request.
+ */
+export async function changePassword(request: ChangePasswordRequest): Promise<AuthResponse> {
+  const { data } = await apiClient.post<AuthResponse>('/api/users/me/password', request)
+  return data
+}

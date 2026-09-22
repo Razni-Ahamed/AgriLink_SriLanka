@@ -1,3 +1,4 @@
+using AgriLink.API.Common;
 using AgriLink.API.Data;
 using AgriLink.API.DTOs.Admin;
 using AgriLink.API.Models;
@@ -19,17 +20,20 @@ public class AdminController : ControllerBase
     private readonly AgriLinkDbContext _db;
     private readonly ICurrentUserService _currentUser;
     private readonly IAuditLogService _auditLog;
+    private readonly INotificationService _notifications;
 
     public AdminController(
         UserManager<ApplicationUser> userManager,
         AgriLinkDbContext db,
         ICurrentUserService currentUser,
-        IAuditLogService auditLog)
+        IAuditLogService auditLog,
+        INotificationService notifications)
     {
         _userManager = userManager;
         _db = db;
         _currentUser = currentUser;
         _auditLog = auditLog;
+        _notifications = notifications;
     }
 
     [HttpPost("users")]
@@ -332,23 +336,59 @@ public class AdminController : ControllerBase
         });
     }
 
-    [HttpGet("audit-logs")]
-    public async Task<ActionResult<List<AuditLogResponse>>> GetAuditLogs([FromQuery] string? entityName, [FromQuery] int take = 100)
+    /// <summary>
+    /// Lets a user back in after they forget their password — there is no email-based reset
+    /// flow, so this is the only recovery path. Refused on the admin's own account: they already
+    /// have UsersController's self-service change-password for that, and letting this path also
+    /// touch the caller's own account would make it a second, redundant way to do the same thing.
+    /// </summary>
+    [HttpPost("users/{userId:int}/password")]
+    public async Task<IActionResult> ResetPassword(int userId, AdminResetPasswordRequest request)
     {
-        var limit = Math.Clamp(take, 1, 500);
+        var actingUserId = _currentUser.GetUserId(User);
+        if (userId == actingUserId)
+        {
+            return BadRequest(new { message = "Use Change password instead to reset your own password." });
+        }
 
+        var user = await _userManager.FindByIdAsync(userId.ToString());
+        if (user is null)
+        {
+            return NotFound();
+        }
+
+        var resetToken = await _userManager.GeneratePasswordResetTokenAsync(user);
+        var resetResult = await _userManager.ResetPasswordAsync(user, resetToken, request.NewPassword);
+        if (!resetResult.Succeeded)
+        {
+            return BadRequest(new { errors = resetResult.Errors.Select(e => e.Description) });
+        }
+
+        _auditLog.Record(actingUserId, "PasswordResetByAdmin", "User", userId);
+        await _db.SaveChangesAsync();
+
+        await _notifications.NotifyAsync(userId, "Password reset", "Your password was reset by an administrator.");
+
+        return NoContent();
+    }
+
+    [HttpGet("audit-logs")]
+    public async Task<ActionResult<PagedResponse<AuditLogResponse>>> GetAuditLogs(
+        [FromQuery] string? entityName,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = PagingExtensions.DefaultPageSize,
+        CancellationToken cancellationToken = default)
+    {
         var query = _db.AuditLogs.Include(a => a.User).AsQueryable();
         if (!string.IsNullOrWhiteSpace(entityName))
         {
             query = query.Where(a => a.EntityName == entityName);
         }
 
-        var logs = await query
-            .OrderByDescending(a => a.CreatedAt)
-            .Take(limit)
-            .ToListAsync();
+        var ordered = query.OrderByDescending(a => a.CreatedAt);
+        var paged = await ordered.ToPagedResponseAsync(page, pageSize, cancellationToken);
 
-        return Ok(logs.Select(a => new AuditLogResponse
+        return Ok(paged.Map(a => new AuditLogResponse
         {
             AuditId = a.AuditId,
             UserId = a.UserId,

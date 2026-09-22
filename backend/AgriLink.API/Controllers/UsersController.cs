@@ -1,5 +1,6 @@
 using AgriLink.API.Data;
 using AgriLink.API.DTOs.Auth;
+using AgriLink.API.DTOs.Users;
 using AgriLink.API.Models;
 using AgriLink.API.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -17,12 +18,21 @@ public class UsersController : ControllerBase
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly AgriLinkDbContext _db;
     private readonly ICurrentUserService _currentUser;
+    private readonly IAuditLogService _auditLog;
+    private readonly IJwtTokenService _tokenService;
 
-    public UsersController(UserManager<ApplicationUser> userManager, AgriLinkDbContext db, ICurrentUserService currentUser)
+    public UsersController(
+        UserManager<ApplicationUser> userManager,
+        AgriLinkDbContext db,
+        ICurrentUserService currentUser,
+        IAuditLogService auditLog,
+        IJwtTokenService tokenService)
     {
         _userManager = userManager;
         _db = db;
         _currentUser = currentUser;
+        _auditLog = auditLog;
+        _tokenService = tokenService;
     }
 
     [HttpGet("me")]
@@ -65,5 +75,37 @@ public class UsersController : ControllerBase
         }
 
         return Ok(response);
+    }
+
+    /// <summary>
+    /// Self-service password change, open to every role (Admin included — AdminLoginPage signs
+    /// into the same account type, just through a separate entry point). Returns a fresh token
+    /// because ChangePasswordAsync rotates SecurityStamp, and the stamp check Program.cs runs on
+    /// every request would otherwise reject the caller's own current token on their very next call.
+    /// </summary>
+    [HttpPost("me/password")]
+    public async Task<ActionResult<AuthResponse>> ChangePassword(ChangePasswordRequest request)
+    {
+        var userId = _currentUser.GetUserId(User);
+        var user = await _userManager.FindByIdAsync(userId.ToString());
+        if (user is null)
+        {
+            return NotFound();
+        }
+
+        var changeResult = await _userManager.ChangePasswordAsync(user, request.CurrentPassword, request.NewPassword);
+        if (!changeResult.Succeeded)
+        {
+            // Covers both a wrong current password and a new password that fails Identity's
+            // policy — Identity's own error descriptions already say which.
+            return BadRequest(new { errors = changeResult.Errors.Select(e => e.Description) });
+        }
+
+        _auditLog.Record(userId, "PasswordChanged", "User", userId);
+        await _db.SaveChangesAsync();
+
+        var roles = await _userManager.GetRolesAsync(user);
+        var token = _tokenService.GenerateToken(user, roles);
+        return Ok(new AuthResponse { Token = token, Role = roles.FirstOrDefault() ?? string.Empty });
     }
 }

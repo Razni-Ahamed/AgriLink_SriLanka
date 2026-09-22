@@ -34,7 +34,7 @@ public class OrdersController : ControllerBase
     [Authorize(Roles = "Buyer,Farmer")]
     public async Task<ActionResult<List<OrderResponse>>> Mine()
     {
-        var query = _db.Orders.AsQueryable();
+        var query = WithDetails(_db.Orders);
 
         if (User.IsInRole("Buyer"))
         {
@@ -62,7 +62,7 @@ public class OrdersController : ControllerBase
     [HttpGet("{id:int}")]
     public async Task<ActionResult<OrderResponse>> GetById(int id)
     {
-        var order = await _db.Orders.FirstOrDefaultAsync(o => o.OrderId == id);
+        var order = await WithDetails(_db.Orders).FirstOrDefaultAsync(o => o.OrderId == id);
         if (order is null)
         {
             return NotFound();
@@ -100,11 +100,7 @@ public class OrdersController : ControllerBase
 
     private async Task<ActionResult<OrderResponse>> Transition(int id, OrderStatus newStatus)
     {
-        var order = await _db.Orders
-            .Include(o => o.Request).ThenInclude(r => r.Harvest).ThenInclude(h => h.Crop)
-            .Include(o => o.FarmerProfile)
-            .Include(o => o.BuyerProfile)
-            .FirstOrDefaultAsync(o => o.OrderId == id);
+        var order = await WithDetails(_db.Orders).FirstOrDefaultAsync(o => o.OrderId == id);
         if (order is null)
         {
             return NotFound();
@@ -158,6 +154,17 @@ public class OrdersController : ControllerBase
         return Ok(ToResponse(order));
     }
 
+    /// <summary>
+    /// The navigations ToResponse needs to fill in contact and listing details — one place so
+    /// Mine/GetById/Transition project the same shape instead of drifting apart, and so the
+    /// buyer/farmer names, districts and the listing's crop/price are each a single joined
+    /// query rather than a per-order round trip.
+    /// </summary>
+    private static IQueryable<Order> WithDetails(IQueryable<Order> query) => query
+        .Include(o => o.Request).ThenInclude(r => r.Harvest).ThenInclude(h => h.Crop)
+        .Include(o => o.FarmerProfile).ThenInclude(fp => fp.User)
+        .Include(o => o.BuyerProfile).ThenInclude(bp => bp.User);
+
     private static OrderResponse ToResponse(Order order) => new()
     {
         OrderId = order.OrderId,
@@ -169,5 +176,17 @@ public class OrdersController : ControllerBase
         Status = order.Status.ToString(),
         OrderDate = order.OrderDate,
         CompletedAt = order.CompletedAt,
+        FarmerName = order.FarmerProfile.User.FullName,
+        FarmerPhone = order.FarmerProfile.PhoneNumber,
+        FarmerEmail = order.FarmerProfile.User.Email ?? string.Empty,
+        FarmerDistrict = order.FarmerProfile.District,
+        BuyerName = order.BuyerProfile.User.FullName,
+        BuyerBusinessName = order.BuyerProfile.BusinessName,
+        BuyerPhone = order.BuyerProfile.BusinessPhone,
+        BuyerEmail = order.BuyerProfile.User.Email ?? string.Empty,
+        BuyerDistrict = order.BuyerProfile.District,
+        CropType = order.Request.Harvest.Crop.CropType,
+        PricePerUnit = order.Request.Harvest.PricePerUnit,
+        HarvestLocation = order.Request.Harvest.Location,
     };
 }

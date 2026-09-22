@@ -1,11 +1,15 @@
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { Pagination } from '@/components/ui/Pagination'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { AuditLogTable } from '../components/AuditLogTable'
 import { useAuditLogs } from '../hooks/useAuditLogs'
 
 export function AuditLogPage() {
   const { t } = useTranslation('orders')
-  const { data: entries, isLoading, isError } = useAuditLogs()
+  const [page, setPage] = useState(1)
+  const { data, isLoading, isFetching, isError } = useAuditLogs(page)
+  const entries = data?.items
 
   return (
     <div className="flex flex-col gap-6">
@@ -28,7 +32,19 @@ export function AuditLogPage() {
         <p className="text-sm text-text-secondary">{t('auditLog.empty')}</p>
       )}
 
-      {!isLoading && !isError && entries && entries.length > 0 && <AuditLogTable entries={entries} />}
+      {!isLoading && !isError && entries && entries.length > 0 && (
+        <>
+          <AuditLogTable entries={entries} />
+          {data && data.totalPages > 1 && (
+            <Pagination
+              page={data.page}
+              totalPages={data.totalPages}
+              onPageChange={setPage}
+              disabled={isFetching}
+            />
+          )}
+        </>
+      )}
     </div>
   )
 }

@@ -64,16 +64,17 @@ builder.Services.AddAuthentication(options =>
         };
 
         // A token outlives the account state it was issued for (8 hours), so deactivating a user
-        // only took effect at their next login. Re-check the account on every request instead.
+        // only took effect at their next login. Re-check the account — and, since a password
+        // change rotates SecurityStamp, the token's own "stamp" claim — on every request instead.
         options.Events = new JwtBearerEvents
         {
             OnTokenValidated = async context =>
             {
                 var userIdValue = context.Principal?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-                var db = context.HttpContext.RequestServices.GetRequiredService<AgriLinkDbContext>();
+                var stampClaim = context.Principal?.FindFirst("stamp")?.Value;
+                var validator = context.HttpContext.RequestServices.GetRequiredService<IAccountSessionValidator>();
                 var isUsable = int.TryParse(userIdValue, out var userId)
-                    && await db.Users.AsNoTracking().AnyAsync(u =>
-                        u.Id == userId && u.IsActive && u.RegistrationStatus == RegistrationStatus.Approved);
+                    && await validator.IsValidAsync(userId, stampClaim, context.HttpContext.RequestAborted);
                 if (!isUsable)
                 {
                     context.Fail("This account is no longer active.");
@@ -89,6 +90,7 @@ builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<IAuditLogService, AuditLogService>();
+builder.Services.AddScoped<IAccountSessionValidator, AccountSessionValidator>();
 
 builder.Services.Configure<WeatherOptions>(builder.Configuration.GetSection("Weather"));
 builder.Services.Configure<AdminSeedOptions>(builder.Configuration.GetSection(AdminSeedOptions.SectionName));

@@ -1,3 +1,4 @@
+using AgriLink.API.Common;
 using AgriLink.API.Controllers;
 using AgriLink.API.Data;
 using AgriLink.API.DTOs.Admin;
@@ -24,11 +25,12 @@ public class AdminControllerTests
 
         var currentUser = new CurrentUserService(db);
         var auditLog = new AuditLogService(db);
+        var notifications = new NotificationService(db);
 
         // The Identity store assigns admin.Id on CreateAsync, so the acting principal is built
         // from whatever id it actually got rather than a hardcoded value — reassigning a saved
         // entity's own primary key afterwards is not something EF Core supports safely.
-        var controller = new AdminController(userManager, db, currentUser, auditLog)
+        var controller = new AdminController(userManager, db, currentUser, auditLog, notifications)
         {
             ControllerContext = new ControllerContext
             {
@@ -329,15 +331,37 @@ public class AdminControllerTests
         await controller.UpdateUserStatus(officer.Id, new UpdateUserStatusRequest { IsActive = false });
         await controller.UpdateUserStatus(officer.Id, new UpdateUserStatusRequest { IsActive = true });
 
-        var result = await controller.GetAuditLogs(entityName: null, take: 10);
+        var result = await controller.GetAuditLogs(entityName: null, page: 1, pageSize: 10);
 
-        // The controller returns Select(...)'s IEnumerable directly (same convention as
-        // HarvestsController.GetAll), not a materialized List, so match that shape here.
-        var logs = (Assert.IsType<OkObjectResult>(result.Result).Value as IEnumerable<AuditLogResponse>)?.ToList();
-        Assert.NotNull(logs);
-        Assert.True(logs!.Count >= 2);
-        Assert.Equal("UserActivated", logs[0].Action);
-        Assert.Equal("AgriLink Administrator", logs[0].UserName);
+        var page = Assert.IsType<PagedResponse<AuditLogResponse>>(Assert.IsType<OkObjectResult>(result.Result).Value);
+        Assert.True(page.Items.Count >= 2);
+        Assert.Equal("UserActivated", page.Items[0].Action);
+        Assert.Equal("AgriLink Administrator", page.Items[0].UserName);
+    }
+
+    [Fact]
+    public async Task GetAuditLogs_PagesCorrectlyAndClampsPageSize()
+    {
+        var (controller, db, users, _) = await CreateAsync();
+        var officer = await CreateOfficerAsync(users, db);
+
+        // A freshly created officer starts Active, so alternate starting with a flip away from
+        // that — otherwise the very first call would be a same-state no-op that records no audit
+        // entry, leaving one fewer row than intended.
+        for (var i = 0; i < 25; i++)
+        {
+            await controller.UpdateUserStatus(officer.Id, new UpdateUserStatusRequest { IsActive = i % 2 != 0 });
+        }
+
+        var firstPage = Assert.IsType<PagedResponse<AuditLogResponse>>(
+            Assert.IsType<OkObjectResult>((await controller.GetAuditLogs(entityName: null, page: 1, pageSize: 10)).Result).Value);
+        Assert.Equal(25, firstPage.TotalCount);
+        Assert.Equal(3, firstPage.TotalPages);
+        Assert.Equal(10, firstPage.Items.Count);
+
+        var clamped = Assert.IsType<PagedResponse<AuditLogResponse>>(
+            Assert.IsType<OkObjectResult>((await controller.GetAuditLogs(entityName: null, page: 1, pageSize: 1000)).Result).Value);
+        Assert.Equal(100, clamped.PageSize);
     }
 
     [Fact]
@@ -374,6 +398,49 @@ public class AdminControllerTests
 
         var metrics = Assert.IsType<AdminMetricsResponse>(Assert.IsType<OkObjectResult>(result.Result).Value);
         Assert.Equal(2, metrics.IssuesPending);
+    }
+
+    [Fact]
+    public async Task ResetPassword_OnAnotherUser_SucceedsAndRecordsAuditAndNotification()
+    {
+        var (controller, db, users, admin) = await CreateAsync();
+        var officer = await CreateOfficerAsync(users, db);
+
+        var result = await controller.ResetPassword(officer.Id, new AdminResetPasswordRequest { NewPassword = "BrandNewPassword@2026!" });
+
+        Assert.IsType<NoContentResult>(result);
+        Assert.True(await users.CheckPasswordAsync(officer, "BrandNewPassword@2026!"));
+        Assert.False(await users.CheckPasswordAsync(officer, "Officer@AgriLink.2026!"));
+
+        var auditLog = await db.AuditLogs.FirstOrDefaultAsync(a => a.EntityId == officer.Id && a.Action == "PasswordResetByAdmin");
+        Assert.NotNull(auditLog);
+        Assert.Equal(admin.Id, auditLog!.UserId);
+
+        var notification = await db.Notifications.FirstOrDefaultAsync(n => n.UserId == officer.Id);
+        Assert.NotNull(notification);
+        Assert.Contains("administrator", notification!.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task ResetPassword_OwnAccount_ReturnsBadRequestAndDoesNotChangePassword()
+    {
+        var (controller, db, users, admin) = await CreateAsync();
+
+        var result = await controller.ResetPassword(admin.Id, new AdminResetPasswordRequest { NewPassword = "BrandNewPassword@2026!" });
+
+        Assert.IsType<BadRequestObjectResult>(result);
+        Assert.True(await users.CheckPasswordAsync(admin, "Admin@AgriLink.2026!"));
+        Assert.Empty(db.AuditLogs.Where(a => a.Action == "PasswordResetByAdmin"));
+    }
+
+    [Fact]
+    public async Task ResetPassword_UnknownUser_ReturnsNotFound()
+    {
+        var (controller, _, _, _) = await CreateAsync();
+
+        var result = await controller.ResetPassword(123456, new AdminResetPasswordRequest { NewPassword = "BrandNewPassword@2026!" });
+
+        Assert.IsType<NotFoundResult>(result);
     }
 
     private static async Task<(AdminController Controller, AgriLinkDbContext Db, UserManager<ApplicationUser> Users, ApplicationUser Farmer)> SeedIssueFixtureAsync()

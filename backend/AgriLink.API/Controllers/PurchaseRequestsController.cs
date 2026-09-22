@@ -34,8 +34,9 @@ public class PurchaseRequestsController : ControllerBase
     [Authorize(Roles = "Buyer")]
     public async Task<ActionResult<PurchaseRequestResponse>> Create(CreatePurchaseRequestRequest request)
     {
-        var buyerProfileId = await _currentUser.GetBuyerProfileIdAsync(User);
-        if (buyerProfileId is null)
+        var userId = _currentUser.GetUserId(User);
+        var buyerProfile = await _db.BuyerProfiles.Include(b => b.User).FirstOrDefaultAsync(b => b.UserId == userId);
+        if (buyerProfile is null)
         {
             return Forbid();
         }
@@ -62,7 +63,8 @@ public class PurchaseRequestsController : ControllerBase
         {
             HarvestId = request.HarvestId,
             Harvest = listing,
-            BuyerProfileId = buyerProfileId.Value,
+            BuyerProfileId = buyerProfile.BuyerProfileId,
+            BuyerProfile = buyerProfile,
             RequestedQuantity = request.RequestedQuantity,
             Message = request.Message ?? string.Empty,
             Status = PurchaseRequestStatus.Pending,
@@ -99,6 +101,7 @@ public class PurchaseRequestsController : ControllerBase
 
         var requests = await _db.PurchaseRequests
             .Include(r => r.Harvest).ThenInclude(h => h.Crop).ThenInclude(c => c.Field).ThenInclude(f => f.Farm)
+            .Include(r => r.BuyerProfile).ThenInclude(bp => bp.User)
             .Where(r => r.Harvest.FarmerProfileId == farmerProfileId)
             .OrderByDescending(r => r.CreatedAt)
             .ToListAsync();
@@ -119,6 +122,7 @@ public class PurchaseRequestsController : ControllerBase
 
         var requests = await _db.PurchaseRequests
             .Include(r => r.Harvest).ThenInclude(h => h.Crop).ThenInclude(c => c.Field).ThenInclude(f => f.Farm)
+            .Include(r => r.BuyerProfile).ThenInclude(bp => bp.User)
             .Where(r => r.BuyerProfileId == buyerProfileId)
             .OrderByDescending(r => r.CreatedAt)
             .ToListAsync();
@@ -138,6 +142,7 @@ public class PurchaseRequestsController : ControllerBase
 
         var purchaseRequest = await _db.PurchaseRequests
             .Include(r => r.Harvest).ThenInclude(h => h.Crop).ThenInclude(c => c.Field).ThenInclude(f => f.Farm)
+            .Include(r => r.BuyerProfile).ThenInclude(bp => bp.User)
             .FirstOrDefaultAsync(r => r.RequestId == id);
 
         if (purchaseRequest is null)
@@ -215,8 +220,40 @@ public class PurchaseRequestsController : ControllerBase
             PurchaseRequestStatus.Pending.ToString(),
             PurchaseRequestStatus.Accepted.ToString());
 
+        // Other still-pending requests on this listing that no longer fit the quantity left —
+        // every one of them if the listing just sold out — can never be filled. Close them in
+        // the same SaveChanges as the acceptance rather than leaving them stuck Pending forever.
+        var staleRequests = await _db.PurchaseRequests
+            .Include(r => r.BuyerProfile)
+            .Where(r => r.HarvestId == listing.HarvestId
+                && r.RequestId != purchaseRequest.RequestId
+                && r.Status == PurchaseRequestStatus.Pending
+                && r.RequestedQuantity > listing.AvailableQuantity)
+            .ToListAsync();
+
+        foreach (var stale in staleRequests)
+        {
+            stale.Status = PurchaseRequestStatus.Cancelled;
+            _auditLog.Record(
+                _currentUser.GetUserId(User),
+                "PurchaseRequestAutoCancelled",
+                "PurchaseRequest",
+                stale.RequestId,
+                PurchaseRequestStatus.Pending.ToString(),
+                PurchaseRequestStatus.Cancelled.ToString());
+        }
+
         await _db.SaveChangesAsync();
         await NotifyBuyerAsync(purchaseRequest, accepted: true);
+
+        var crop = listing.Crop.CropType;
+        foreach (var stale in staleRequests)
+        {
+            await _notifications.NotifyAsync(
+                stale.BuyerProfile.UserId,
+                "Purchase request closed",
+                $"The listing for {crop} is no longer available, so your request was closed.");
+        }
 
         return Ok(ToResponse(purchaseRequest));
     }
@@ -253,5 +290,7 @@ public class PurchaseRequestsController : ControllerBase
         CropType = request.Harvest.Crop.CropType,
         District = request.Harvest.Crop.Field.Farm.District,
         PricePerUnit = request.Harvest.PricePerUnit,
+        BuyerName = request.BuyerProfile.User.FullName,
+        BuyerBusinessName = request.BuyerProfile.BusinessName,
     };
 }

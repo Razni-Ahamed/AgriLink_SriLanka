@@ -1,5 +1,6 @@
 using AgriLink.API.Controllers;
 using AgriLink.API.Data;
+using AgriLink.API.DTOs.Orders;
 using AgriLink.API.Models;
 using AgriLink.API.Services;
 using AgriLink.API.Tests.TestSupport;
@@ -22,8 +23,18 @@ public class OrdersControllerTests
     // A listing that accepting this 100 kg order sold out, as PurchaseRequestsController.Respond leaves it.
     private static Order SeedConfirmedOrder(AgriLinkDbContext db)
     {
-        var farmer = new FarmerProfile { FarmerProfileId = 1, UserId = FarmerUserId, NIC = "1", District = "Kandy" };
-        var buyer = new BuyerProfile { BuyerProfileId = 1, UserId = BuyerUserId, BusinessName = "Buyer Co", District = "Colombo" };
+        var farmerUser = new ApplicationUser
+        {
+            Id = FarmerUserId, UserName = "farmer@agrilink.lk", Email = "farmer@agrilink.lk", FullName = "Farmer One",
+        };
+        var buyerUser = new ApplicationUser
+        {
+            Id = BuyerUserId, UserName = "buyer@agrilink.lk", Email = "buyer@agrilink.lk", FullName = "Buyer One",
+        };
+        db.Users.AddRange(farmerUser, buyerUser);
+
+        var farmer = new FarmerProfile { FarmerProfileId = 1, UserId = FarmerUserId, User = farmerUser, NIC = "1", District = "Kandy", PhoneNumber = "0711111111" };
+        var buyer = new BuyerProfile { BuyerProfileId = 1, UserId = BuyerUserId, User = buyerUser, BusinessName = "Buyer Co", District = "Colombo", BusinessPhone = "0722222222" };
         db.FarmerProfiles.Add(farmer);
         db.BuyerProfiles.Add(buyer);
 
@@ -131,5 +142,77 @@ public class OrdersControllerTests
 
         Assert.IsType<BadRequestObjectResult>(result.Result);
         Assert.Equal(0, (await db.HarvestListings.SingleAsync()).AvailableQuantity);
+    }
+
+    [Fact]
+    public async Task GetById_ByTheOwningFarmer_IncludesBothSidesContactAndListingDetails()
+    {
+        using var db = CreateDb();
+        SeedConfirmedOrder(db);
+
+        var result = await CreateController(db, FarmerUserId, "Farmer").GetById(1);
+
+        var response = Assert.IsType<OrderResponse>(Assert.IsType<OkObjectResult>(result.Result).Value);
+        Assert.Equal("Farmer One", response.FarmerName);
+        Assert.Equal("0711111111", response.FarmerPhone);
+        Assert.Equal("farmer@agrilink.lk", response.FarmerEmail);
+        Assert.Equal("Kandy", response.FarmerDistrict);
+        Assert.Equal("Buyer One", response.BuyerName);
+        Assert.Equal("Buyer Co", response.BuyerBusinessName);
+        Assert.Equal("0722222222", response.BuyerPhone);
+        Assert.Equal("buyer@agrilink.lk", response.BuyerEmail);
+        Assert.Equal("Colombo", response.BuyerDistrict);
+        Assert.Equal("Tomato", response.CropType);
+        Assert.Equal(50, response.PricePerUnit);
+        Assert.Equal("Kandy Town", response.HarvestLocation);
+    }
+
+    [Fact]
+    public async Task GetById_ByTheOwningBuyer_IncludesContactDetails()
+    {
+        using var db = CreateDb();
+        SeedConfirmedOrder(db);
+
+        var result = await CreateController(db, BuyerUserId, "Buyer").GetById(1);
+
+        var response = Assert.IsType<OrderResponse>(Assert.IsType<OkObjectResult>(result.Result).Value);
+        Assert.Equal("Farmer One", response.FarmerName);
+        Assert.Equal("Buyer One", response.BuyerName);
+    }
+
+    [Fact]
+    public async Task GetById_ByAdmin_IncludesContactDetails()
+    {
+        using var db = CreateDb();
+        SeedConfirmedOrder(db);
+
+        var result = await CreateController(db, userId: 999, "Admin").GetById(1);
+
+        var response = Assert.IsType<OrderResponse>(Assert.IsType<OkObjectResult>(result.Result).Value);
+        Assert.Equal("Farmer One", response.FarmerName);
+    }
+
+    [Fact]
+    public async Task GetById_ByAThirdParty_IsForbidden()
+    {
+        using var db = CreateDb();
+        SeedConfirmedOrder(db);
+
+        var result = await CreateController(db, userId: 12345, "Buyer").GetById(1);
+
+        Assert.IsType<ForbidResult>(result.Result);
+    }
+
+    [Fact]
+    public async Task Mine_AsFarmer_IncludesContactAndListingDetails()
+    {
+        using var db = CreateDb();
+        SeedConfirmedOrder(db);
+
+        var result = await CreateController(db, FarmerUserId, "Farmer").Mine();
+
+        var response = Assert.Single(Assert.IsType<OkObjectResult>(result.Result).Value as IEnumerable<OrderResponse> ?? Array.Empty<OrderResponse>());
+        Assert.Equal("Buyer One", response.BuyerName);
+        Assert.Equal("Tomato", response.CropType);
     }
 }

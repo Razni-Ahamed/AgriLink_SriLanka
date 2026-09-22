@@ -11,6 +11,11 @@ export interface PurchaseRequestResponse {
   cropType: string
   district: string
   pricePerUnit: number
+
+  // Who sent it — no phone/email here (unlike OrderResponse): a request isn't a deal yet, so
+  // the buyer's direct contact details stay withheld until the farmer accepts it.
+  buyerName: string
+  buyerBusinessName: string
 }
 
 export interface CreatePurchaseRequestRequest {

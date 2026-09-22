@@ -1,3 +1,4 @@
+using AgriLink.API.Common;
 using AgriLink.API.Data;
 using AgriLink.API.DTOs.Issues;
 using AgriLink.API.Models;
@@ -188,7 +189,10 @@ public class IssuesController : ControllerBase
 
     [HttpGet("mine")]
     [Authorize(Roles = "Farmer")]
-    public async Task<ActionResult<List<CropIssueResponse>>> Mine()
+    public async Task<ActionResult<PagedResponse<CropIssueResponse>>> Mine(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = PagingExtensions.DefaultPageSize,
+        CancellationToken cancellationToken = default)
     {
         var farmerProfileId = await _currentUser.GetFarmerProfileIdAsync(User);
         if (farmerProfileId is null)
@@ -196,20 +200,23 @@ public class IssuesController : ControllerBase
             return Forbid();
         }
 
-        var issues = await _db.CropIssues
+        var query = _db.CropIssues
             .Include(i => i.Advisories)
             .Include(i => i.Images)
             .Include(i => i.Crop).ThenInclude(c => c.Field).ThenInclude(f => f.Farm)
             .Where(i => i.FarmerProfileId == farmerProfileId)
-            .OrderByDescending(i => i.CreatedAt)
-            .ToListAsync();
+            .OrderByDescending(i => i.CreatedAt);
 
-        return Ok(issues.Select(i => ToResponse(i, includeReporter: false)));
+        var paged = await query.ToPagedResponseAsync(page, pageSize, cancellationToken);
+        return Ok(paged.Map(i => ToResponse(i, includeReporter: false)));
     }
 
     [HttpGet("pending")]
     [Authorize(Roles = "Officer,Admin")]
-    public async Task<ActionResult<List<CropIssueResponse>>> Pending()
+    public async Task<ActionResult<PagedResponse<CropIssueResponse>>> Pending(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = PagingExtensions.DefaultPageSize,
+        CancellationToken cancellationToken = default)
     {
         var query = _db.CropIssues
             .Include(i => i.Advisories)
@@ -229,13 +236,19 @@ public class IssuesController : ControllerBase
             query = query.Where(i => i.Crop.Field.Farm.District == district);
         }
 
-        var issues = await query.OrderBy(i => i.CreatedAt).ToListAsync();
-
         // Cases the farmer has had no advice on yet (Draft) come first; Preliminary advice has
         // already reached the farmer and is waiting for confirmation. Oldest first within each.
-        var ordered = issues.OrderBy(i => LatestAdvisory(i)?.Status == AdvisoryStatus.Preliminary ? 1 : 0);
+        // Expressed as a correlated subquery (the latest advisory by id) so the sort — and so
+        // the paging above it — happens in the database, not after loading every row.
+        var ordered = query
+            .OrderBy(i => i.Advisories
+                .OrderByDescending(a => a.AdvisoryId)
+                .Select(a => a.Status)
+                .FirstOrDefault() == AdvisoryStatus.Preliminary ? 1 : 0)
+            .ThenBy(i => i.CreatedAt);
 
-        return Ok(ordered.Select(i => ToResponse(i, includeReporter: true)));
+        var paged = await ordered.ToPagedResponseAsync(page, pageSize, cancellationToken);
+        return Ok(paged.Map(i => ToResponse(i, includeReporter: true)));
     }
 
     /// <summary>
@@ -302,44 +315,51 @@ public class IssuesController : ControllerBase
     /// </summary>
     [HttpGet("reviewed")]
     [Authorize(Roles = "Officer")]
-    public async Task<ActionResult<List<CropIssueResponse>>> Reviewed()
+    public async Task<ActionResult<PagedResponse<CropIssueResponse>>> Reviewed(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = PagingExtensions.DefaultPageSize,
+        CancellationToken cancellationToken = default)
     {
         var userId = _currentUser.GetUserId(User);
 
-        var issues = await _db.CropIssues
+        var query = _db.CropIssues
             .Include(i => i.Advisories)
             .Include(i => i.Images)
             .Include(i => i.Crop).ThenInclude(c => c.Field).ThenInclude(f => f.Farm)
             .Include(i => i.FarmerProfile).ThenInclude(fp => fp.User)
-            .Where(i => i.Advisories.Any(a => a.ReviewedByFK == userId))
-            .ToListAsync();
+            .Where(i => i.Advisories.Any(a => a.ReviewedByFK == userId));
 
         // OrderByDescending on the reviewed advisory's timestamp, not the issue's — sorting by
         // when it was reviewed (not when it was reported) is what makes this "recent activity"
-        // rather than just Pending() with an extra filter.
-        var ordered = issues
+        // rather than just Pending() with an extra filter. A correlated subquery, like Pending()'s
+        // sort, so paging happens in the database.
+        var ordered = query
             .OrderByDescending(i => i.Advisories
                 .Where(a => a.ReviewedByFK == userId)
-                .Max(a => a.ReviewedAt));
+                .Max(a => (DateTime?)a.ReviewedAt));
 
-        return Ok(ordered.Select(i => ToResponse(i, includeReporter: true)));
+        var paged = await ordered.ToPagedResponseAsync(page, pageSize, cancellationToken);
+        return Ok(paged.Map(i => ToResponse(i, includeReporter: true)));
     }
 
     /// <summary>Every issue ever reported, any status — Admin's full oversight view, not just
     /// the Officer's Draft-advisory work queue.</summary>
     [HttpGet]
     [Authorize(Roles = "Admin")]
-    public async Task<ActionResult<List<CropIssueResponse>>> GetAll()
+    public async Task<ActionResult<PagedResponse<CropIssueResponse>>> GetAll(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = PagingExtensions.DefaultPageSize,
+        CancellationToken cancellationToken = default)
     {
-        var issues = await _db.CropIssues
+        var query = _db.CropIssues
             .Include(i => i.Advisories)
             .Include(i => i.Images)
             .Include(i => i.Crop).ThenInclude(c => c.Field).ThenInclude(f => f.Farm)
             .Include(i => i.FarmerProfile).ThenInclude(fp => fp.User)
-            .OrderByDescending(i => i.CreatedAt)
-            .ToListAsync();
+            .OrderByDescending(i => i.CreatedAt);
 
-        return Ok(issues.Select(i => ToResponse(i, includeReporter: true)));
+        var paged = await query.ToPagedResponseAsync(page, pageSize, cancellationToken);
+        return Ok(paged.Map(i => ToResponse(i, includeReporter: true)));
     }
 
     private static AIAdvisory? LatestAdvisory(CropIssue issue) =>

@@ -1,5 +1,6 @@
 import { apiClient } from '@/lib/apiClient'
 import type { CreateCropIssueRequest, CropIssueResponse } from '@/types/dto/issues'
+import type { PagedResponse } from '@/types/dto/paging'
 
 export async function createIssue({
   photo,
@@ -28,24 +29,32 @@ export async function getIssuePhoto(url: string, signal?: AbortSignal): Promise<
   return data
 }
 
-export async function getMyIssues(): Promise<CropIssueResponse[]> {
-  const { data } = await apiClient.get<CropIssueResponse[]>('/api/issues/mine')
+export async function getMyIssues(page: number): Promise<PagedResponse<CropIssueResponse>> {
+  const { data } = await apiClient.get<PagedResponse<CropIssueResponse>>('/api/issues/mine', {
+    params: { page },
+  })
   return data
 }
 
-export async function getPendingIssues(): Promise<CropIssueResponse[]> {
-  const { data } = await apiClient.get<CropIssueResponse[]>('/api/issues/pending')
+export async function getPendingIssues(page: number): Promise<PagedResponse<CropIssueResponse>> {
+  const { data } = await apiClient.get<PagedResponse<CropIssueResponse>>('/api/issues/pending', {
+    params: { page },
+  })
   return data
 }
 
 /** Every issue ever reported, any status — Admin-only. */
-export async function getAllIssues(): Promise<CropIssueResponse[]> {
-  const { data } = await apiClient.get<CropIssueResponse[]>('/api/issues')
+export async function getAllIssues(page: number): Promise<PagedResponse<CropIssueResponse>> {
+  const { data } = await apiClient.get<PagedResponse<CropIssueResponse>>('/api/issues', {
+    params: { page },
+  })
   return data
 }
 
 /** Issues the calling officer has personally reviewed, most recently reviewed first — Officer-only. */
-export async function getReviewedIssues(): Promise<CropIssueResponse[]> {
-  const { data } = await apiClient.get<CropIssueResponse[]>('/api/issues/reviewed')
+export async function getReviewedIssues(page: number): Promise<PagedResponse<CropIssueResponse>> {
+  const { data } = await apiClient.get<PagedResponse<CropIssueResponse>>('/api/issues/reviewed', {
+    params: { page },
+  })
   return data
 }

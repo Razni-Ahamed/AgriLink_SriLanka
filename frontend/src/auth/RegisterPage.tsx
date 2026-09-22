@@ -11,6 +11,7 @@ import { DistrictSelect } from '@/components/ui/DistrictSelect'
 import { Card } from '@/components/ui/Card'
 import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
+import { buildPasswordSchema } from '@/lib/passwordSchema'
 import { register as registerRequest } from './api'
 import type { RegisterRequest } from './api'
 
@@ -24,7 +25,15 @@ export function RegisterPage() {
     () => ({
       fullName: z.string().min(1, t('common:validation.fullNameRequired')),
       email: z.string().email(t('common:validation.emailInvalid')),
-      password: z.string().min(8, t('common:validation.passwordMin')),
+      // Matches Identity's server-side policy (Program.cs) — the same schema backs the
+      // change-password and admin-reset forms.
+      password: buildPasswordSchema({
+        min: t('common:validation.passwordMin12'),
+        uppercase: t('common:validation.passwordUppercase'),
+        lowercase: t('common:validation.passwordLowercase'),
+        digit: t('common:validation.passwordDigit'),
+        symbol: t('common:validation.passwordSymbol'),
+      }),
       nic: z.string().min(1, t('common:validation.nicRequired')),
       district: z.string().min(1, t('common:validation.districtRequired')),
     }),

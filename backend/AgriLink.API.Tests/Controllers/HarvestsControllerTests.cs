@@ -53,7 +53,8 @@ public class HarvestsControllerTests
     private static HarvestsController CreateController(AgriLinkDbContext db, int actingUserId, string role) => new(
         db,
         new CurrentUserService(db),
-        new AuditLogService(db))
+        new AuditLogService(db),
+        new NotificationService(db))
     {
         ControllerContext = new ControllerContext
         {
@@ -176,5 +177,68 @@ public class HarvestsControllerTests
             .Update(listing.HarvestId, new UpdateHarvestListingRequest { PricePerUnit = 0 });
 
         Assert.IsType<BadRequestObjectResult>(result.Result);
+    }
+
+    private static PurchaseRequest AddPendingRequest(AgriLinkDbContext db, HarvestListing listing, int requestId, int buyerUserId)
+    {
+        db.Users.Add(new ApplicationUser { Id = buyerUserId, UserName = $"buyer{buyerUserId}@agrilink.lk", Email = $"buyer{buyerUserId}@agrilink.lk", FullName = $"Buyer {buyerUserId}" });
+        db.BuyerProfiles.Add(new BuyerProfile { BuyerProfileId = requestId, UserId = buyerUserId, BusinessName = "Buyer Co", District = "Colombo" });
+        var request = new PurchaseRequest
+        {
+            RequestId = requestId,
+            HarvestId = listing.HarvestId,
+            Harvest = listing,
+            BuyerProfileId = requestId,
+            RequestedQuantity = 10,
+            Status = PurchaseRequestStatus.Pending,
+        };
+        db.PurchaseRequests.Add(request);
+        db.SaveChanges();
+        return request;
+    }
+
+    [Fact]
+    public async Task Update_StatusChangedToSold_CancelsPendingRequestsAndNotifiesTheirBuyers()
+    {
+        using var db = CreateDb();
+        var listing = SeedListing(db, farmerProfileId: 1, farmerUserId: 10);
+        var request = AddPendingRequest(db, listing, requestId: 1, buyerUserId: 20);
+
+        var result = await CreateController(db, actingUserId: 10, role: "Farmer")
+            .Update(listing.HarvestId, new UpdateHarvestListingRequest { Status = HarvestStatus.Sold });
+
+        Assert.IsType<OkObjectResult>(result.Result);
+        Assert.Equal(PurchaseRequestStatus.Cancelled, (await db.PurchaseRequests.SingleAsync(r => r.RequestId == request.RequestId)).Status);
+        Assert.Contains(await db.AuditLogs.ToListAsync(), a => a.Action == "PurchaseRequestAutoCancelled" && a.EntityId == request.RequestId);
+        Assert.Contains(await db.Notifications.ToListAsync(), n => n.UserId == 20 && n.Title == "Purchase request closed");
+    }
+
+    [Fact]
+    public async Task Update_StatusChangedToCancelled_CancelsPendingRequests()
+    {
+        using var db = CreateDb();
+        var listing = SeedListing(db, farmerProfileId: 1, farmerUserId: 10);
+        var request = AddPendingRequest(db, listing, requestId: 1, buyerUserId: 20);
+
+        var result = await CreateController(db, actingUserId: 10, role: "Farmer")
+            .Update(listing.HarvestId, new UpdateHarvestListingRequest { Status = HarvestStatus.Cancelled });
+
+        Assert.IsType<OkObjectResult>(result.Result);
+        Assert.Equal(PurchaseRequestStatus.Cancelled, (await db.PurchaseRequests.SingleAsync(r => r.RequestId == request.RequestId)).Status);
+    }
+
+    [Fact]
+    public async Task Update_StatusStaysActive_LeavesPendingRequestsAlone()
+    {
+        using var db = CreateDb();
+        var listing = SeedListing(db, farmerProfileId: 1, farmerUserId: 10);
+        var request = AddPendingRequest(db, listing, requestId: 1, buyerUserId: 20);
+
+        var result = await CreateController(db, actingUserId: 10, role: "Farmer")
+            .Update(listing.HarvestId, new UpdateHarvestListingRequest { PricePerUnit = 55 });
+
+        Assert.IsType<OkObjectResult>(result.Result);
+        Assert.Equal(PurchaseRequestStatus.Pending, (await db.PurchaseRequests.SingleAsync(r => r.RequestId == request.RequestId)).Status);
+        Assert.Empty(await db.Notifications.ToListAsync());
     }
 }

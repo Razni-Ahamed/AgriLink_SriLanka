@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Camera, Plus, FirstAidKit } from '@phosphor-icons/react'
 import { useTranslation } from 'react-i18next'
@@ -6,6 +7,7 @@ import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { CropIcon } from '@/components/ui/CropIcon'
 import { IconBadge } from '@/components/ui/IconBadge'
+import { Pagination } from '@/components/ui/Pagination'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { StaggerList } from '@/components/ui/motion/StaggerList'
 import { formatDate } from '@/lib/utils'
@@ -75,7 +77,9 @@ function IssueCard({ issue }: { issue: CropIssueResponse }) {
 export function MyIssuesPage() {
   const { t } = useTranslation('issues')
   const navigate = useNavigate()
-  const { data: issues, isLoading } = useMyIssues()
+  const [page, setPage] = useState(1)
+  const { data, isLoading, isFetching } = useMyIssues(page)
+  const issues = data?.items
 
   return (
     <div className="flex flex-col gap-6">
@@ -112,13 +116,23 @@ export function MyIssuesPage() {
       )}
 
       {!isLoading && issues && issues.length > 0 && (
-        <StaggerList className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {issues.map((issue) => (
-            <StaggerList.Item key={issue.issueId}>
-              <IssueCard issue={issue} />
-            </StaggerList.Item>
-          ))}
-        </StaggerList>
+        <>
+          <StaggerList className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {issues.map((issue) => (
+              <StaggerList.Item key={issue.issueId}>
+                <IssueCard issue={issue} />
+              </StaggerList.Item>
+            ))}
+          </StaggerList>
+          {data && data.totalPages > 1 && (
+            <Pagination
+              page={data.page}
+              totalPages={data.totalPages}
+              onPageChange={setPage}
+              disabled={isFetching}
+            />
+          )}
+        </>
       )}
     </div>
   )

@@ -1,6 +1,7 @@
 import { apiClient } from '@/lib/apiClient'
 import type {
   AdminMetricsResponse,
+  AdminResetPasswordRequest,
   AdminUserSummary,
   AuditLogEntry,
   CreateUserRequest,
@@ -10,6 +11,7 @@ import type {
   UpdateUserRoleRequest,
   UpdateUserStatusRequest,
 } from '@/types/dto/admin'
+import type { PagedResponse } from '@/types/dto/paging'
 
 export async function getAdminMetrics(): Promise<AdminMetricsResponse> {
   const { data } = await apiClient.get<AdminMetricsResponse>('/api/admin/metrics')
@@ -47,9 +49,20 @@ export async function updateUserStatus(
   return data
 }
 
-export async function getAuditLogs(entityName?: string): Promise<AuditLogEntry[]> {
-  const { data } = await apiClient.get<AuditLogEntry[]>('/api/admin/audit-logs', {
-    params: entityName ? { entityName } : undefined,
+/** No email-based reset flow exists — this is how a user who forgot their password gets back in. */
+export async function resetUserPassword(
+  userId: number,
+  request: AdminResetPasswordRequest,
+): Promise<void> {
+  await apiClient.post(`/api/admin/users/${userId}/password`, request)
+}
+
+export async function getAuditLogs(
+  page: number,
+  entityName?: string,
+): Promise<PagedResponse<AuditLogEntry>> {
+  const { data } = await apiClient.get<PagedResponse<AuditLogEntry>>('/api/admin/audit-logs', {
+    params: { page, entityName },
   })
   return data
 }

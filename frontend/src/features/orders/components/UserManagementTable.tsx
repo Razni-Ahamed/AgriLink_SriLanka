@@ -12,16 +12,21 @@ const roleBadgeVariant: Record<ManagedRole, 'info' | 'success' | 'warning' | 'ne
 
 interface UserManagementTableProps {
   users: AdminUserSummary[]
+  /** The signed-in admin's own user id — hides self-service actions on their own row. */
+  currentUserId?: number
   isMutating?: boolean
   onChangeRole: (user: AdminUserSummary) => void
   onToggleStatus: (user: AdminUserSummary) => void
+  onResetPassword: (user: AdminUserSummary) => void
 }
 
 export function UserManagementTable({
   users,
+  currentUserId,
   isMutating,
   onChangeRole,
   onToggleStatus,
+  onResetPassword,
 }: UserManagementTableProps) {
   const { t } = useTranslation(['orders', 'common'])
 
@@ -72,6 +77,18 @@ export function UserManagementTable({
                       onClick={() => onToggleStatus(user)}
                     >
                       {user.isActive ? t('orders:admin.deactivate') : t('orders:admin.activate')}
+                    </Button>
+                  )}
+                  {/* Hidden on the admin's own row — they use Change password (self-service)
+                      instead, which the backend's own /admin/users/{id}/password also refuses. */}
+                  {user.userId !== currentUserId && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      disabled={isMutating}
+                      onClick={() => onResetPassword(user)}
+                    >
+                      {t('orders:admin.resetPassword')}
                     </Button>
                   )}
                 </div>

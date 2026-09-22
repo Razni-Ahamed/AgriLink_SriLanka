@@ -1,4 +1,5 @@
 import type { NavItem, Role } from '@/types/common'
+import { accountNavItems } from '@/features/account/routes'
 import { farmsNavItems } from '@/features/farms/routes'
 import { issuesNavItems } from '@/features/issues/routes'
 import { marketplaceNavItems } from '@/features/marketplace/routes'
@@ -13,6 +14,7 @@ const allNavItems: NavItem[] = [
   ...officerNavItems,
   ...ordersNavItems,
   ...registrationsNavItems,
+  ...accountNavItems,
 ]
 
 export function getNavItemsForRole(role: Role | null): NavItem[] {

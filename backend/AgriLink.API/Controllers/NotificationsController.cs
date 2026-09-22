@@ -1,3 +1,4 @@
+using AgriLink.API.Common;
 using AgriLink.API.Data;
 using AgriLink.API.DTOs.Notifications;
 using AgriLink.API.Models;
@@ -25,16 +26,48 @@ public class NotificationsController : ControllerBase
     }
 
     [HttpGet("mine")]
-    public async Task<ActionResult<List<NotificationResponse>>> Mine()
+    public async Task<ActionResult<PagedResponse<NotificationResponse>>> Mine(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = PagingExtensions.DefaultPageSize,
+        CancellationToken cancellationToken = default)
     {
         var userId = _currentUser.GetUserId(User);
 
-        var notifications = await _db.Notifications
+        var query = _db.Notifications
             .Where(n => n.UserId == userId)
-            .OrderByDescending(n => n.CreatedAt)
-            .ToListAsync();
+            .OrderByDescending(n => n.CreatedAt);
 
-        return Ok(notifications.Select(ToResponse));
+        var paged = await query.ToPagedResponseAsync(page, pageSize, cancellationToken);
+        return Ok(paged.Map(ToResponse));
+    }
+
+    /// <summary>Backs the header bell's unread badge without downloading every notification just
+    /// to count how many are unread.</summary>
+    [HttpGet("unread-count")]
+    public async Task<ActionResult<NotificationUnreadCountResponse>> UnreadCount(CancellationToken cancellationToken)
+    {
+        var userId = _currentUser.GetUserId(User);
+        var count = await _db.Notifications.CountAsync(n => n.UserId == userId && !n.IsRead, cancellationToken);
+        return Ok(new NotificationUnreadCountResponse { Count = count });
+    }
+
+    /// <summary>Marks every one of the caller's own unread notifications as read in one request,
+    /// instead of the bell's previous one-PUT-per-notification approach.</summary>
+    [HttpPut("read-all")]
+    public async Task<IActionResult> MarkAllRead(CancellationToken cancellationToken)
+    {
+        var userId = _currentUser.GetUserId(User);
+        var unread = await _db.Notifications
+            .Where(n => n.UserId == userId && !n.IsRead)
+            .ToListAsync(cancellationToken);
+
+        foreach (var notification in unread)
+        {
+            notification.IsRead = true;
+        }
+
+        await _db.SaveChangesAsync(cancellationToken);
+        return NoContent();
     }
 
     [HttpPut("{id}/read")]

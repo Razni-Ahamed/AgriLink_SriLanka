@@ -9,6 +9,7 @@ import {
   useMarkAllNotificationsRead,
   useMarkNotificationRead,
   useNotifications,
+  useUnreadNotificationCount,
 } from '../hooks/useNotifications'
 
 const POLL_INTERVAL_MS = 30_000
@@ -17,14 +18,13 @@ const MAX_VISIBLE = 6
 export function NotificationBell() {
   const { t } = useTranslation(['orders', 'common'])
   const [isOpen, setOpen] = useState(false)
-  const { data: notifications, isLoading } = useNotifications({
-    refetchInterval: POLL_INTERVAL_MS,
-  })
+  const { data: unreadCount } = useUnreadNotificationCount({ refetchInterval: POLL_INTERVAL_MS })
+  const { data, isLoading } = useNotifications(1, { pageSize: MAX_VISIBLE })
   const markRead = useMarkNotificationRead()
   const markAllRead = useMarkAllNotificationsRead()
 
-  const unread = (notifications ?? []).filter((notification) => !notification.isRead)
-  const recent = (notifications ?? []).slice(0, MAX_VISIBLE)
+  const unread = unreadCount?.count ?? 0
+  const recent = data?.items ?? []
 
   return (
     <div className="relative">
@@ -35,9 +35,9 @@ export function NotificationBell() {
         className="relative flex h-9 w-9 items-center justify-center rounded-xl text-brand-forest hover:bg-brand-forest/10"
       >
         <Bell size={20} weight="duotone" />
-        {unread.length > 0 && (
+        {unread > 0 && (
           <span className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-brand-terracotta px-1 text-[10px] font-semibold text-bg-surface">
-            {unread.length > 9 ? '9+' : unread.length}
+            {unread > 9 ? '9+' : unread}
           </span>
         )}
       </button>
@@ -57,10 +57,10 @@ export function NotificationBell() {
                 <h3 className="font-display text-sm text-text-primary">
                   {t('orders:notifications.title')}
                 </h3>
-                {unread.length > 0 && (
+                {unread > 0 && (
                   <button
                     type="button"
-                    onClick={() => markAllRead.mutate(unread.map((n) => n.notificationId))}
+                    onClick={() => markAllRead.mutate()}
                     disabled={markAllRead.isPending}
                     className="text-xs font-medium text-brand-forest hover:underline disabled:opacity-50"
                   >

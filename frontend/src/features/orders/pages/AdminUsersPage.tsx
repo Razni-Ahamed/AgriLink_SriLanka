@@ -3,23 +3,33 @@ import { useTranslation } from 'react-i18next'
 import { Card } from '@/components/ui/Card'
 import { Modal } from '@/components/ui/Modal'
 import { Skeleton } from '@/components/ui/Skeleton'
+import { useAuthStore } from '@/auth/authStore'
 import { useCreateUser } from '../hooks/useAdminMetrics'
-import { useAdminUsers, useUpdateUserRole, useUpdateUserStatus } from '../hooks/useAdminUsers'
+import {
+  useAdminResetPassword,
+  useAdminUsers,
+  useUpdateUserRole,
+  useUpdateUserStatus,
+} from '../hooks/useAdminUsers'
 import { UserCreateForm } from '../components/UserCreateForm'
 import { ChangeRoleForm } from '../components/ChangeRoleForm'
+import { AdminResetPasswordForm } from '../components/AdminResetPasswordForm'
 import { UserManagementTable } from '../components/UserManagementTable'
 import type { AdminUserSummary } from '@/types/dto/admin'
 
 export function AdminUsersPage() {
   const { t } = useTranslation(['orders', 'common'])
+  const currentUserId = useAuthStore((state) => state.user?.userId)
   const createUser = useCreateUser()
   const [created, setCreated] = useState<string | null>(null)
 
   const { data: users, isLoading: isLoadingUsers, isError: isUsersError } = useAdminUsers()
   const updateRole = useUpdateUserRole()
   const updateStatus = useUpdateUserStatus()
+  const resetPassword = useAdminResetPassword()
 
   const [roleTarget, setRoleTarget] = useState<AdminUserSummary | null>(null)
+  const [passwordTarget, setPasswordTarget] = useState<AdminUserSummary | null>(null)
   const [feedback, setFeedback] = useState<{ tone: 'success' | 'danger'; text: string } | null>(null)
 
   const handleToggleStatus = (user: AdminUserSummary) => {
@@ -84,9 +94,11 @@ export function AdminUsersPage() {
         {!isLoadingUsers && !isUsersError && users && users.length > 0 && (
           <UserManagementTable
             users={users}
+            currentUserId={currentUserId}
             isMutating={updateRole.isPending || updateStatus.isPending}
             onChangeRole={setRoleTarget}
             onToggleStatus={handleToggleStatus}
+            onResetPassword={setPasswordTarget}
           />
         )}
 
@@ -118,6 +130,34 @@ export function AdminUsersPage() {
                     setRoleTarget(null)
                   },
                   onError: () => setFeedback({ tone: 'danger', text: t('orders:admin.roleUpdateError') }),
+                },
+              )
+            }
+          />
+        )}
+      </Modal>
+
+      <Modal
+        open={passwordTarget !== null}
+        onClose={() => setPasswordTarget(null)}
+        title={passwordTarget ? t('orders:admin.resetPasswordFor', { name: passwordTarget.fullName }) : ''}
+      >
+        {passwordTarget && (
+          <AdminResetPasswordForm
+            isSubmitting={resetPassword.isPending}
+            onSubmit={(values) =>
+              resetPassword.mutate(
+                { userId: passwordTarget.userId, request: { newPassword: values.newPassword } },
+                {
+                  onSuccess: () => {
+                    setFeedback({
+                      tone: 'success',
+                      text: t('orders:admin.passwordReset', { name: passwordTarget.fullName }),
+                    })
+                    setPasswordTarget(null)
+                  },
+                  onError: () =>
+                    setFeedback({ tone: 'danger', text: t('orders:admin.resetPasswordError') }),
                 },
               )
             }

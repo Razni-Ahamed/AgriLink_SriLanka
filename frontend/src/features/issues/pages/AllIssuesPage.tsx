@@ -1,9 +1,11 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Badge } from '@/components/ui/Badge'
 import { Card } from '@/components/ui/Card'
 import { CropIcon } from '@/components/ui/CropIcon'
 import { IconBadge } from '@/components/ui/IconBadge'
+import { Pagination } from '@/components/ui/Pagination'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { StaggerList } from '@/components/ui/motion/StaggerList'
 import { formatDate } from '@/lib/utils'
@@ -57,7 +59,9 @@ function AllIssuesCard({ issue }: { issue: CropIssueResponse }) {
 /** Admin-only oversight view: every issue ever reported, any status, with who reported it. */
 export function AllIssuesPage() {
   const { t } = useTranslation('issues')
-  const { data: issues, isLoading, isError, error } = useAllIssues()
+  const [page, setPage] = useState(1)
+  const { data, isLoading, isFetching, isError, error } = useAllIssues(page)
+  const issues = data?.items
 
   return (
     <div className="flex flex-col gap-6">
@@ -89,13 +93,23 @@ export function AllIssuesPage() {
       )}
 
       {!isLoading && !isError && issues && issues.length > 0 && (
-        <StaggerList className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {issues.map((issue) => (
-            <StaggerList.Item key={issue.issueId}>
-              <AllIssuesCard issue={issue} />
-            </StaggerList.Item>
-          ))}
-        </StaggerList>
+        <>
+          <StaggerList className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {issues.map((issue) => (
+              <StaggerList.Item key={issue.issueId}>
+                <AllIssuesCard issue={issue} />
+              </StaggerList.Item>
+            ))}
+          </StaggerList>
+          {data && data.totalPages > 1 && (
+            <Pagination
+              page={data.page}
+              totalPages={data.totalPages}
+              onPageChange={setPage}
+              disabled={isFetching}
+            />
+          )}
+        </>
       )}
     </div>
   )
