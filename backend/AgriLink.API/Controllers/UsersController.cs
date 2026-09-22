@@ -2,6 +2,7 @@ using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Unicode;
 using AgriLink.API.Data;
+using AgriLink.API.DTOs.Accounts;
 using AgriLink.API.DTOs.Auth;
 using AgriLink.API.DTOs.Users;
 using AgriLink.API.Models;
@@ -33,6 +34,7 @@ public class UsersController : ControllerBase
     private readonly AgriLinkDbContext _db;
     private readonly ICurrentUserService _currentUser;
     private readonly IAuditLogService _auditLog;
+    private readonly INotificationService _notifications;
     private readonly IJwtTokenService _tokenService;
     private readonly IProfilePhotoProcessor _photoProcessor;
     private readonly IProfilePhotoStorage _photoStorage;
@@ -43,6 +45,7 @@ public class UsersController : ControllerBase
         AgriLinkDbContext db,
         ICurrentUserService currentUser,
         IAuditLogService auditLog,
+        INotificationService notifications,
         IJwtTokenService tokenService,
         IProfilePhotoProcessor photoProcessor,
         IProfilePhotoStorage photoStorage,
@@ -52,6 +55,7 @@ public class UsersController : ControllerBase
         _db = db;
         _currentUser = currentUser;
         _auditLog = auditLog;
+        _notifications = notifications;
         _tokenService = tokenService;
         _photoProcessor = photoProcessor;
         _photoStorage = photoStorage;
@@ -395,6 +399,421 @@ public class UsersController : ControllerBase
         var token = _tokenService.GenerateToken(user, roles);
         return Ok(new AuthResponse { Token = token, Role = roles.FirstOrDefault() ?? string.Empty });
     }
+
+    /// <summary>
+    /// What the Security tab shows: which fields the caller's role may change directly versus
+    /// only request, their current phone/NIC, and their own change-request history — pending
+    /// requests first, then the 10 most recently decided.
+    /// </summary>
+    [HttpGet("me/security")]
+    public async Task<ActionResult<SecuritySettingsResponse>> Security()
+    {
+        var userId = _currentUser.GetUserId(User);
+        var user = await _userManager.FindByIdAsync(userId.ToString());
+        if (user is null)
+        {
+            return NotFound();
+        }
+
+        var role = (await _userManager.GetRolesAsync(user)).FirstOrDefault() ?? string.Empty;
+        var (canChange, canRequest) = SecurityCapabilities.For(role);
+
+        string? phone;
+        string? nic = null;
+        if (role == "Farmer")
+        {
+            var profile = await _db.FarmerProfiles.AsNoTracking().FirstOrDefaultAsync(f => f.UserId == userId);
+            phone = profile?.PhoneNumber;
+            nic = profile?.NIC;
+        }
+        else if (role == "Buyer")
+        {
+            var profile = await _db.BuyerProfiles.AsNoTracking().FirstOrDefaultAsync(b => b.UserId == userId);
+            phone = profile?.BusinessPhone;
+            nic = profile?.NIC;
+        }
+        else
+        {
+            phone = user.PhoneNumber;
+        }
+
+        var requests = await _db.ProfileChangeRequests.AsNoTracking().Where(r => r.UserId == userId).ToListAsync();
+        var pending = requests
+            .Where(r => r.Status == ChangeRequestStatus.Pending)
+            .OrderBy(r => r.RequestedAt);
+        var recentDecided = requests
+            .Where(r => r.Status != ChangeRequestStatus.Pending)
+            .OrderByDescending(r => r.DecidedAt ?? r.RequestedAt)
+            .Take(10);
+
+        return Ok(new SecuritySettingsResponse
+        {
+            CanChange = canChange,
+            CanRequest = canRequest,
+            PhoneNumber = phone,
+            NIC = nic,
+            ChangeRequests = pending.Concat(recentDecided).Select(ToChangeRequestSummary).ToList(),
+        });
+    }
+
+    /// <summary>
+    /// The Security tab's "unlock" step: proves the caller still knows their password before the
+    /// form lets them edit anything. A convenience for the UI only — every field-changing
+    /// endpoint below re-checks the password itself regardless of this call.
+    /// </summary>
+    [HttpPost("me/verify-password")]
+    public async Task<IActionResult> VerifyPassword(VerifyPasswordRequest request)
+    {
+        var userId = _currentUser.GetUserId(User);
+        var user = await _userManager.FindByIdAsync(userId.ToString());
+        if (user is null)
+        {
+            return NotFound();
+        }
+
+        if (!await SecurityReauth.VerifyAsync(_userManager, user, request.CurrentPassword))
+        {
+            _auditLog.Record(userId, "SecurityReauthFailed", "User", userId);
+            await _db.SaveChangesAsync();
+            return BadRequest(new { message = "Current password is incorrect." });
+        }
+
+        return NoContent();
+    }
+
+    /// <summary>Applies directly for every role — phone is never an approval-needed field.</summary>
+    [HttpPut("me/phone")]
+    public async Task<ActionResult<UserProfileResponse>> UpdatePhone(UpdatePhoneRequest request)
+    {
+        var userId = _currentUser.GetUserId(User);
+        var user = await _userManager.FindByIdAsync(userId.ToString());
+        if (user is null)
+        {
+            return NotFound();
+        }
+
+        if (!await SecurityReauth.VerifyAsync(_userManager, user, request.CurrentPassword))
+        {
+            _auditLog.Record(userId, "SecurityReauthFailed", "User", userId);
+            await _db.SaveChangesAsync();
+            return BadRequest(new { message = "Current password is incorrect." });
+        }
+
+        var role = (await _userManager.GetRolesAsync(user)).FirstOrDefault() ?? string.Empty;
+        var phoneRequired = role is "Farmer" or "Buyer";
+
+        string? normalizedPhone = null;
+        if (!string.IsNullOrWhiteSpace(request.PhoneNumber))
+        {
+            normalizedPhone = IdentityFieldNormalization.NormalizePhone(request.PhoneNumber);
+            if (normalizedPhone is null)
+            {
+                return BadRequest(new { message = "Phone number must be 10 digits." });
+            }
+        }
+        else if (phoneRequired)
+        {
+            return BadRequest(new { message = "Phone number is required." });
+        }
+
+        string? oldValue;
+        if (role == "Farmer")
+        {
+            var profile = await _db.FarmerProfiles.FirstOrDefaultAsync(f => f.UserId == userId);
+            if (profile is null)
+            {
+                return BadRequest(new { message = "This account has no farmer profile." });
+            }
+
+            oldValue = profile.PhoneNumber;
+            profile.PhoneNumber = normalizedPhone;
+        }
+        else if (role == "Buyer")
+        {
+            var profile = await _db.BuyerProfiles.FirstOrDefaultAsync(b => b.UserId == userId);
+            if (profile is null)
+            {
+                return BadRequest(new { message = "This account has no buyer profile." });
+            }
+
+            oldValue = profile.BusinessPhone;
+            profile.BusinessPhone = normalizedPhone;
+        }
+        else
+        {
+            oldValue = user.PhoneNumber;
+            user.PhoneNumber = normalizedPhone;
+        }
+
+        if (oldValue == normalizedPhone)
+        {
+            return BadRequest(new { message = "That is already your current phone number." });
+        }
+
+        _auditLog.Record(userId, "PhoneChanged", "User", userId, oldValue, normalizedPhone);
+        await _db.SaveChangesAsync();
+        await _notifications.NotifyAsync(userId, "Phone number updated", "Your phone number was updated.");
+
+        return Ok(await BuildProfileAsync(user));
+    }
+
+    /// <summary>
+    /// Admin: applies directly (rotating the security stamp, and returning a fresh token, on an
+    /// email change — exactly like POST /me/password). Everyone else: opens a Pending request for
+    /// an Officer/Admin to decide, and notifies the right approvers.
+    /// </summary>
+    [HttpPost("me/change-requests")]
+    public async Task<IActionResult> CreateChangeRequest(CreateChangeRequestRequest request)
+    {
+        var userId = _currentUser.GetUserId(User);
+        var user = await _userManager.FindByIdAsync(userId.ToString());
+        if (user is null)
+        {
+            return NotFound();
+        }
+
+        if (!await SecurityReauth.VerifyAsync(_userManager, user, request.CurrentPassword))
+        {
+            _auditLog.Record(userId, "SecurityReauthFailed", "User", userId);
+            await _db.SaveChangesAsync();
+            return BadRequest(new { message = "Current password is incorrect." });
+        }
+
+        if (!Enum.TryParse<ChangeRequestField>(request.Field, ignoreCase: true, out var field)
+            || !Enum.IsDefined(field))
+        {
+            return BadRequest(new { message = "Field must be 'FullName', 'NIC' or 'Email'." });
+        }
+
+        var role = (await _userManager.GetRolesAsync(user)).FirstOrDefault() ?? string.Empty;
+
+        FarmerProfile? farmerProfile = null;
+        BuyerProfile? buyerProfile = null;
+        if (role == "Farmer")
+        {
+            farmerProfile = await _db.FarmerProfiles.FirstOrDefaultAsync(f => f.UserId == userId);
+        }
+        else if (role == "Buyer")
+        {
+            buyerProfile = await _db.BuyerProfiles.FirstOrDefaultAsync(b => b.UserId == userId);
+        }
+
+        string oldValue;
+        string newValue;
+        switch (field)
+        {
+            case ChangeRequestField.FullName:
+                oldValue = user.FullName;
+                var trimmedName = request.NewValue.Trim();
+                if (trimmedName.Length is < 2 or > 100)
+                {
+                    return BadRequest(new { message = "Full name must be 2-100 characters." });
+                }
+
+                newValue = trimmedName;
+                break;
+
+            case ChangeRequestField.Email:
+                oldValue = user.Email ?? string.Empty;
+                var trimmedEmail = request.NewValue.Trim();
+                if (!IdentityFieldNormalization.IsValidEmail(trimmedEmail))
+                {
+                    return BadRequest(new { message = "Enter a valid email." });
+                }
+
+                var existingByEmail = await _userManager.FindByEmailAsync(trimmedEmail);
+                if (existingByEmail is not null && existingByEmail.Id != userId)
+                {
+                    return Conflict(new { message = "An account with this email already exists." });
+                }
+
+                newValue = trimmedEmail;
+                break;
+
+            case ChangeRequestField.NIC:
+                if (role == "Farmer")
+                {
+                    if (farmerProfile is null)
+                    {
+                        return BadRequest(new { message = "This account has no farmer profile." });
+                    }
+
+                    oldValue = farmerProfile.NIC;
+                }
+                else if (role == "Buyer")
+                {
+                    if (buyerProfile is null)
+                    {
+                        return BadRequest(new { message = "This account has no buyer profile." });
+                    }
+
+                    oldValue = buyerProfile.NIC ?? string.Empty;
+                }
+                else
+                {
+                    return BadRequest(new { message = "This account has no NIC." });
+                }
+
+                var normalizedNic = IdentityFieldNormalization.NormalizeNic(request.NewValue);
+                if (normalizedNic is null)
+                {
+                    return BadRequest(new { message = "NIC must be 12 digits, or 9 digits followed by V or X." });
+                }
+
+                newValue = normalizedNic;
+                break;
+
+            default:
+                return BadRequest(new { message = "Unsupported field." });
+        }
+
+        if (string.Equals(oldValue, newValue, StringComparison.Ordinal))
+        {
+            return BadRequest(new { message = "That is already your current value." });
+        }
+
+        if (_currentUser.IsAdmin(User))
+        {
+            return await ApplyAdminOwnChangeAsync(user, userId, field, oldValue, newValue);
+        }
+
+        var alreadyPending = await _db.ProfileChangeRequests.AnyAsync(
+            r => r.UserId == userId && r.Field == field && r.Status == ChangeRequestStatus.Pending);
+        if (alreadyPending)
+        {
+            return Conflict(new { message = "You already have a pending request for this field." });
+        }
+
+        var changeRequest = new ProfileChangeRequest
+        {
+            UserId = userId,
+            Field = field,
+            OldValue = oldValue,
+            NewValue = newValue,
+            Status = ChangeRequestStatus.Pending,
+        };
+        _db.ProfileChangeRequests.Add(changeRequest);
+        _auditLog.Record(userId, "ProfileChangeRequested", "User", userId, oldValue, newValue);
+
+        try
+        {
+            await _db.SaveChangesAsync();
+        }
+        catch (DbUpdateException ex) when (IsUniqueViolation(ex))
+        {
+            // Another request for the same field was saved between the check above and this one.
+            return Conflict(new { message = "You already have a pending request for this field." });
+        }
+
+        await NotifyApproversAsync(role, role == "Farmer" ? farmerProfile?.District : null, user.FullName, field);
+
+        return StatusCode(StatusCodes.Status201Created, ToChangeRequestSummary(changeRequest));
+    }
+
+    /// <summary>Withdraws the caller's own request — never anyone else's, and only while Pending.</summary>
+    [HttpDelete("me/change-requests/{id:int}")]
+    public async Task<IActionResult> WithdrawChangeRequest(int id)
+    {
+        var userId = _currentUser.GetUserId(User);
+        var changeRequest = await _db.ProfileChangeRequests.FirstOrDefaultAsync(
+            r => r.RequestId == id && r.UserId == userId && r.Status == ChangeRequestStatus.Pending);
+        if (changeRequest is null)
+        {
+            return NotFound();
+        }
+
+        changeRequest.Status = ChangeRequestStatus.Withdrawn;
+        changeRequest.DecidedAt = DateTime.UtcNow;
+        _auditLog.Record(userId, "ProfileChangeWithdrawn", "ProfileChangeRequest", changeRequest.RequestId);
+        await _db.SaveChangesAsync();
+
+        return NoContent();
+    }
+
+    /// <summary>
+    /// Admin editing their own full name or email: no approver sits above an Admin, so this
+    /// applies immediately instead of opening a request. An email change rotates the security
+    /// stamp — same as any other email edit — so a fresh token comes back to keep this session
+    /// working; a full-name change needs no token.
+    /// </summary>
+    private async Task<IActionResult> ApplyAdminOwnChangeAsync(
+        ApplicationUser user, int userId, ChangeRequestField field, string oldValue, string newValue)
+    {
+        if (field == ChangeRequestField.NIC)
+        {
+            return BadRequest(new { message = "This account has no NIC." });
+        }
+
+        if (field == ChangeRequestField.FullName)
+        {
+            user.FullName = newValue;
+            _auditLog.Record(userId, "FullNameChanged", "User", userId, oldValue, newValue);
+            await _db.SaveChangesAsync();
+            return Ok(await BuildProfileAsync(user));
+        }
+
+        var setEmailResult = await _userManager.SetEmailAsync(user, newValue);
+        if (!setEmailResult.Succeeded)
+        {
+            return BadRequest(new { errors = setEmailResult.Errors.Select(e => new { code = e.Code, description = e.Description }) });
+        }
+
+        await _userManager.UpdateSecurityStampAsync(user);
+        _auditLog.Record(userId, "EmailChanged", "User", userId, oldValue, newValue);
+        await _db.SaveChangesAsync();
+
+        var roles = await _userManager.GetRolesAsync(user);
+        var token = _tokenService.GenerateToken(user, roles);
+        return Ok(new AuthResponse { Token = token, Role = roles.FirstOrDefault() ?? string.Empty });
+    }
+
+    private async Task NotifyApproversAsync(string role, string? farmerDistrict, string requesterName, ChangeRequestField field)
+    {
+        var recipientIds = new HashSet<int>();
+
+        if (role == "Farmer" && farmerDistrict is not null)
+        {
+            var officerIds = await _db.OfficerProfiles
+                .Where(o => o.District == farmerDistrict)
+                .Select(o => o.UserId)
+                .ToListAsync();
+            recipientIds.UnionWith(officerIds);
+        }
+
+        var admins = await _userManager.GetUsersInRoleAsync("Admin");
+        recipientIds.UnionWith(admins.Select(a => a.Id));
+
+        foreach (var recipientId in recipientIds)
+        {
+            await _notifications.NotifyAsync(
+                recipientId,
+                "Profile change request",
+                $"{requesterName} requested to change their {FieldLabel(field)}.");
+        }
+    }
+
+    private static string FieldLabel(ChangeRequestField field) => field switch
+    {
+        ChangeRequestField.FullName => "full name",
+        ChangeRequestField.NIC => "NIC",
+        ChangeRequestField.Email => "email",
+        _ => field.ToString(),
+    };
+
+    private static bool IsUniqueViolation(DbUpdateException exception) =>
+        exception.InnerException is Npgsql.PostgresException { SqlState: Npgsql.PostgresErrorCodes.UniqueViolation };
+
+    private static ChangeRequestSummary ToChangeRequestSummary(ProfileChangeRequest request) => new()
+    {
+        RequestId = request.RequestId,
+        Field = request.Field.ToString(),
+        OldValue = request.OldValue,
+        NewValue = request.NewValue,
+        Status = request.Status.ToString(),
+        RequestedAt = request.RequestedAt,
+        DecidedAt = request.DecidedAt,
+        RejectionReason = request.RejectionReason,
+    };
 
     private async Task<UserProfileResponse> BuildProfileAsync(ApplicationUser user)
     {
