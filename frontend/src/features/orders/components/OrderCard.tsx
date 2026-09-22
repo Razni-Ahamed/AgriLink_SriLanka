@@ -19,12 +19,10 @@ export function OrderCard({ order, role }: { order: OrderResponse; role: Role | 
   const { t } = useTranslation(['orders', 'common'])
   const statusLabel = useStatusLabel()
 
-  // OrderResponse only carries counterpart profile ids, not names — there's no
-  // endpoint yet to resolve a FarmerProfileId/BuyerProfileId to a display name.
-  const counterpart =
-    role === 'Buyer'
-      ? t('orders:card.farmerCounterpart', { id: order.farmerProfileId })
-      : t('orders:card.buyerCounterpart', { id: order.buyerProfileId })
+  // The counterpart is whoever the caller is NOT — a buyer sees the farmer they ordered from,
+  // a farmer sees the buyer who ordered from them.
+  const counterpartName = role === 'Buyer' ? order.farmerName : order.buyerName
+  const counterpartBusiness = role === 'Buyer' ? undefined : order.buyerBusinessName
 
   return (
     <Link to={`/orders/${order.orderId}`}>
@@ -40,7 +38,10 @@ export function OrderCard({ order, role }: { order: OrderResponse; role: Role | 
           <h3 className="font-display text-lg text-text-primary">
             {t('orders:card.orderNumber', { id: order.orderId })}
           </h3>
-          <p className="text-sm text-text-secondary">{counterpart}</p>
+          <p className="text-sm text-text-secondary">
+            {counterpartBusiness ? `${counterpartName} · ${counterpartBusiness}` : counterpartName}
+          </p>
+          <p className="text-xs text-text-secondary">{order.cropType}</p>
         </div>
 
         <div className="flex items-baseline justify-between font-mono text-sm">

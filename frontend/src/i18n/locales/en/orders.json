@@ -4,9 +4,7 @@
     "empty": "You don't have any orders yet."
   },
   "card": {
-    "orderNumber": "Order #{{id}}",
-    "farmerCounterpart": "Farmer #{{id}}",
-    "buyerCounterpart": "Buyer #{{id}}"
+    "orderNumber": "Order #{{id}}"
   },
   "detail": {
     "back": "Back to orders",
@@ -14,8 +12,15 @@
     "placedOn": "Placed {{date}}",
     "quantity": "Quantity",
     "totalAmount": "Total amount",
+    "pricePerUnit": "Price per unit",
     "farmer": "Farmer",
     "buyer": "Buyer",
+    "crop": "Crop",
+    "location": "Pickup location",
+    "contact": "Contact",
+    "phone": "Phone",
+    "email": "Email",
+    "noPhoneOnFile": "No phone number on file",
     "completedOn": "Completed {{date}}",
     "markCompleted": "Mark as completed",
     "cancelOrder": "Cancel order",

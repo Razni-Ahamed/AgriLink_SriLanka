@@ -34,8 +34,9 @@ public class PurchaseRequestsController : ControllerBase
     [Authorize(Roles = "Buyer")]
     public async Task<ActionResult<PurchaseRequestResponse>> Create(CreatePurchaseRequestRequest request)
     {
-        var buyerProfileId = await _currentUser.GetBuyerProfileIdAsync(User);
-        if (buyerProfileId is null)
+        var userId = _currentUser.GetUserId(User);
+        var buyerProfile = await _db.BuyerProfiles.Include(b => b.User).FirstOrDefaultAsync(b => b.UserId == userId);
+        if (buyerProfile is null)
         {
             return Forbid();
         }
@@ -62,7 +63,8 @@ public class PurchaseRequestsController : ControllerBase
         {
             HarvestId = request.HarvestId,
             Harvest = listing,
-            BuyerProfileId = buyerProfileId.Value,
+            BuyerProfileId = buyerProfile.BuyerProfileId,
+            BuyerProfile = buyerProfile,
             RequestedQuantity = request.RequestedQuantity,
             Message = request.Message ?? string.Empty,
             Status = PurchaseRequestStatus.Pending,
@@ -99,6 +101,7 @@ public class PurchaseRequestsController : ControllerBase
 
         var requests = await _db.PurchaseRequests
             .Include(r => r.Harvest).ThenInclude(h => h.Crop).ThenInclude(c => c.Field).ThenInclude(f => f.Farm)
+            .Include(r => r.BuyerProfile).ThenInclude(bp => bp.User)
             .Where(r => r.Harvest.FarmerProfileId == farmerProfileId)
             .OrderByDescending(r => r.CreatedAt)
             .ToListAsync();
@@ -119,6 +122,7 @@ public class PurchaseRequestsController : ControllerBase
 
         var requests = await _db.PurchaseRequests
             .Include(r => r.Harvest).ThenInclude(h => h.Crop).ThenInclude(c => c.Field).ThenInclude(f => f.Farm)
+            .Include(r => r.BuyerProfile).ThenInclude(bp => bp.User)
             .Where(r => r.BuyerProfileId == buyerProfileId)
             .OrderByDescending(r => r.CreatedAt)
             .ToListAsync();
@@ -138,6 +142,7 @@ public class PurchaseRequestsController : ControllerBase
 
         var purchaseRequest = await _db.PurchaseRequests
             .Include(r => r.Harvest).ThenInclude(h => h.Crop).ThenInclude(c => c.Field).ThenInclude(f => f.Farm)
+            .Include(r => r.BuyerProfile).ThenInclude(bp => bp.User)
             .FirstOrDefaultAsync(r => r.RequestId == id);
 
         if (purchaseRequest is null)
@@ -253,5 +258,7 @@ public class PurchaseRequestsController : ControllerBase
         CropType = request.Harvest.Crop.CropType,
         District = request.Harvest.Crop.Field.Farm.District,
         PricePerUnit = request.Harvest.PricePerUnit,
+        BuyerName = request.BuyerProfile.User.FullName,
+        BuyerBusinessName = request.BuyerProfile.BusinessName,
     };
 }

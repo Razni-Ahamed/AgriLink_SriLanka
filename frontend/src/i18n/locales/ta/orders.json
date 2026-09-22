@@ -4,9 +4,7 @@
     "empty": "உங்களிடம் இன்னும் ஆர்டர்கள் இல்லை."
   },
   "card": {
-    "orderNumber": "ஆர்டர் #{{id}}",
-    "farmerCounterpart": "விவசாயி #{{id}}",
-    "buyerCounterpart": "வாங்குபவர் #{{id}}"
+    "orderNumber": "ஆர்டர் #{{id}}"
   },
   "detail": {
     "back": "ஆர்டர்களுக்குத் திரும்பு",
@@ -14,8 +12,15 @@
     "placedOn": "இட்ட திகதி {{date}}",
     "quantity": "அளவு",
     "totalAmount": "மொத்தத் தொகை",
+    "pricePerUnit": "ஒரு அலகின் விலை",
     "farmer": "விவசாயி",
     "buyer": "வாங்குபவர்",
+    "crop": "பயிர்",
+    "location": "பெறும் இடம்",
+    "contact": "தொடர்பு",
+    "phone": "தொலைபேசி",
+    "email": "மின்னஞ்சல்",
+    "noPhoneOnFile": "தொலைபேசி எண் பதிவு செய்யப்படவில்லை",
     "completedOn": "நிறைவடைந்த திகதி {{date}}",
     "markCompleted": "நிறைவடைந்ததாகக் குறிக்கவும்",
     "cancelOrder": "ஆர்டரை ரத்து செய்",

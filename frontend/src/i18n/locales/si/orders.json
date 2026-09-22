@@ -4,9 +4,7 @@
     "empty": "ඔබට තවම ඇණවුම් නොමැත."
   },
   "card": {
-    "orderNumber": "ඇණවුම #{{id}}",
-    "farmerCounterpart": "ගොවියා #{{id}}",
-    "buyerCounterpart": "ගැනුම්කරු #{{id}}"
+    "orderNumber": "ඇණවුම #{{id}}"
   },
   "detail": {
     "back": "ඇණවුම් වෙත ආපසු",
@@ -14,8 +12,15 @@
     "placedOn": "තැබූ දිනය {{date}}",
     "quantity": "ප්‍රමාණය",
     "totalAmount": "මුළු මුදල",
+    "pricePerUnit": "ඒකකයක මිල",
     "farmer": "ගොවියා",
     "buyer": "ගැනුම්කරු",
+    "crop": "බෝගය",
+    "location": "ලබා ගැනීමේ ස්ථානය",
+    "contact": "සම්බන්ධතාවය",
+    "phone": "දුරකථනය",
+    "email": "විද්‍යුත් තැපෑල",
+    "noPhoneOnFile": "දුරකථන අංකයක් සටහන් කර නොමැත",
     "completedOn": "සම්පූර්ණ කළ දිනය {{date}}",
     "markCompleted": "සම්පූර්ණ කළ ලෙස සලකුණු කරන්න",
     "cancelOrder": "ඇණවුම අවලංගු කරන්න",

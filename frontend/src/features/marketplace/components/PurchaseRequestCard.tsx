@@ -61,6 +61,14 @@ export function PurchaseRequestCard({
             </Badge>
           </div>
 
+          <p className="text-sm text-text-secondary">
+            {t('marketplace:requests.from', {
+              name: request.buyerBusinessName
+                ? `${request.buyerName} · ${request.buyerBusinessName}`
+                : request.buyerName,
+            })}
+          </p>
+
           <p className="font-mono tabular-nums text-brand-forest">
             {t('marketplace:requests.unitsRequested', {
               quantity: formatQuantity(request.requestedQuantity),

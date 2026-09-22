@@ -19,6 +19,9 @@ public class PurchaseRequestsControllerTests
 
     private static PurchaseRequest SeedPendingRequest(AgriLinkDbContext db, int farmerUserId = 10, int buyerUserId = 20)
     {
+        db.Users.AddRange(
+            new ApplicationUser { Id = farmerUserId, UserName = $"farmer{farmerUserId}@agrilink.lk", Email = $"farmer{farmerUserId}@agrilink.lk", FullName = "Farmer One" },
+            new ApplicationUser { Id = buyerUserId, UserName = $"buyer{buyerUserId}@agrilink.lk", Email = $"buyer{buyerUserId}@agrilink.lk", FullName = "Buyer One" });
         db.FarmerProfiles.Add(new FarmerProfile { FarmerProfileId = 1, UserId = farmerUserId, NIC = "1", District = "Kandy" });
         db.BuyerProfiles.Add(new BuyerProfile { BuyerProfileId = 1, UserId = buyerUserId, BusinessName = "Buyer Co", District = "Colombo" });
 
@@ -116,6 +119,9 @@ public class PurchaseRequestsControllerTests
     public async Task Create_ReturnsResponseEnrichedWithHarvestContext()
     {
         using var db = CreateDb();
+        db.Users.AddRange(
+            new ApplicationUser { Id = 10, UserName = "farmer@agrilink.lk", Email = "farmer@agrilink.lk", FullName = "Farmer One" },
+            new ApplicationUser { Id = 20, UserName = "buyer@agrilink.lk", Email = "buyer@agrilink.lk", FullName = "Buyer One" });
         db.FarmerProfiles.Add(new FarmerProfile { FarmerProfileId = 1, UserId = 10, NIC = "1", District = "Kandy" });
         db.BuyerProfiles.Add(new BuyerProfile { BuyerProfileId = 1, UserId = 20, BusinessName = "Buyer Co", District = "Colombo" });
         var crop = new Crop
@@ -146,6 +152,23 @@ public class PurchaseRequestsControllerTests
         Assert.Equal("Rice", response.CropType);
         Assert.Equal("Kandy", response.District);
         Assert.Equal(75, response.PricePerUnit);
+        Assert.Equal("Buyer One", response.BuyerName);
+        Assert.Equal("Buyer Co", response.BuyerBusinessName);
+    }
+
+    [Fact]
+    public async Task Mine_AsFarmer_IncludesTheRequestingBuyersNameAndBusiness()
+    {
+        using var db = CreateDb();
+        SeedPendingRequest(db, farmerUserId: 10, buyerUserId: 20);
+        var controller = CreateController(db, actingUserId: 10);
+
+        var result = await controller.Mine();
+
+        var requests = Assert.IsType<OkObjectResult>(result.Result).Value as IEnumerable<PurchaseRequestResponse>;
+        var only = Assert.Single(requests!);
+        Assert.Equal("Buyer One", only.BuyerName);
+        Assert.Equal("Buyer Co", only.BuyerBusinessName);
     }
 
     [Fact]

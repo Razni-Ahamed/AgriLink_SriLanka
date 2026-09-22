@@ -1,5 +1,5 @@
 import { Link, useParams } from 'react-router-dom'
-import { ArrowLeft } from '@phosphor-icons/react'
+import { ArrowLeft, EnvelopeSimple, Phone } from '@phosphor-icons/react'
 import { useTranslation } from 'react-i18next'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
@@ -9,12 +9,82 @@ import { formatDate, formatQuantity } from '@/lib/utils'
 import { useStatusLabel } from '@/lib/useStatusLabel'
 import { useUiStore } from '@/lib/useUiStore'
 import { useOrder, useOrderTransition } from '../hooks/useOrders'
-import type { OrderStatus } from '@/types/dto/orders'
+import type { OrderResponse, OrderStatus } from '@/types/dto/orders'
 
 const statusVariant: Record<OrderStatus, 'warning' | 'success' | 'danger'> = {
   Confirmed: 'warning',
   Completed: 'success',
   Cancelled: 'danger',
+}
+
+interface ContactCardProps {
+  title: string
+  name: string
+  business?: string
+  district: string
+  phone?: string | null
+  email: string
+}
+
+/** Phone and email as tappable tel:/mailto: links; when a phone is missing, email only. */
+function ContactCard({ title, name, business, district, phone, email }: ContactCardProps) {
+  const { t } = useTranslation('orders')
+
+  return (
+    <Card className="flex flex-col gap-2">
+      <p className="text-xs text-text-secondary">{title}</p>
+      <p className="font-display text-base text-text-primary">{name}</p>
+      {business && <p className="text-sm text-text-secondary">{business}</p>}
+      <p className="text-sm text-text-secondary">{district}</p>
+      <div className="mt-1 flex flex-col gap-1 text-sm">
+        {phone ? (
+          <a
+            href={`tel:${phone}`}
+            className="flex items-center gap-1.5 text-brand-forest hover:underline"
+          >
+            <Phone size={14} weight="duotone" />
+            {phone}
+          </a>
+        ) : (
+          <span className="flex items-center gap-1.5 text-text-secondary/70">
+            <Phone size={14} weight="duotone" />
+            {t('detail.noPhoneOnFile')}
+          </span>
+        )}
+        <a
+          href={`mailto:${email}`}
+          className="flex items-center gap-1.5 text-brand-forest hover:underline"
+        >
+          <EnvelopeSimple size={14} weight="duotone" />
+          {email}
+        </a>
+      </div>
+    </Card>
+  )
+}
+
+function OrderContacts({ order }: { order: OrderResponse }) {
+  const { t } = useTranslation('orders')
+
+  return (
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <ContactCard
+        title={t('detail.farmer')}
+        name={order.farmerName}
+        district={order.farmerDistrict}
+        phone={order.farmerPhone}
+        email={order.farmerEmail}
+      />
+      <ContactCard
+        title={t('detail.buyer')}
+        name={order.buyerName}
+        business={order.buyerBusinessName}
+        district={order.buyerDistrict}
+        phone={order.buyerPhone}
+        email={order.buyerEmail}
+      />
+    </div>
+  )
 }
 
 export function OrderDetailPage() {
@@ -75,9 +145,19 @@ export function OrderDetailPage() {
 
       <Card className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         <div>
+          <p className="text-xs text-text-secondary">{t('orders:detail.crop')}</p>
+          <p className="font-display text-lg text-text-primary">{order.cropType}</p>
+        </div>
+        <div>
           <p className="text-xs text-text-secondary">{t('orders:detail.quantity')}</p>
           <p className="font-mono text-lg text-text-primary">
             {t('common:units.kg', { value: formatQuantity(order.totalQuantity) })}
+          </p>
+        </div>
+        <div>
+          <p className="text-xs text-text-secondary">{t('orders:detail.pricePerUnit')}</p>
+          <p className="font-mono text-lg text-text-primary">
+            {t('common:units.rupeesPerUnit', { value: formatQuantity(order.pricePerUnit) })}
           </p>
         </div>
         <div>
@@ -86,15 +166,12 @@ export function OrderDetailPage() {
             {t('common:units.rupees', { value: formatQuantity(order.totalAmount) })}
           </p>
         </div>
-        <div>
-          <p className="text-xs text-text-secondary">{t('orders:detail.farmer')}</p>
-          <p className="font-mono text-lg text-text-primary">#{order.farmerProfileId}</p>
-        </div>
-        <div>
-          <p className="text-xs text-text-secondary">{t('orders:detail.buyer')}</p>
-          <p className="font-mono text-lg text-text-primary">#{order.buyerProfileId}</p>
-        </div>
       </Card>
+
+      <div>
+        <h2 className="mb-2 font-display text-lg text-text-primary">{t('orders:detail.contact')}</h2>
+        <OrderContacts order={order} />
+      </div>
 
       {order.status === 'Confirmed' && (
         <div className="flex flex-wrap gap-2">

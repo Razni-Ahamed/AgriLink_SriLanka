@@ -10,4 +10,20 @@ export interface OrderResponse {
   status: OrderStatus
   orderDate: string
   completedAt?: string
+
+  farmerName: string
+  farmerPhone?: string | null
+  farmerEmail: string
+  farmerDistrict: string
+
+  buyerName: string
+  buyerBusinessName: string
+  /** Null for a Buyer account created by Admin without a business phone on file. */
+  buyerPhone?: string | null
+  buyerEmail: string
+  buyerDistrict: string
+
+  cropType: string
+  pricePerUnit: number
+  harvestLocation: string
 }
