@@ -28,8 +28,13 @@ export function ProfileSummary({ user }: { user: UserProfileResponse }) {
   const { t } = useTranslation(['auth', 'common'])
   const notSet = <span className="text-text-secondary">{t('auth:profile.general.notSet')}</span>
   const securityNote = t('auth:profile.general.noteSecuritySettings')
+  const requiresApprovalNote = t('auth:profile.general.noteRequiresApproval')
   const adminNote = t('auth:profile.general.noteContactAdmin')
   const name = displayNameOf(user)
+  // Admin changes full name/email directly (Security settings); every other role has to
+  // request them and wait for an Officer/Admin to approve. NIC is always request-only — Officer
+  // and Admin accounts have none at all.
+  const directOrApprovalNote = user.role === 'Admin' ? securityNote : requiresApprovalNote
 
   return (
     <div className="flex flex-col gap-6">
@@ -48,7 +53,7 @@ export function ProfileSummary({ user }: { user: UserProfileResponse }) {
       </div>
 
       <dl className="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2">
-        <SummaryItem label={t('common:fields.fullName')} value={user.fullName} note={securityNote} />
+        <SummaryItem label={t('common:fields.fullName')} value={user.fullName} note={directOrApprovalNote} />
         <SummaryItem
           label={t('auth:profile.general.displayName')}
           value={user.displayName || <span className="text-text-secondary">{t('auth:profile.general.displayNameFallback')}</span>}
@@ -62,7 +67,7 @@ export function ProfileSummary({ user }: { user: UserProfileResponse }) {
               : t('auth:profile.general.usernameChangeNow')
           }
         />
-        <SummaryItem label={t('common:fields.email')} value={user.email} note={securityNote} />
+        <SummaryItem label={t('common:fields.email')} value={user.email} note={directOrApprovalNote} />
         <SummaryItem label={t('common:fields.role')} value={t(`common:roles.${user.role}`)} note={adminNote} />
         <SummaryItem label={t('common:fields.district')} value={user.district || notSet} note={adminNote} />
         <SummaryItem label={t('common:fields.phoneNumber')} value={user.phoneNumber || notSet} note={securityNote} />
@@ -70,7 +75,7 @@ export function ProfileSummary({ user }: { user: UserProfileResponse }) {
         {user.role === 'Farmer' && (
           <>
             <SummaryItem label={t('common:fields.fieldPlotNumber')} value={user.fieldPlotNumber || notSet} />
-            <SummaryItem label={t('common:fields.nic')} value={user.nic || notSet} note={adminNote} />
+            <SummaryItem label={t('common:fields.nic')} value={user.nic || notSet} note={requiresApprovalNote} />
           </>
         )}
         {user.role === 'Buyer' && (
@@ -81,7 +86,7 @@ export function ProfileSummary({ user }: { user: UserProfileResponse }) {
               value={user.businessRegistrationNumber || notSet}
               note={adminNote}
             />
-            <SummaryItem label={t('common:fields.nic')} value={user.nic || notSet} note={adminNote} />
+            <SummaryItem label={t('common:fields.nic')} value={user.nic || notSet} note={requiresApprovalNote} />
           </>
         )}
         {user.role === 'Officer' && (

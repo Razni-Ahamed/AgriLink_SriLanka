@@ -1,3 +1,6 @@
+using System.Text.Encodings.Web;
+using System.Text.Json;
+using System.Text.Unicode;
 using AgriLink.API.Common;
 using AgriLink.API.Data;
 using AgriLink.API.DTOs.Admin;
@@ -16,6 +19,12 @@ namespace AgriLink.API.Controllers;
 public class AdminController : ControllerBase
 {
     private static readonly string[] CreatableRoles = { "Officer", "Buyer" };
+
+    // Keeps Sinhala and Tamil names readable in the audit log instead of \u-escaping every character.
+    private static readonly JsonSerializerOptions AuditJsonOptions = new()
+    {
+        Encoder = JavaScriptEncoder.Create(UnicodeRanges.All),
+    };
 
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly AgriLinkDbContext _db;
@@ -406,6 +415,361 @@ public class AdminController : ControllerBase
         await _notifications.NotifyAsync(userId, "Password reset", "Your password was reset by an administrator.");
 
         return NoContent();
+    }
+
+    /// <summary>
+    /// Admin editing any user's identity details directly — the same validation as self-service,
+    /// applied without an approval step since the admin already is the approver. A field left out
+    /// of the request keeps its value; role, IsActive, RegistrationStatus and anything password-
+    /// related are simply not on this DTO, so they can never be set through it.
+    /// </summary>
+    [HttpPut("users/{userId:int}/profile")]
+    public async Task<ActionResult<AdminUserSummary>> UpdateUserProfile(int userId, AdminUpdateUserProfileRequest request)
+    {
+        var user = await _userManager.FindByIdAsync(userId.ToString());
+        if (user is null)
+        {
+            return NotFound();
+        }
+
+        var role = (await _userManager.GetRolesAsync(user)).FirstOrDefault() ?? string.Empty;
+        var actingUserId = _currentUser.GetUserId(User);
+
+        var oldValues = new Dictionary<string, string?>();
+        var newValues = new Dictionary<string, string?>();
+        var closedRequestFields = new HashSet<ChangeRequestField>();
+
+        FarmerProfile? farmerProfile = role == "Farmer"
+            ? await _db.FarmerProfiles.FirstOrDefaultAsync(f => f.UserId == userId)
+            : null;
+        BuyerProfile? buyerProfile = role == "Buyer"
+            ? await _db.BuyerProfiles.FirstOrDefaultAsync(b => b.UserId == userId)
+            : null;
+        OfficerProfile? officerProfile = role == "Officer"
+            ? await _db.OfficerProfiles.FirstOrDefaultAsync(o => o.UserId == userId)
+            : null;
+
+        if (request.FullName is not null)
+        {
+            var trimmed = request.FullName.Trim();
+            if (trimmed.Length is < 2 or > 100)
+            {
+                return BadRequest(new { message = "Full name must be 2-100 characters." });
+            }
+
+            if (trimmed != user.FullName)
+            {
+                oldValues["fullName"] = user.FullName;
+                newValues["fullName"] = trimmed;
+                user.FullName = trimmed;
+                closedRequestFields.Add(ChangeRequestField.FullName);
+            }
+        }
+
+        if (request.DisplayName is not null)
+        {
+            var trimmed = request.DisplayName.Trim();
+            if (trimmed.Length > ProfileFieldLimits.DisplayName)
+            {
+                return BadRequest(new { message = $"Display name must be at most {ProfileFieldLimits.DisplayName} characters." });
+            }
+
+            var newDisplayName = trimmed.Length == 0 ? null : trimmed;
+            if (newDisplayName != user.DisplayName)
+            {
+                oldValues["displayName"] = user.DisplayName;
+                newValues["displayName"] = newDisplayName;
+                user.DisplayName = newDisplayName;
+            }
+        }
+
+        if (request.Email is not null)
+        {
+            var trimmedEmail = request.Email.Trim();
+            if (!IdentityFieldNormalization.IsValidEmail(trimmedEmail))
+            {
+                return BadRequest(new { message = "Enter a valid email." });
+            }
+
+            if (!string.Equals(trimmedEmail, user.Email, StringComparison.OrdinalIgnoreCase))
+            {
+                var existingByEmail = await _userManager.FindByEmailAsync(trimmedEmail);
+                if (existingByEmail is not null && existingByEmail.Id != userId)
+                {
+                    return Conflict(new { message = "An account with this email already exists." });
+                }
+
+                oldValues["email"] = user.Email;
+                newValues["email"] = trimmedEmail;
+
+                // Identity's own call saves itself; do it before anything else saves so a failure
+                // here leaves every other field in this request unapplied too.
+                var setEmailResult = await _userManager.SetEmailAsync(user, trimmedEmail);
+                if (!setEmailResult.Succeeded)
+                {
+                    return BadRequest(new { errors = setEmailResult.Errors.Select(e => new { code = e.Code, description = e.Description }) });
+                }
+
+                await _userManager.UpdateSecurityStampAsync(user);
+                closedRequestFields.Add(ChangeRequestField.Email);
+            }
+        }
+
+        if (request.PhoneNumber is not null)
+        {
+            string? normalizedPhone = null;
+            if (request.PhoneNumber.Trim().Length > 0)
+            {
+                normalizedPhone = IdentityFieldNormalization.NormalizePhone(request.PhoneNumber);
+                if (normalizedPhone is null)
+                {
+                    return BadRequest(new { message = "Phone number must be 10 digits." });
+                }
+            }
+            else if (role is "Farmer" or "Buyer")
+            {
+                return BadRequest(new { message = "Phone number is required for this account." });
+            }
+
+            if (role == "Farmer")
+            {
+                if (farmerProfile is null)
+                {
+                    return BadRequest(new { message = "This account has no farmer profile." });
+                }
+
+                if (farmerProfile.PhoneNumber != normalizedPhone)
+                {
+                    oldValues["phoneNumber"] = farmerProfile.PhoneNumber;
+                    newValues["phoneNumber"] = normalizedPhone;
+                    farmerProfile.PhoneNumber = normalizedPhone;
+                }
+            }
+            else if (role == "Buyer")
+            {
+                if (buyerProfile is null)
+                {
+                    return BadRequest(new { message = "This account has no buyer profile." });
+                }
+
+                if (buyerProfile.BusinessPhone != normalizedPhone)
+                {
+                    oldValues["phoneNumber"] = buyerProfile.BusinessPhone;
+                    newValues["phoneNumber"] = normalizedPhone;
+                    buyerProfile.BusinessPhone = normalizedPhone;
+                }
+            }
+            else if (user.PhoneNumber != normalizedPhone)
+            {
+                oldValues["phoneNumber"] = user.PhoneNumber;
+                newValues["phoneNumber"] = normalizedPhone;
+                user.PhoneNumber = normalizedPhone;
+            }
+        }
+
+        if (request.NIC is not null)
+        {
+            if (role is not ("Farmer" or "Buyer"))
+            {
+                return BadRequest(new { message = "Only Farmer and Buyer accounts have a NIC." });
+            }
+
+            var normalizedNic = IdentityFieldNormalization.NormalizeNic(request.NIC);
+            if (normalizedNic is null)
+            {
+                return BadRequest(new { message = "NIC must be 12 digits, or 9 digits followed by V or X." });
+            }
+
+            if (role == "Farmer" && farmerProfile is not null && farmerProfile.NIC != normalizedNic)
+            {
+                oldValues["nic"] = farmerProfile.NIC;
+                newValues["nic"] = normalizedNic;
+                farmerProfile.NIC = normalizedNic;
+                closedRequestFields.Add(ChangeRequestField.NIC);
+            }
+            else if (role == "Buyer" && buyerProfile is not null && buyerProfile.NIC != normalizedNic)
+            {
+                oldValues["nic"] = buyerProfile.NIC;
+                newValues["nic"] = normalizedNic;
+                buyerProfile.NIC = normalizedNic;
+                closedRequestFields.Add(ChangeRequestField.NIC);
+            }
+        }
+
+        if (request.District is not null)
+        {
+            var canonical = SriLankaDistricts.Canonicalize(request.District);
+            if (canonical is null)
+            {
+                return BadRequest(new { message = "District must be one of Sri Lanka's 25 administrative districts." });
+            }
+
+            if (role == "Farmer" && farmerProfile is not null)
+            {
+                // Doesn't move the farmer's own farms — issue routing (IssuesController.Pending)
+                // scopes by the farm's own district, not the farmer profile's, so this alone
+                // changes only which officer approves this farmer's future change requests.
+                if (farmerProfile.District != canonical)
+                {
+                    oldValues["district"] = farmerProfile.District;
+                    newValues["district"] = canonical;
+                    farmerProfile.District = canonical;
+                }
+            }
+            else if (role == "Buyer" && buyerProfile is not null)
+            {
+                if (buyerProfile.District != canonical)
+                {
+                    oldValues["district"] = buyerProfile.District;
+                    newValues["district"] = canonical;
+                    buyerProfile.District = canonical;
+                }
+            }
+            else if (role == "Officer" && officerProfile is not null)
+            {
+                // Moves which Pending Issues / approval queue this officer sees
+                // (their scoping reads OfficerProfile.District) — expected.
+                if (officerProfile.District != canonical)
+                {
+                    oldValues["district"] = officerProfile.District;
+                    newValues["district"] = canonical;
+                    officerProfile.District = canonical;
+                }
+            }
+            else
+            {
+                return BadRequest(new { message = "This account has no district." });
+            }
+        }
+
+        if (request.BusinessRegistrationNumber is not null)
+        {
+            if (role != "Buyer" || buyerProfile is null)
+            {
+                return BadRequest(new { message = "Only Buyer accounts have a business registration number." });
+            }
+
+            var trimmed = request.BusinessRegistrationNumber.Trim();
+            if (trimmed.Length > 50)
+            {
+                return BadRequest(new { message = "Business registration number must be at most 50 characters." });
+            }
+
+            if (buyerProfile.BusinessRegistrationNumber != trimmed)
+            {
+                oldValues["businessRegistrationNumber"] = buyerProfile.BusinessRegistrationNumber;
+                newValues["businessRegistrationNumber"] = trimmed;
+                buyerProfile.BusinessRegistrationNumber = trimmed;
+            }
+        }
+
+        if (request.BusinessName is not null)
+        {
+            if (role != "Buyer" || buyerProfile is null)
+            {
+                return BadRequest(new { message = "Only Buyer accounts have a business name." });
+            }
+
+            var trimmed = request.BusinessName.Trim();
+            if (trimmed.Length == 0 || trimmed.Length > ProfileFieldLimits.BusinessName)
+            {
+                return BadRequest(new { message = $"Business name must be 1-{ProfileFieldLimits.BusinessName} characters." });
+            }
+
+            if (buyerProfile.BusinessName != trimmed)
+            {
+                oldValues["businessName"] = buyerProfile.BusinessName;
+                newValues["businessName"] = trimmed;
+                buyerProfile.BusinessName = trimmed;
+            }
+        }
+
+        if (request.FieldPlotNumber is not null)
+        {
+            if (role != "Farmer" || farmerProfile is null)
+            {
+                return BadRequest(new { message = "Only Farmer accounts have a field or plot number." });
+            }
+
+            var trimmed = request.FieldPlotNumber.Trim();
+            if (trimmed.Length == 0 || trimmed.Length > ProfileFieldLimits.FieldPlotNumber)
+            {
+                return BadRequest(new { message = $"Field/plot number must be 1-{ProfileFieldLimits.FieldPlotNumber} characters." });
+            }
+
+            if (farmerProfile.FieldPlotNumber != trimmed)
+            {
+                oldValues["fieldPlotNumber"] = farmerProfile.FieldPlotNumber;
+                newValues["fieldPlotNumber"] = trimmed;
+                farmerProfile.FieldPlotNumber = trimmed;
+            }
+        }
+
+        if (newValues.Count > 0)
+        {
+            _auditLog.Record(
+                actingUserId, "ProfileUpdatedByAdmin", "User", userId,
+                JsonSerializer.Serialize(oldValues, AuditJsonOptions),
+                JsonSerializer.Serialize(newValues, AuditJsonOptions));
+
+            List<ProfileChangeRequest> closedRequests = new();
+            if (closedRequestFields.Count > 0)
+            {
+                closedRequests = await _db.ProfileChangeRequests
+                    .Where(r => r.UserId == userId && r.Status == ChangeRequestStatus.Pending && closedRequestFields.Contains(r.Field))
+                    .ToListAsync();
+                foreach (var pending in closedRequests)
+                {
+                    pending.Status = ChangeRequestStatus.Rejected;
+                    pending.DecidedByUserId = actingUserId;
+                    pending.DecidedAt = DateTime.UtcNow;
+                    pending.RejectionReason = "Updated by an administrator";
+                }
+            }
+
+            await _db.SaveChangesAsync();
+
+            await _notifications.NotifyAsync(
+                userId, "Profile updated", $"An administrator updated your profile: {string.Join(", ", newValues.Keys)}.");
+
+            foreach (var closedRequest in closedRequests)
+            {
+                await _notifications.NotifyAsync(
+                    userId,
+                    "Profile change request closed",
+                    $"Your {closedRequest.Field} change request was closed. Reason: Updated by an administrator.");
+            }
+        }
+
+        return Ok(await BuildAdminUserSummaryAsync(user, role));
+    }
+
+    private async Task<AdminUserSummary> BuildAdminUserSummaryAsync(ApplicationUser user, string role)
+    {
+        string? district = role switch
+        {
+            "Farmer" => (await _db.FarmerProfiles.AsNoTracking().FirstOrDefaultAsync(f => f.UserId == user.Id))?.District,
+            "Buyer" => (await _db.BuyerProfiles.AsNoTracking().FirstOrDefaultAsync(b => b.UserId == user.Id))?.District,
+            "Officer" => (await _db.OfficerProfiles.AsNoTracking().FirstOrDefaultAsync(o => o.UserId == user.Id))?.District,
+            _ => null,
+        };
+        string? department = role == "Officer"
+            ? (await _db.OfficerProfiles.AsNoTracking().Include(o => o.Department).FirstOrDefaultAsync(o => o.UserId == user.Id))?.Department.Name
+            : null;
+
+        return new AdminUserSummary
+        {
+            UserId = user.Id,
+            FullName = user.FullName,
+            Email = user.Email ?? string.Empty,
+            Username = user.UserName ?? string.Empty,
+            ProfilePhotoUrl = user.ProfilePhotoUrl,
+            Role = role,
+            District = district,
+            Department = department,
+            IsActive = user.IsActive,
+            CreatedAt = user.CreatedAt,
+        };
     }
 
     [HttpGet("audit-logs")]

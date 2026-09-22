@@ -8,7 +8,7 @@ import { ChangePasswordForm, type ChangePasswordFormValues } from './ChangePassw
 
 /**
  * The working change-password form: submits, adopts the fresh token, and clears itself on success.
- * Shared by the /account/password page and the profile pop-up's Security tab.
+ * Embedded in the profile pop-up's Security tab, once unlocked.
  */
 export function ChangePasswordPanel() {
   const { t } = useTranslation(['auth', 'common'])

@@ -802,6 +802,65 @@ namespace AgriLink.API.Migrations
                     b.ToTable("Orders");
                 });
 
+            modelBuilder.Entity("AgriLink.API.Models.ProfileChangeRequest", b =>
+                {
+                    b.Property<int>("RequestId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("RequestId"));
+
+                    b.Property<DateTime?>("DecidedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("DecidedByUserId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Field")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("NewValue")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<string>("OldValue")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<string>("RejectionReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<DateTime>("RequestedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("RequestId");
+
+                    b.HasIndex("DecidedByUserId");
+
+                    b.HasIndex("Status");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("UserId", "Field")
+                        .IsUnique()
+                        .HasFilter("\"Status\" = 'Pending'");
+
+                    b.ToTable("ProfileChangeRequests");
+                });
+
             modelBuilder.Entity("AgriLink.API.Models.PurchaseRequest", b =>
                 {
                     b.Property<int>("RequestId")
@@ -1196,6 +1255,24 @@ namespace AgriLink.API.Migrations
                     b.Navigation("FarmerProfile");
 
                     b.Navigation("Request");
+                });
+
+            modelBuilder.Entity("AgriLink.API.Models.ProfileChangeRequest", b =>
+                {
+                    b.HasOne("AgriLink.API.Models.ApplicationUser", "DecidedByUser")
+                        .WithMany()
+                        .HasForeignKey("DecidedByUserId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("AgriLink.API.Models.ApplicationUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("DecidedByUser");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("AgriLink.API.Models.PurchaseRequest", b =>

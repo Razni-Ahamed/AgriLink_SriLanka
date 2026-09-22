@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import * as adminApi from '../api/adminApi'
 import type {
   AdminResetPasswordRequest,
+  AdminUpdateUserProfileRequest,
   UpdateUserRoleRequest,
   UpdateUserStatusRequest,
 } from '@/types/dto/admin'
@@ -31,6 +32,15 @@ export function useUpdateUserStatus() {
   return useMutation({
     mutationFn: ({ userId, request }: { userId: number; request: UpdateUserStatusRequest }) =>
       adminApi.updateUserStatus(userId, request),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: usersKey }),
+  })
+}
+
+export function useUpdateUserProfile() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ userId, request }: { userId: number; request: AdminUpdateUserProfileRequest }) =>
+      adminApi.updateUserProfile(userId, request),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: usersKey }),
   })
 }

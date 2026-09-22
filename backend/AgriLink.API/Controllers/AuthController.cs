@@ -1,4 +1,3 @@
-using System.Text.RegularExpressions;
 using AgriLink.API.Data;
 using AgriLink.API.DTOs.Auth;
 using AgriLink.API.Models;
@@ -63,7 +62,7 @@ public class AuthController : ControllerBase
             return BadRequest(new { message = "District must be one of Sri Lanka's 25 administrative districts." });
         }
 
-        var nic = NormalizeNic(request.NIC);
+        var nic = IdentityFieldNormalization.NormalizeNic(request.NIC);
         if (nic is null)
         {
             return BadRequest(new { message = "NIC must be 12 digits, or 9 digits followed by V or X." });
@@ -83,7 +82,7 @@ public class AuthController : ControllerBase
                 return BadRequest(new { message = "Enter your field or plot number." });
             }
 
-            phoneNumber = NormalizePhone(request.PhoneNumber);
+            phoneNumber = IdentityFieldNormalization.NormalizePhone(request.PhoneNumber);
             if (phoneNumber is null)
             {
                 return BadRequest(new { message = "Phone number must be 10 digits." });
@@ -103,7 +102,7 @@ public class AuthController : ControllerBase
                 return BadRequest(new { message = "Enter your legal business name." });
             }
 
-            businessPhone = NormalizePhone(request.BusinessPhone);
+            businessPhone = IdentityFieldNormalization.NormalizePhone(request.BusinessPhone);
             if (businessPhone is null)
             {
                 return BadRequest(new { message = "Business phone must be 10 digits." });
@@ -258,46 +257,5 @@ public class AuthController : ControllerBase
 
         var token = _tokenService.GenerateToken(user, roles);
         return Ok(new AuthResponse { Token = token, Role = AdminSeeder.AdminRole });
-    }
-
-    /// <summary>
-    /// Accepts the new 12-digit format and the old 9-digit-plus-letter format, trims surrounding
-    /// whitespace, and uppercases the trailing letter so "901234567v" and "901234567V" are stored
-    /// identically. Returns null when neither format matches.
-    /// </summary>
-    private static string? NormalizeNic(string? nic)
-    {
-        if (string.IsNullOrWhiteSpace(nic))
-        {
-            return null;
-        }
-
-        var trimmed = nic.Trim();
-        if (Regex.IsMatch(trimmed, @"^\d{12}$"))
-        {
-            return trimmed;
-        }
-
-        if (Regex.IsMatch(trimmed, @"^\d{9}[VvXx]$"))
-        {
-            return trimmed[..9] + char.ToUpperInvariant(trimmed[9]);
-        }
-
-        return null;
-    }
-
-    /// <summary>
-    /// Strips spaces and dashes so "077 123 4567" and "077-123-4567" both normalize to
-    /// "0771234567". Returns null unless the result is exactly 10 digits.
-    /// </summary>
-    private static string? NormalizePhone(string? phone)
-    {
-        if (string.IsNullOrWhiteSpace(phone))
-        {
-            return null;
-        }
-
-        var digitsOnly = phone.Replace(" ", string.Empty).Replace("-", string.Empty);
-        return Regex.IsMatch(digitsOnly, @"^\d{10}$") ? digitsOnly : null;
     }
 }

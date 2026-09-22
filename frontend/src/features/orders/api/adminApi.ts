@@ -2,6 +2,7 @@ import { apiClient } from '@/lib/apiClient'
 import type {
   AdminMetricsResponse,
   AdminResetPasswordRequest,
+  AdminUpdateUserProfileRequest,
   AdminUserSummary,
   AuditLogEntry,
   CreateUserRequest,
@@ -46,6 +47,14 @@ export async function updateUserStatus(
   request: UpdateUserStatusRequest,
 ): Promise<AdminUserSummary> {
   const { data } = await apiClient.put<AdminUserSummary>(`/api/admin/users/${userId}/status`, request)
+  return data
+}
+
+export async function updateUserProfile(
+  userId: number,
+  request: AdminUpdateUserProfileRequest,
+): Promise<AdminUserSummary> {
+  const { data } = await apiClient.put<AdminUserSummary>(`/api/admin/users/${userId}/profile`, request)
   return data
 }
 

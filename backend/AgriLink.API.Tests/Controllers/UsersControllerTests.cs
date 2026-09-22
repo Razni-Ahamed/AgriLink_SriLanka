@@ -30,11 +30,13 @@ public class UsersControllerTests
         int actingUserId,
         string role,
         IJwtTokenService? tokenService = null,
-        IProfilePhotoStorage? photoStorage = null) => new(
+        IProfilePhotoStorage? photoStorage = null,
+        INotificationService? notifications = null) => new(
             users,
             db,
             new CurrentUserService(db),
             new AuditLogService(db),
+            notifications ?? new NotificationService(db),
             tokenService ?? Mock.Of<IJwtTokenService>(),
             new ProfilePhotoProcessor(),
             photoStorage ?? Mock.Of<IProfilePhotoStorage>(),

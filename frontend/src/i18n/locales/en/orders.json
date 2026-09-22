@@ -79,7 +79,18 @@
     "passwordReset": "{{name}}'s password was reset.",
     "resetPasswordError": "Could not reset this user's password. Check the details and try again.",
     "usernameHint": "Leave blank to generate one from the full name.",
-    "userCreatedWithUsername": "{{name}} was created as {{role}} with the username {{username}}."
+    "userCreatedWithUsername": "{{name}} was created as {{role}} with the username {{username}}.",
+    "editUser": "Edit",
+    "editUserFor": "Edit {{name}}'s details",
+    "editUserKeepCurrent": "Fields left blank keep their current value.",
+    "editUserUnchanged": "Unchanged",
+    "editUserDisplayName": "Display name",
+    "editUserSave": "Save changes",
+    "editUserSaving": "Saving…",
+    "editUserNoChanges": "There were no changes to save.",
+    "editUserUpdated": "{{name}}'s profile was updated.",
+    "editUserError": "Could not update this user's profile. Check the details and try again.",
+    "editUserEmailTaken": "An account with this email already exists."
   },
   "auditLog": {
     "title": "Audit Log",
