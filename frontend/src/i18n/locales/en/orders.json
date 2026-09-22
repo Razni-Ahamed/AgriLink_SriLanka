@@ -64,7 +64,15 @@
     "userDeactivated": "{{name}} was deactivated.",
     "statusUpdateError": "Could not update this user's status.",
     "loadUsersError": "Could not load users. Try refreshing the page.",
-    "noUsers": "No users found."
+    "noUsers": "No users found.",
+    "resetPassword": "Reset password",
+    "resetPasswordFor": "Reset the password for {{name}}.",
+    "newPassword": "New password",
+    "confirmNewPassword": "Confirm new password",
+    "resetPasswordSubmit": "Reset Password",
+    "resettingPassword": "Resetting…",
+    "passwordReset": "{{name}}'s password was reset.",
+    "resetPasswordError": "Could not reset this user's password. Check the details and try again."
   },
   "auditLog": {
     "title": "Audit Log",

@@ -1,6 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import * as adminApi from '../api/adminApi'
-import type { UpdateUserRoleRequest, UpdateUserStatusRequest } from '@/types/dto/admin'
+import type {
+  AdminResetPasswordRequest,
+  UpdateUserRoleRequest,
+  UpdateUserStatusRequest,
+} from '@/types/dto/admin'
 
 const usersKey = ['admin', 'users'] as const
 const rolesKey = ['admin', 'roles'] as const
@@ -28,5 +32,14 @@ export function useUpdateUserStatus() {
     mutationFn: ({ userId, request }: { userId: number; request: UpdateUserStatusRequest }) =>
       adminApi.updateUserStatus(userId, request),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: usersKey }),
+  })
+}
+
+// No list to invalidate afterwards — resetting a password doesn't change anything
+// UserManagementTable displays.
+export function useAdminResetPassword() {
+  return useMutation({
+    mutationFn: ({ userId, request }: { userId: number; request: AdminResetPasswordRequest }) =>
+      adminApi.resetUserPassword(userId, request),
   })
 }

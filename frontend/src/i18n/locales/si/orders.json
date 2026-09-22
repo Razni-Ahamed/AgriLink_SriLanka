@@ -64,7 +64,15 @@
     "userDeactivated": "{{name}} අක්‍රීය කරන ලදී.",
     "statusUpdateError": "මෙම පරිශීලකයාගේ තත්ත්වය යාවත්කාලීන කළ නොහැකි විය.",
     "loadUsersError": "පරිශීලකයන් පූරණය කළ නොහැකි විය. පිටුව නැවත පූරණය කරන්න.",
-    "noUsers": "පරිශීලකයන් හමු නොවීය."
+    "noUsers": "පරිශීලකයන් හමු නොවීය.",
+    "resetPassword": "මුරපදය යළි පිහිටුවන්න",
+    "resetPasswordFor": "{{name}} සඳහා මුරපදය යළි පිහිටුවන්න.",
+    "newPassword": "නව මුරපදය",
+    "confirmNewPassword": "නව මුරපදය තහවුරු කරන්න",
+    "resetPasswordSubmit": "මුරපදය යළි පිහිටුවන්න",
+    "resettingPassword": "යළි පිහිටුවමින්…",
+    "passwordReset": "{{name}} ගේ මුරපදය යළි පිහිටුවන ලදී.",
+    "resetPasswordError": "මෙම පරිශීලකයාගේ මුරපදය යළි පිහිටුවිය නොහැකි විය. විස්තර පරීක්ෂා කර නැවත උත්සාහ කරන්න."
   },
   "auditLog": {
     "title": "විගණන සටහන",

@@ -1,6 +1,7 @@
 import { apiClient } from '@/lib/apiClient'
 import type {
   AdminMetricsResponse,
+  AdminResetPasswordRequest,
   AdminUserSummary,
   AuditLogEntry,
   CreateUserRequest,
@@ -45,6 +46,14 @@ export async function updateUserStatus(
 ): Promise<AdminUserSummary> {
   const { data } = await apiClient.put<AdminUserSummary>(`/api/admin/users/${userId}/status`, request)
   return data
+}
+
+/** No email-based reset flow exists — this is how a user who forgot their password gets back in. */
+export async function resetUserPassword(
+  userId: number,
+  request: AdminResetPasswordRequest,
+): Promise<void> {
+  await apiClient.post(`/api/admin/users/${userId}/password`, request)
 }
 
 export async function getAuditLogs(entityName?: string): Promise<AuditLogEntry[]> {

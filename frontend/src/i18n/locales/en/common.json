@@ -16,7 +16,8 @@
     "auditLog": "Audit Log",
     "myReviews": "My Reviews",
     "officerDashboard": "Dashboard",
-    "pendingRegistrations": "Pending Registrations"
+    "pendingRegistrations": "Pending Registrations",
+    "changePassword": "Change Password"
   },
   "actions": {
     "saving": "Saving…",
@@ -92,7 +93,7 @@
       "Pending": "Pending",
       "Accepted": "Accepted",
       "Declined": "Declined",
-      "Cancelled": "Cancelled"
+      "Cancelled": "Closed – listing unavailable"
     },
     "order": {
       "Confirmed": "Confirmed",
@@ -124,6 +125,12 @@
     "emailInvalid": "Enter a valid email",
     "passwordRequired": "Password is required",
     "passwordMin": "Password must be at least 8 characters",
+    "passwordMin12": "Password must be at least 12 characters",
+    "passwordUppercase": "Password must include an uppercase letter",
+    "passwordLowercase": "Password must include a lowercase letter",
+    "passwordDigit": "Password must include a number",
+    "passwordSymbol": "Password must include a symbol",
+    "passwordsMustMatch": "Passwords must match",
     "districtRequired": "District is required",
     "nicRequired": "NIC is required",
     "areaMin": "Area must be greater than 0",

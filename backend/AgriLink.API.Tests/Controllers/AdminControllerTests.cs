@@ -24,11 +24,12 @@ public class AdminControllerTests
 
         var currentUser = new CurrentUserService(db);
         var auditLog = new AuditLogService(db);
+        var notifications = new NotificationService(db);
 
         // The Identity store assigns admin.Id on CreateAsync, so the acting principal is built
         // from whatever id it actually got rather than a hardcoded value — reassigning a saved
         // entity's own primary key afterwards is not something EF Core supports safely.
-        var controller = new AdminController(userManager, db, currentUser, auditLog)
+        var controller = new AdminController(userManager, db, currentUser, auditLog, notifications)
         {
             ControllerContext = new ControllerContext
             {
@@ -374,6 +375,49 @@ public class AdminControllerTests
 
         var metrics = Assert.IsType<AdminMetricsResponse>(Assert.IsType<OkObjectResult>(result.Result).Value);
         Assert.Equal(2, metrics.IssuesPending);
+    }
+
+    [Fact]
+    public async Task ResetPassword_OnAnotherUser_SucceedsAndRecordsAuditAndNotification()
+    {
+        var (controller, db, users, admin) = await CreateAsync();
+        var officer = await CreateOfficerAsync(users, db);
+
+        var result = await controller.ResetPassword(officer.Id, new AdminResetPasswordRequest { NewPassword = "BrandNewPassword@2026!" });
+
+        Assert.IsType<NoContentResult>(result);
+        Assert.True(await users.CheckPasswordAsync(officer, "BrandNewPassword@2026!"));
+        Assert.False(await users.CheckPasswordAsync(officer, "Officer@AgriLink.2026!"));
+
+        var auditLog = await db.AuditLogs.FirstOrDefaultAsync(a => a.EntityId == officer.Id && a.Action == "PasswordResetByAdmin");
+        Assert.NotNull(auditLog);
+        Assert.Equal(admin.Id, auditLog!.UserId);
+
+        var notification = await db.Notifications.FirstOrDefaultAsync(n => n.UserId == officer.Id);
+        Assert.NotNull(notification);
+        Assert.Contains("administrator", notification!.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task ResetPassword_OwnAccount_ReturnsBadRequestAndDoesNotChangePassword()
+    {
+        var (controller, db, users, admin) = await CreateAsync();
+
+        var result = await controller.ResetPassword(admin.Id, new AdminResetPasswordRequest { NewPassword = "BrandNewPassword@2026!" });
+
+        Assert.IsType<BadRequestObjectResult>(result);
+        Assert.True(await users.CheckPasswordAsync(admin, "Admin@AgriLink.2026!"));
+        Assert.Empty(db.AuditLogs.Where(a => a.Action == "PasswordResetByAdmin"));
+    }
+
+    [Fact]
+    public async Task ResetPassword_UnknownUser_ReturnsNotFound()
+    {
+        var (controller, _, _, _) = await CreateAsync();
+
+        var result = await controller.ResetPassword(123456, new AdminResetPasswordRequest { NewPassword = "BrandNewPassword@2026!" });
+
+        Assert.IsType<NotFoundResult>(result);
     }
 
     private static async Task<(AdminController Controller, AgriLinkDbContext Db, UserManager<ApplicationUser> Users, ApplicationUser Farmer)> SeedIssueFixtureAsync()

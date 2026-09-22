@@ -1,6 +1,7 @@
 using AgriLink.API.Controllers;
 using AgriLink.API.Data;
 using AgriLink.API.DTOs.Auth;
+using AgriLink.API.DTOs.Users;
 using AgriLink.API.Models;
 using AgriLink.API.Services;
 using AgriLink.API.Tests.TestSupport;
@@ -8,6 +9,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Moq;
 
 namespace AgriLink.API.Tests.Controllers;
 
@@ -24,7 +26,8 @@ public class UsersControllerTests
         AgriLinkDbContext db,
         UserManager<ApplicationUser> users,
         int actingUserId,
-        string role) => new(users, db, new CurrentUserService(db))
+        string role,
+        IJwtTokenService? tokenService = null) => new(users, db, new CurrentUserService(db), new AuditLogService(db), tokenService ?? Mock.Of<IJwtTokenService>())
         {
             ControllerContext = new ControllerContext
             {
@@ -116,5 +119,67 @@ public class UsersControllerTests
         var response = Assert.IsType<UserProfileResponse>(Assert.IsType<OkObjectResult>(result.Result).Value);
         Assert.Null(response.FarmerProfileId);
         Assert.Null(response.District);
+    }
+
+    [Fact]
+    public async Task ChangePassword_CorrectCurrentPassword_SucceedsAndReturnsFreshToken()
+    {
+        var (db, users) = await CreateAsync();
+        var user = await CreateUserAsync(users, "farmer@agrilink.lk", "Farmer One", "Farmer");
+        var tokenService = Mock.Of<IJwtTokenService>(
+            t => t.GenerateToken(It.IsAny<ApplicationUser>(), It.IsAny<IList<string>>()) == "fresh-jwt");
+        var controller = BuildController(db, users, user.Id, "Farmer", tokenService);
+
+        var result = await controller.ChangePassword(new ChangePasswordRequest
+        {
+            CurrentPassword = "AgriLink@Test.2026!",
+            NewPassword = "NewPassword@2026!",
+        });
+
+        var response = Assert.IsType<AuthResponse>(Assert.IsType<OkObjectResult>(result.Result).Value);
+        Assert.Equal("fresh-jwt", response.Token);
+        Assert.Equal("Farmer", response.Role);
+
+        // The new password must actually work, and the old one must no longer.
+        Assert.True(await users.CheckPasswordAsync(user, "NewPassword@2026!"));
+        Assert.False(await users.CheckPasswordAsync(user, "AgriLink@Test.2026!"));
+
+        var auditLog = await db.AuditLogs.FirstOrDefaultAsync(a => a.EntityId == user.Id && a.Action == "PasswordChanged");
+        Assert.NotNull(auditLog);
+        Assert.Equal("User", auditLog!.EntityName);
+    }
+
+    [Fact]
+    public async Task ChangePassword_WrongCurrentPassword_ReturnsBadRequestAndLeavesPasswordUnchanged()
+    {
+        var (db, users) = await CreateAsync();
+        var user = await CreateUserAsync(users, "farmer@agrilink.lk", "Farmer One", "Farmer");
+        var controller = BuildController(db, users, user.Id, "Farmer");
+
+        var result = await controller.ChangePassword(new ChangePasswordRequest
+        {
+            CurrentPassword = "TotallyWrong@2026!",
+            NewPassword = "NewPassword@2026!",
+        });
+
+        Assert.IsType<BadRequestObjectResult>(result.Result);
+        Assert.True(await users.CheckPasswordAsync(user, "AgriLink@Test.2026!"));
+        Assert.Empty(await db.AuditLogs.Where(a => a.Action == "PasswordChanged").ToListAsync());
+    }
+
+    [Fact]
+    public async Task ChangePassword_NewPasswordFailsIdentityPolicy_ReturnsBadRequest()
+    {
+        var (db, users) = await CreateAsync();
+        var user = await CreateUserAsync(users, "farmer@agrilink.lk", "Farmer One", "Farmer");
+        var controller = BuildController(db, users, user.Id, "Farmer");
+
+        var result = await controller.ChangePassword(new ChangePasswordRequest
+        {
+            CurrentPassword = "AgriLink@Test.2026!",
+            NewPassword = "short",
+        });
+
+        Assert.IsType<BadRequestObjectResult>(result.Result);
     }
 }

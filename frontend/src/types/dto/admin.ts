@@ -56,6 +56,10 @@ export interface UpdateUserStatusRequest {
   isActive: boolean
 }
 
+export interface AdminResetPasswordRequest {
+  newPassword: string
+}
+
 export interface AuditLogEntry {
   auditId: number
   userId: number

@@ -2,6 +2,7 @@ import { createBrowserRouter } from 'react-router-dom'
 import { AdminLoginPage } from '@/auth/AdminLoginPage'
 import { LoginPage } from '@/auth/LoginPage'
 import { RegisterPage } from '@/auth/RegisterPage'
+import { accountRoutes } from '@/features/account/routes'
 import { farmsRoutes } from '@/features/farms/routes'
 import { issuesRoutes } from '@/features/issues/routes'
 import { marketplacePublicRoutes, marketplaceRoutes } from '@/features/marketplace/routes'
@@ -32,6 +33,7 @@ export const router = createBrowserRouter([
           // exactly what its backend endpoints authorize (see the comments there) — no
           // single coarse role list here, since farms/issues/marketplace mix Farmer-only,
           // Officer-only, and shared sub-routes that a single wrapper can't tell apart.
+          ...accountRoutes,
           ...farmsRoutes,
           ...issuesRoutes,
           ...marketplaceRoutes,

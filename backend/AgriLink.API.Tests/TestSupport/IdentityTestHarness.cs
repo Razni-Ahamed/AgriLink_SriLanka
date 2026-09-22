@@ -1,9 +1,11 @@
 using AgriLink.API.Data;
 using AgriLink.API.Models;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 
 namespace AgriLink.API.Tests.TestSupport;
 
@@ -33,6 +35,16 @@ public static class IdentityTestHarness
             new IdentityErrorDescriber(),
             services: null!,
             new NullLogger<UserManager<ApplicationUser>>());
+
+        // AdminController's password reset (GeneratePasswordResetTokenAsync/ResetPasswordAsync)
+        // needs a "Default" token provider, same as Program.cs's real AddDefaultTokenProviders()
+        // registers — this manually-built UserManager needs the equivalent wired in by hand.
+        userManager.RegisterTokenProvider(
+            TokenOptions.DefaultProvider,
+            new DataProtectorTokenProvider<ApplicationUser>(
+                new EphemeralDataProtectionProvider(),
+                Options.Create(new DataProtectionTokenProviderOptions()),
+                NullLogger<DataProtectorTokenProvider<ApplicationUser>>.Instance));
 
         var roleStore = new RoleStore<IdentityRole<int>, AgriLinkDbContext, int>(db);
         var roleManager = new RoleManager<IdentityRole<int>>(
