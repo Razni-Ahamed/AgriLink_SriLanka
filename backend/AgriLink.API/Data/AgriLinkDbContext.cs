@@ -30,6 +30,7 @@ public class AgriLinkDbContext : IdentityDbContext<ApplicationUser, IdentityRole
     public DbSet<Notification> Notifications => Set<Notification>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
     public DbSet<Department> Departments => Set<Department>();
+    public DbSet<ProfileChangeRequest> ProfileChangeRequests => Set<ProfileChangeRequest>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -289,6 +290,32 @@ public class AgriLinkDbContext : IdentityDbContext<ApplicationUser, IdentityRole
                 .WithMany()
                 .HasForeignKey(a => a.UserId)
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        builder.Entity<ProfileChangeRequest>(entity =>
+        {
+            entity.HasKey(r => r.RequestId);
+            entity.Property(r => r.Field).HasConversion<string>().HasMaxLength(20);
+            entity.Property(r => r.Status).HasConversion<string>().HasMaxLength(20);
+            entity.Property(r => r.OldValue).HasMaxLength(256).IsRequired();
+            entity.Property(r => r.NewValue).HasMaxLength(256).IsRequired();
+            entity.Property(r => r.RejectionReason).HasMaxLength(500);
+            entity.HasIndex(r => r.Status);
+            entity.HasIndex(r => r.UserId);
+            // One pending request per user per field — a race between two requests for the same
+            // field is caught here (409 from the unique-violation handler) rather than silently
+            // letting a second one queue up behind the first.
+            entity.HasIndex(r => new { r.UserId, r.Field })
+                .IsUnique()
+                .HasFilter("\"Status\" = 'Pending'");
+            entity.HasOne(r => r.User)
+                .WithMany()
+                .HasForeignKey(r => r.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(r => r.DecidedByUser)
+                .WithMany()
+                .HasForeignKey(r => r.DecidedByUserId)
+                .OnDelete(DeleteBehavior.SetNull);
         });
     }
 }
