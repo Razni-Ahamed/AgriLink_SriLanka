@@ -1,3 +1,4 @@
+using AgriLink.API.Common;
 using AgriLink.API.Controllers;
 using AgriLink.API.Data;
 using AgriLink.API.DTOs.Issues;
@@ -113,8 +114,8 @@ public class IssuesControllerOfficerScopeTests
 
         var result = await controller.Pending();
 
-        var issues = Assert.IsAssignableFrom<IEnumerable<CropIssueResponse>>(
-            Assert.IsType<OkObjectResult>(result.Result).Value);
+        var issues = Assert.IsType<PagedResponse<CropIssueResponse>>(
+            Assert.IsType<OkObjectResult>(result.Result).Value).Items;
         var issue = Assert.Single(issues);
         Assert.Equal("Kandy issue", issue.Title);
     }
@@ -127,8 +128,8 @@ public class IssuesControllerOfficerScopeTests
 
         var result = await controller.Pending();
 
-        var issues = Assert.IsAssignableFrom<IEnumerable<CropIssueResponse>>(
-            Assert.IsType<OkObjectResult>(result.Result).Value);
+        var issues = Assert.IsType<PagedResponse<CropIssueResponse>>(
+            Assert.IsType<OkObjectResult>(result.Result).Value).Items;
         var issue = Assert.Single(issues);
         Assert.Equal("Galle issue", issue.Title);
     }
@@ -141,8 +142,8 @@ public class IssuesControllerOfficerScopeTests
 
         var result = await controller.Pending();
 
-        var issues = Assert.IsAssignableFrom<IEnumerable<CropIssueResponse>>(
-            Assert.IsType<OkObjectResult>(result.Result).Value);
+        var issues = Assert.IsType<PagedResponse<CropIssueResponse>>(
+            Assert.IsType<OkObjectResult>(result.Result).Value).Items;
         Assert.Equal(2, issues.Count());
     }
 
@@ -161,8 +162,8 @@ public class IssuesControllerOfficerScopeTests
 
         var result = await controller.Reviewed();
 
-        var issues = Assert.IsAssignableFrom<IEnumerable<CropIssueResponse>>(
-            Assert.IsType<OkObjectResult>(result.Result).Value);
+        var issues = Assert.IsType<PagedResponse<CropIssueResponse>>(
+            Assert.IsType<OkObjectResult>(result.Result).Value).Items;
         var issue = Assert.Single(issues);
         Assert.Equal("Kandy issue", issue.Title);
     }
@@ -175,8 +176,8 @@ public class IssuesControllerOfficerScopeTests
 
         var result = await controller.Reviewed();
 
-        var issues = Assert.IsAssignableFrom<IEnumerable<CropIssueResponse>>(
-            Assert.IsType<OkObjectResult>(result.Result).Value);
+        var issues = Assert.IsType<PagedResponse<CropIssueResponse>>(
+            Assert.IsType<OkObjectResult>(result.Result).Value).Items;
         Assert.Empty(issues);
     }
 }

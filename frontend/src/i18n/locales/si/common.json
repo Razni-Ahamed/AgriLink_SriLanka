@@ -34,6 +34,12 @@
     "loading": "පූරණය වෙමින්",
     "dismiss": "ඉවත් කරන්න"
   },
+  "pagination": {
+    "navigation": "පිටු අංකනය",
+    "previous": "පෙර පිටුව",
+    "next": "ඊළඟ පිටුව",
+    "pageOf": "පිටුව {{page}} න් {{totalPages}}"
+  },
   "language": {
     "label": "භාෂාව",
     "en": "English",

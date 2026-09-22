@@ -29,9 +29,11 @@ function issue(overrides: Partial<CropIssueResponse>): CropIssueResponse {
 }
 
 function renderWith(issues: CropIssueResponse[]) {
-  vi.mocked(useMyIssues).mockReturnValue({ data: issues, isLoading: false } as ReturnType<
-    typeof useMyIssues
-  >)
+  vi.mocked(useMyIssues).mockReturnValue({
+    data: { items: issues, page: 1, pageSize: 20, totalCount: issues.length, totalPages: 1 },
+    isLoading: false,
+    isFetching: false,
+  } as ReturnType<typeof useMyIssues>)
   render(
     <MemoryRouter>
       <MyIssuesPage />

@@ -1,3 +1,4 @@
+using AgriLink.API.Common;
 using AgriLink.API.Controllers;
 using AgriLink.API.Data;
 using AgriLink.API.DTOs.Admin;
@@ -330,15 +331,37 @@ public class AdminControllerTests
         await controller.UpdateUserStatus(officer.Id, new UpdateUserStatusRequest { IsActive = false });
         await controller.UpdateUserStatus(officer.Id, new UpdateUserStatusRequest { IsActive = true });
 
-        var result = await controller.GetAuditLogs(entityName: null, take: 10);
+        var result = await controller.GetAuditLogs(entityName: null, page: 1, pageSize: 10);
 
-        // The controller returns Select(...)'s IEnumerable directly (same convention as
-        // HarvestsController.GetAll), not a materialized List, so match that shape here.
-        var logs = (Assert.IsType<OkObjectResult>(result.Result).Value as IEnumerable<AuditLogResponse>)?.ToList();
-        Assert.NotNull(logs);
-        Assert.True(logs!.Count >= 2);
-        Assert.Equal("UserActivated", logs[0].Action);
-        Assert.Equal("AgriLink Administrator", logs[0].UserName);
+        var page = Assert.IsType<PagedResponse<AuditLogResponse>>(Assert.IsType<OkObjectResult>(result.Result).Value);
+        Assert.True(page.Items.Count >= 2);
+        Assert.Equal("UserActivated", page.Items[0].Action);
+        Assert.Equal("AgriLink Administrator", page.Items[0].UserName);
+    }
+
+    [Fact]
+    public async Task GetAuditLogs_PagesCorrectlyAndClampsPageSize()
+    {
+        var (controller, db, users, _) = await CreateAsync();
+        var officer = await CreateOfficerAsync(users, db);
+
+        // A freshly created officer starts Active, so alternate starting with a flip away from
+        // that — otherwise the very first call would be a same-state no-op that records no audit
+        // entry, leaving one fewer row than intended.
+        for (var i = 0; i < 25; i++)
+        {
+            await controller.UpdateUserStatus(officer.Id, new UpdateUserStatusRequest { IsActive = i % 2 != 0 });
+        }
+
+        var firstPage = Assert.IsType<PagedResponse<AuditLogResponse>>(
+            Assert.IsType<OkObjectResult>((await controller.GetAuditLogs(entityName: null, page: 1, pageSize: 10)).Result).Value);
+        Assert.Equal(25, firstPage.TotalCount);
+        Assert.Equal(3, firstPage.TotalPages);
+        Assert.Equal(10, firstPage.Items.Count);
+
+        var clamped = Assert.IsType<PagedResponse<AuditLogResponse>>(
+            Assert.IsType<OkObjectResult>((await controller.GetAuditLogs(entityName: null, page: 1, pageSize: 1000)).Result).Value);
+        Assert.Equal(100, clamped.PageSize);
     }
 
     [Fact]

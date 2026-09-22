@@ -1,6 +1,8 @@
+import { useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { useTranslation } from 'react-i18next'
 import { Card } from '@/components/ui/Card'
+import { Pagination } from '@/components/ui/Pagination'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { cn, formatDate } from '@/lib/utils'
 import { useMarkNotificationRead, useNotifications } from '../hooks/useNotifications'
@@ -56,7 +58,9 @@ function NotificationRow({ notification }: { notification: NotificationResponse 
 
 export function NotificationsPage() {
   const { t } = useTranslation('orders')
-  const { data: notifications, isLoading } = useNotifications()
+  const [page, setPage] = useState(1)
+  const { data, isLoading, isFetching } = useNotifications(page)
+  const notifications = data?.items
 
   return (
     <div className="flex flex-col gap-6">
@@ -75,13 +79,23 @@ export function NotificationsPage() {
       )}
 
       {!isLoading && notifications && notifications.length > 0 && (
-        <div className="flex flex-col gap-3">
-          <AnimatePresence initial={false}>
-            {notifications.map((notification) => (
-              <NotificationRow key={notification.notificationId} notification={notification} />
-            ))}
-          </AnimatePresence>
-        </div>
+        <>
+          <div className="flex flex-col gap-3">
+            <AnimatePresence initial={false}>
+              {notifications.map((notification) => (
+                <NotificationRow key={notification.notificationId} notification={notification} />
+              ))}
+            </AnimatePresence>
+          </div>
+          {data && data.totalPages > 1 && (
+            <Pagination
+              page={data.page}
+              totalPages={data.totalPages}
+              onPageChange={setPage}
+              disabled={isFetching}
+            />
+          )}
+        </>
       )}
     </div>
   )

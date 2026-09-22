@@ -1,3 +1,4 @@
+using AgriLink.API.Common;
 using AgriLink.API.Controllers;
 using AgriLink.API.Data;
 using AgriLink.API.DTOs.Issues;
@@ -93,7 +94,7 @@ public class IssuesControllerReviewQueueAndPhotoTests
 
         var result = await CreateController(db, OfficerUserId, "Officer").Pending();
 
-        var issues = Assert.IsAssignableFrom<IEnumerable<CropIssueResponse>>(Assert.IsType<OkObjectResult>(result.Result).Value).ToList();
+        var issues = Assert.IsType<PagedResponse<CropIssueResponse>>(Assert.IsType<OkObjectResult>(result.Result).Value).Items.ToList();
         Assert.Equal(new[] { "Needs inspection", "Preliminary" }, issues.Select(i => i.Title));
         Assert.Equal(new[] { nameof(AdvisoryStatus.Draft), nameof(AdvisoryStatus.Preliminary) }, issues.Select(i => i.AdvisoryStatus));
         Assert.Equal(new[] { false, true }, issues.Select(i => i.HasPhoto));

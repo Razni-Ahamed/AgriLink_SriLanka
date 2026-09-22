@@ -1,3 +1,4 @@
+using AgriLink.API.Common;
 using AgriLink.API.Controllers;
 using AgriLink.API.Data;
 using AgriLink.API.DTOs.Issues;
@@ -126,8 +127,8 @@ public class IssuesControllerCropDetailsTests
 
         var result = await controller.Mine();
 
-        var issues = Assert.IsAssignableFrom<IEnumerable<CropIssueResponse>>(
-            Assert.IsType<OkObjectResult>(result.Result).Value);
+        var issues = Assert.IsType<PagedResponse<CropIssueResponse>>(
+            Assert.IsType<OkObjectResult>(result.Result).Value).Items;
         var issue = Assert.Single(issues);
         Assert.Equal("Paddy", issue.CropType);
         Assert.Equal("Samba", issue.Variety);
@@ -141,8 +142,8 @@ public class IssuesControllerCropDetailsTests
 
         var result = await controller.Pending();
 
-        var issues = Assert.IsAssignableFrom<IEnumerable<CropIssueResponse>>(
-            Assert.IsType<OkObjectResult>(result.Result).Value);
+        var issues = Assert.IsType<PagedResponse<CropIssueResponse>>(
+            Assert.IsType<OkObjectResult>(result.Result).Value).Items;
         var issue = Assert.Single(issues);
         Assert.Equal("Paddy", issue.CropType);
         Assert.Equal("Samba", issue.Variety);

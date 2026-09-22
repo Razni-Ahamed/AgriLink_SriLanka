@@ -34,6 +34,12 @@
     "loading": "Loading",
     "dismiss": "Dismiss"
   },
+  "pagination": {
+    "navigation": "Pagination",
+    "previous": "Previous page",
+    "next": "Next page",
+    "pageOf": "Page {{page}} of {{totalPages}}"
+  },
   "language": {
     "label": "Language",
     "en": "English",

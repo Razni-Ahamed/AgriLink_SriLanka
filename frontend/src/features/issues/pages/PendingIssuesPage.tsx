@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Camera, MapPin } from '@phosphor-icons/react'
@@ -5,6 +6,7 @@ import { Badge } from '@/components/ui/Badge'
 import { Card } from '@/components/ui/Card'
 import { CropIcon } from '@/components/ui/CropIcon'
 import { IconBadge } from '@/components/ui/IconBadge'
+import { Pagination } from '@/components/ui/Pagination'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { StaggerList } from '@/components/ui/motion/StaggerList'
 import { useAuthStore } from '@/auth/authStore'
@@ -14,7 +16,9 @@ import { usePendingIssues } from '../hooks/useIssues'
 
 export function PendingIssuesPage() {
   const { t } = useTranslation('issues')
-  const { data: issues, isLoading } = usePendingIssues()
+  const [page, setPage] = useState(1)
+  const { data, isLoading, isFetching } = usePendingIssues(page)
+  const issues = data?.items
   const role = useAuthStore((state) => state.role)
   const officerDistrict = useAuthStore((state) => state.user?.district)
 
@@ -101,6 +105,10 @@ export function PendingIssuesPage() {
             )
           })}
         </StaggerList>
+      )}
+
+      {data && data.totalPages > 1 && (
+        <Pagination page={data.page} totalPages={data.totalPages} onPageChange={setPage} disabled={isFetching} />
       )}
     </div>
   )

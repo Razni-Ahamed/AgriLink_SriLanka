@@ -34,6 +34,12 @@
     "loading": "ஏற்றுகிறது",
     "dismiss": "நிராகரி"
   },
+  "pagination": {
+    "navigation": "பக்க வழிசெலுத்தல்",
+    "previous": "முந்தைய பக்கம்",
+    "next": "அடுத்த பக்கம்",
+    "pageOf": "பக்கம் {{page}} / {{totalPages}}"
+  },
   "language": {
     "label": "மொழி",
     "en": "English",

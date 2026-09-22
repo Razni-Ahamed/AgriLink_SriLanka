@@ -39,23 +39,25 @@ describe('PendingIssuesPage', () => {
   })
 
   it('tells cases needing a decision apart from preliminary advice to confirm, and marks photos', () => {
+    const issues = [
+      issue({
+        issueId: 1,
+        advisoryId: 11,
+        title: 'Held back',
+        advisoryStatus: 'Draft',
+        hasPhoto: true,
+      }),
+      issue({
+        issueId: 2,
+        advisoryId: 12,
+        title: 'Already advised',
+        advisoryStatus: 'Preliminary',
+      }),
+    ]
     vi.mocked(usePendingIssues).mockReturnValue({
-      data: [
-        issue({
-          issueId: 1,
-          advisoryId: 11,
-          title: 'Held back',
-          advisoryStatus: 'Draft',
-          hasPhoto: true,
-        }),
-        issue({
-          issueId: 2,
-          advisoryId: 12,
-          title: 'Already advised',
-          advisoryStatus: 'Preliminary',
-        }),
-      ],
+      data: { items: issues, page: 1, pageSize: 20, totalCount: issues.length, totalPages: 1 },
       isLoading: false,
+      isFetching: false,
     } as ReturnType<typeof usePendingIssues>)
 
     render(

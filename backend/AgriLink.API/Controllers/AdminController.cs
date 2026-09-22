@@ -1,3 +1,4 @@
+using AgriLink.API.Common;
 using AgriLink.API.Data;
 using AgriLink.API.DTOs.Admin;
 using AgriLink.API.Models;
@@ -372,22 +373,22 @@ public class AdminController : ControllerBase
     }
 
     [HttpGet("audit-logs")]
-    public async Task<ActionResult<List<AuditLogResponse>>> GetAuditLogs([FromQuery] string? entityName, [FromQuery] int take = 100)
+    public async Task<ActionResult<PagedResponse<AuditLogResponse>>> GetAuditLogs(
+        [FromQuery] string? entityName,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = PagingExtensions.DefaultPageSize,
+        CancellationToken cancellationToken = default)
     {
-        var limit = Math.Clamp(take, 1, 500);
-
         var query = _db.AuditLogs.Include(a => a.User).AsQueryable();
         if (!string.IsNullOrWhiteSpace(entityName))
         {
             query = query.Where(a => a.EntityName == entityName);
         }
 
-        var logs = await query
-            .OrderByDescending(a => a.CreatedAt)
-            .Take(limit)
-            .ToListAsync();
+        var ordered = query.OrderByDescending(a => a.CreatedAt);
+        var paged = await ordered.ToPagedResponseAsync(page, pageSize, cancellationToken);
 
-        return Ok(logs.Select(a => new AuditLogResponse
+        return Ok(paged.Map(a => new AuditLogResponse
         {
             AuditId = a.AuditId,
             UserId = a.UserId,

@@ -1,3 +1,4 @@
+using AgriLink.API.Common;
 using AgriLink.API.Controllers;
 using AgriLink.API.Data;
 using AgriLink.API.DTOs.Issues;
@@ -85,8 +86,8 @@ public class IssuesControllerGetAllTests
 
         var result = await controller.GetAll();
 
-        var issues = Assert.IsAssignableFrom<IEnumerable<CropIssueResponse>>(
-            Assert.IsType<OkObjectResult>(result.Result).Value).ToList();
+        var issues = Assert.IsType<PagedResponse<CropIssueResponse>>(
+            Assert.IsType<OkObjectResult>(result.Result).Value).Items.ToList();
 
         Assert.Equal(3, issues.Count);
         Assert.Contains(issues, i => i.ReporterName == "Farmer One" && i.Status == nameof(IssueStatus.AwaitingReview));
