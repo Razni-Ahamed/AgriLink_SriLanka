@@ -252,5 +252,10 @@
     "reserved": "That username is reserved",
     "checkFailed": "Couldn't check availability right now. We'll check again when you save.",
     "hint": "3–30 characters: lowercase letters, numbers, dots and underscores."
+  },
+  "profileMenu": {
+    "button": "Account menu for {{name}}",
+    "menuLabel": "Account",
+    "myProfile": "My profile"
   }
 }
