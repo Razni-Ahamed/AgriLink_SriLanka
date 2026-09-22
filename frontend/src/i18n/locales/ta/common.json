@@ -32,7 +32,9 @@
     "markRead": "படித்ததாகக் குறி",
     "markAllRead": "அனைத்தையும் படித்ததாகக் குறி",
     "loading": "ஏற்றுகிறது",
-    "dismiss": "நிராகரி"
+    "dismiss": "நிராகரி",
+    "showPassword": "கடவுச்சொல்லைக் காட்டு",
+    "hidePassword": "கடவுச்சொல்லை மறை"
   },
   "pagination": {
     "navigation": "பக்க வழிசெலுத்தல்",
@@ -74,6 +76,7 @@
     "businessRegistrationNumber": "வணிகப் பதிவு எண்",
     "businessPhone": "வணிகத் தொலைபேசி எண்",
     "legalBusinessName": "சட்டப்பூர்வ வணிகப் பெயர்",
+    "confirmPassword": "கடவுச்சொல்லை உறுதிப்படுத்தவும்",
     "status": "நிலை",
     "location": "இடம்",
     "quantity": "அளவு",
@@ -157,7 +160,28 @@
     "phoneNumberRequired": "தொலைபேசி எண் தேவை",
     "businessRegistrationNumberRequired": "வணிகப் பதிவு எண் தேவை",
     "businessPhoneRequired": "வணிகத் தொலைபேசி எண் தேவை",
-    "legalBusinessNameRequired": "சட்டப்பூர்வ வணிகப் பெயர் தேவை"
+    "legalBusinessNameRequired": "சட்டப்பூர்வ வணிகப் பெயர் தேவை",
+    "nameTooLong": "பெயர் மிக நீளமானது",
+    "emailTooLong": "மின்னஞ்சல் முகவரி மிக நீளமானது",
+    "confirmPasswordRequired": "உங்கள் கடவுச்சொல்லை உறுதிப்படுத்தவும்",
+    "confirmPasswordMismatch": "கடவுச்சொற்கள் பொருந்தவில்லை",
+    "nicInvalid": "தேசிய அடையாள அட்டை இலக்கம் 12 இலக்கங்களாகவோ அல்லது 9 இலக்கங்களுக்குப் பின் V அல்லது X எனவோ இருக்க வேண்டும்",
+    "phoneNumberInvalid": "தொலைபேசி எண் 10 இலக்கங்களாக இருக்க வேண்டும்",
+    "businessPhoneInvalid": "வணிகத் தொலைபேசி எண் 10 இலக்கங்களாக இருக்க வேண்டும்",
+    "fieldPlotNumberTooLong": "நில/காணி எண் மிக நீளமானது",
+    "businessRegistrationNumberTooLong": "வணிகப் பதிவு எண் மிக நீளமானது",
+    "legalBusinessNameTooLong": "சட்டப்பூர்வ வணிகப் பெயர் மிக நீளமானது"
+  },
+  "passwordChecklist": {
+    "ariaLabel": "கடவுச்சொல் தேவைகள்",
+    "met": "பூர்த்தி செய்யப்பட்டது",
+    "notMet": "பூர்த்தி செய்யப்படவில்லை",
+    "notChecked": "இன்னும் சரிபார்க்கப்படவில்லை",
+    "length": "குறைந்தது 12 எழுத்துகள்",
+    "lowercase": "ஒரு சிறிய எழுத்தைக் கொண்டுள்ளது",
+    "uppercase": "ஒரு பெரிய எழுத்தைக் கொண்டுள்ளது",
+    "digit": "ஒரு எண்ணைக் கொண்டுள்ளது",
+    "symbol": "ஒரு குறியீட்டைக் கொண்டுள்ளது (எ.கா. ! @ # $)"
   },
   "severity": {
     "Low": "குறைவு",

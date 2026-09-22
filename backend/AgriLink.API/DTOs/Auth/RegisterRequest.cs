@@ -4,13 +4,13 @@ namespace AgriLink.API.DTOs.Auth;
 
 public class RegisterRequest
 {
-    [Required, MaxLength(100)]
+    [Required, MinLength(2), MaxLength(100)]
     public string FullName { get; set; } = string.Empty;
 
-    [Required, EmailAddress]
+    [Required, EmailAddress, MaxLength(256)]
     public string Email { get; set; } = string.Empty;
 
-    [Required, MinLength(8)]
+    [Required, MinLength(12)]
     public string Password { get; set; } = string.Empty;
 
     [Required, MaxLength(20)]

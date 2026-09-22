@@ -7,6 +7,7 @@ using AgriLink.API.Tests.TestSupport;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Moq;
+using System.Linq;
 
 namespace AgriLink.API.Tests.Controllers;
 
@@ -228,5 +229,126 @@ public class AuthControllerTests
 
         notifications.Verify(n => n.NotifyAsync(100, It.IsAny<string>(), It.IsAny<string>()), Times.Once);
         notifications.Verify(n => n.NotifyAsync(101, It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+    }
+
+    [Theory]
+    [InlineData("200012345678", true)] // new 12-digit format
+    [InlineData("901234567V", true)] // old format, uppercase suffix
+    [InlineData("901234567x", true)] // old format, lowercase suffix
+    [InlineData("90123456V", false)] // only 8 digits before the suffix
+    [InlineData("1234567890", false)] // 10 digits, neither format
+    [InlineData("20001234567A", false)] // 11 digits + a letter that isn't V/X
+    public async Task Register_NicFormats_AcceptsOrRejectsAsExpected(string nic, bool shouldSucceed)
+    {
+        var (controller, db, _) = await CreateAsync();
+        var request = FarmerRequest();
+        request.NIC = nic;
+
+        var result = await controller.Register(request);
+
+        if (shouldSucceed)
+        {
+            Assert.IsType<ObjectResult>(result.Result);
+        }
+        else
+        {
+            Assert.IsType<BadRequestObjectResult>(result.Result);
+            Assert.Empty(db.Users);
+        }
+    }
+
+    [Fact]
+    public async Task Register_LowercaseNicSuffix_NormalizedToUppercaseBeforeSaving()
+    {
+        var (controller, db, _) = await CreateAsync();
+        var request = FarmerRequest();
+        request.NIC = "901234567x";
+
+        await controller.Register(request);
+
+        var profile = await db.FarmerProfiles.FirstAsync();
+        Assert.Equal("901234567X", profile.NIC);
+    }
+
+    [Theory]
+    [InlineData("0771234567", true)]
+    [InlineData("077 123 4567", true)] // spaces stripped before validating
+    [InlineData("077123456", false)] // 9 digits
+    [InlineData("07712345678", false)] // 11 digits
+    [InlineData("07712a4567", false)] // contains a letter
+    public async Task Register_FarmerPhoneFormats_AcceptsOrRejectsAsExpected(string phone, bool shouldSucceed)
+    {
+        var (controller, db, _) = await CreateAsync();
+        var request = FarmerRequest();
+        request.PhoneNumber = phone;
+
+        var result = await controller.Register(request);
+
+        if (shouldSucceed)
+        {
+            Assert.IsType<ObjectResult>(result.Result);
+        }
+        else
+        {
+            Assert.IsType<BadRequestObjectResult>(result.Result);
+            Assert.Empty(db.Users);
+        }
+    }
+
+    [Fact]
+    public async Task Register_SpacedPhoneNumber_NormalizedToDigitsOnlyBeforeSaving()
+    {
+        var (controller, db, _) = await CreateAsync();
+        var request = FarmerRequest();
+        request.PhoneNumber = "077 123 4567";
+
+        await controller.Register(request);
+
+        var profile = await db.FarmerProfiles.FirstAsync();
+        Assert.Equal("0771234567", profile.PhoneNumber);
+    }
+
+    [Theory]
+    [InlineData("0771234567", true)]
+    [InlineData("077-123-4567", true)] // dashes stripped before validating
+    [InlineData("07712345", false)]
+    public async Task Register_BuyerBusinessPhoneFormats_AcceptsOrRejectsAsExpected(string phone, bool shouldSucceed)
+    {
+        var (controller, db, _) = await CreateAsync();
+        var request = BuyerRequest();
+        request.BusinessPhone = phone;
+
+        var result = await controller.Register(request);
+
+        if (shouldSucceed)
+        {
+            Assert.IsType<ObjectResult>(result.Result);
+        }
+        else
+        {
+            Assert.IsType<BadRequestObjectResult>(result.Result);
+            Assert.Empty(db.Users);
+        }
+    }
+
+    [Fact]
+    public async Task Register_WeakPassword_ReturnsIdentityErrorsWithCodes()
+    {
+        var (controller, db, _) = await CreateAsync();
+        var request = FarmerRequest();
+        request.Password = "abc";
+
+        var result = await controller.Register(request);
+
+        var badRequest = Assert.IsType<BadRequestObjectResult>(result.Result);
+        var errors = (badRequest.Value!.GetType().GetProperty("errors")!.GetValue(badRequest.Value) as IEnumerable<object>)!
+            .ToList();
+        Assert.NotEmpty(errors);
+
+        var codes = errors.Select(e => (string)e.GetType().GetProperty("code")!.GetValue(e)!).ToList();
+        var descriptions = errors.Select(e => (string)e.GetType().GetProperty("description")!.GetValue(e)!).ToList();
+        Assert.Contains("PasswordTooShort", codes);
+        Assert.NotEmpty(descriptions);
+        Assert.Empty(db.Users);
     }
 }

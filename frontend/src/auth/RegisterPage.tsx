@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useId, useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -7,11 +7,15 @@ import { useTranslation } from 'react-i18next'
 import { motion } from 'motion/react'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
+import { PasswordInput } from '@/components/ui/PasswordInput'
+import { PasswordChecklist } from '@/components/ui/PasswordChecklist'
 import { DistrictSelect } from '@/components/ui/DistrictSelect'
 import { Card } from '@/components/ui/Card'
 import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
 import { buildPasswordSchema } from '@/lib/passwordSchema'
+import { NIC_NEW_FORMAT_REGEX, NIC_OLD_FORMAT_REGEX, PHONE_REGEX, normalizeNic, normalizePhone } from '@/lib/validation'
+import { parseApiError } from '@/lib/apiErrors'
 import { register as registerRequest } from './api'
 import type { RegisterRequest } from './api'
 
@@ -20,11 +24,22 @@ type Role = 'Farmer' | 'Buyer'
 export function RegisterPage() {
   const { t } = useTranslation(['auth', 'common'])
   const [role, setRole] = useState<Role>('Farmer')
+  const [generalErrors, setGeneralErrors] = useState<string[]>([])
+  const passwordChecklistId = useId()
 
   const baseFields = useMemo(
     () => ({
-      fullName: z.string().min(1, t('common:validation.fullNameRequired')),
-      email: z.string().email(t('common:validation.emailInvalid')),
+      fullName: z
+        .string()
+        .trim()
+        .min(2, t('common:validation.fullNameRequired'))
+        .max(100, t('common:validation.nameTooLong')),
+      email: z
+        .string()
+        .trim()
+        .min(1, t('common:validation.emailInvalid'))
+        .email(t('common:validation.emailInvalid'))
+        .max(256, t('common:validation.emailTooLong')),
       // Matches Identity's server-side policy (Program.cs) — the same schema backs the
       // change-password and admin-reset forms.
       password: buildPasswordSchema({
@@ -34,7 +49,15 @@ export function RegisterPage() {
         digit: t('common:validation.passwordDigit'),
         symbol: t('common:validation.passwordSymbol'),
       }),
-      nic: z.string().min(1, t('common:validation.nicRequired')),
+      confirmPassword: z.string().min(1, t('common:validation.confirmPasswordRequired')),
+      nic: z
+        .string()
+        .min(1, t('common:validation.nicRequired'))
+        .transform(normalizeNic)
+        .refine(
+          (value) => NIC_NEW_FORMAT_REGEX.test(value) || NIC_OLD_FORMAT_REGEX.test(value),
+          t('common:validation.nicInvalid'),
+        ),
       district: z.string().min(1, t('common:validation.districtRequired')),
     }),
     [t],
@@ -42,37 +65,71 @@ export function RegisterPage() {
 
   const schema = useMemo(
     () =>
-      z.discriminatedUnion('role', [
-        z.object({
-          role: z.literal('Farmer'),
-          ...baseFields,
-          fieldPlotNumber: z.string().min(1, t('common:validation.fieldPlotNumberRequired')),
-          phoneNumber: z.string().min(1, t('common:validation.phoneNumberRequired')),
+      z
+        .discriminatedUnion('role', [
+          z.object({
+            role: z.literal('Farmer'),
+            ...baseFields,
+            fieldPlotNumber: z
+              .string()
+              .trim()
+              .min(1, t('common:validation.fieldPlotNumberRequired'))
+              .max(50, t('common:validation.fieldPlotNumberTooLong')),
+            phoneNumber: z
+              .string()
+              .min(1, t('common:validation.phoneNumberRequired'))
+              .transform(normalizePhone)
+              .refine((value) => PHONE_REGEX.test(value), t('common:validation.phoneNumberInvalid')),
+          }),
+          z.object({
+            role: z.literal('Buyer'),
+            ...baseFields,
+            businessRegistrationNumber: z
+              .string()
+              .trim()
+              .min(1, t('common:validation.businessRegistrationNumberRequired'))
+              .max(50, t('common:validation.businessRegistrationNumberTooLong')),
+            businessPhone: z
+              .string()
+              .min(1, t('common:validation.businessPhoneRequired'))
+              .transform(normalizePhone)
+              .refine((value) => PHONE_REGEX.test(value), t('common:validation.businessPhoneInvalid')),
+            legalBusinessName: z
+              .string()
+              .trim()
+              .min(1, t('common:validation.legalBusinessNameRequired'))
+              .max(100, t('common:validation.legalBusinessNameTooLong')),
+          }),
+        ])
+        .superRefine((values, ctx) => {
+          if (values.password !== values.confirmPassword) {
+            ctx.addIssue({
+              code: 'custom',
+              message: t('common:validation.confirmPasswordMismatch'),
+              path: ['confirmPassword'],
+            })
+          }
         }),
-        z.object({
-          role: z.literal('Buyer'),
-          ...baseFields,
-          businessRegistrationNumber: z
-            .string()
-            .min(1, t('common:validation.businessRegistrationNumberRequired')),
-          businessPhone: z.string().min(1, t('common:validation.businessPhoneRequired')),
-          legalBusinessName: z.string().min(1, t('common:validation.legalBusinessNameRequired')),
-        }),
-      ]),
     [baseFields, t],
   )
 
-  type FormValues = z.infer<typeof schema>
+  type FormInput = z.input<typeof schema>
+  type FormOutput = z.output<typeof schema>
 
   const {
     register: registerField,
     handleSubmit,
     formState: { errors },
     setValue,
-  } = useForm<FormValues>({
+    setError,
+    watch,
+  } = useForm<FormInput, unknown, FormOutput>({
     resolver: zodResolver(schema),
-    defaultValues: { role: 'Farmer' } as Partial<FormValues>,
+    mode: 'onTouched',
+    defaultValues: { role: 'Farmer' } as Partial<FormInput>,
   })
+
+  const passwordValue = watch('password') ?? ''
 
   // The role-specific fields only exist on one branch of the discriminated union, so
   // FieldErrors<FormValues> only ever types the branch common to both — look these up
@@ -82,12 +139,47 @@ export function RegisterPage() {
 
   const mutation = useMutation({
     mutationFn: (values: RegisterRequest) => registerRequest(values),
+    onError: (error) => {
+      const parsed = parseApiError(error, t)
+      Object.entries(parsed.fieldErrors).forEach(([field, message]) => {
+        setError(field as keyof FormInput, { type: 'server', message })
+      })
+      setGeneralErrors(parsed.generalErrors)
+    },
   })
 
   const selectRole = (next: Role) => {
     setRole(next)
     setValue('role', next)
   }
+
+  const onSubmit = handleSubmit((values) => {
+    setGeneralErrors([])
+    if (values.role === 'Farmer') {
+      mutation.mutate({
+        role: 'Farmer',
+        fullName: values.fullName,
+        email: values.email,
+        password: values.password,
+        nic: values.nic,
+        district: values.district,
+        fieldPlotNumber: values.fieldPlotNumber,
+        phoneNumber: values.phoneNumber,
+      })
+    } else {
+      mutation.mutate({
+        role: 'Buyer',
+        fullName: values.fullName,
+        email: values.email,
+        password: values.password,
+        nic: values.nic,
+        district: values.district,
+        businessRegistrationNumber: values.businessRegistrationNumber,
+        businessPhone: values.businessPhone,
+        legalBusinessName: values.legalBusinessName,
+      })
+    }
+  })
 
   if (mutation.isSuccess) {
     return (
@@ -141,29 +233,41 @@ export function RegisterPage() {
             </Button>
           </div>
 
-          <form
-            className="flex flex-col gap-4"
-            onSubmit={handleSubmit((values) => mutation.mutate(values as RegisterRequest))}
-          >
+          <form className="flex flex-col gap-4" onSubmit={onSubmit}>
             <Input
               label={t('common:fields.fullName')}
+              autoComplete="name"
               error={errors.fullName?.message}
               {...registerField('fullName')}
             />
             <Input
               label={t('common:fields.email')}
               type="email"
+              autoComplete="email"
               error={errors.email?.message}
               {...registerField('email')}
             />
-            <Input
-              label={t('common:fields.password')}
-              type="password"
-              error={errors.password?.message}
-              {...registerField('password')}
+            <div>
+              <PasswordInput
+                label={t('common:fields.password')}
+                autoComplete="new-password"
+                aria-describedby={passwordChecklistId}
+                error={errors.password?.message}
+                {...registerField('password')}
+              />
+              <div className="mt-2">
+                <PasswordChecklist id={passwordChecklistId} password={passwordValue} />
+              </div>
+            </div>
+            <PasswordInput
+              label={t('common:fields.confirmPassword')}
+              autoComplete="new-password"
+              error={errors.confirmPassword?.message}
+              {...registerField('confirmPassword')}
             />
             <Input
               label={t('common:fields.nic')}
+              autoCapitalize="characters"
               error={errors.nic?.message}
               {...registerField('nic')}
             />
@@ -178,6 +282,8 @@ export function RegisterPage() {
                 />
                 <Input
                   label={t('common:fields.phoneNumber')}
+                  inputMode="numeric"
+                  autoComplete="tel"
                   error={roleFieldError('phoneNumber')}
                   {...registerField('phoneNumber')}
                 />
@@ -196,16 +302,25 @@ export function RegisterPage() {
                 />
                 <Input
                   label={t('common:fields.businessPhone')}
+                  inputMode="numeric"
+                  autoComplete="tel"
                   error={roleFieldError('businessPhone')}
                   {...registerField('businessPhone')}
                 />
               </>
             )}
 
-            {mutation.isError && (
-              <p className="text-sm text-state-danger">{t('auth:register.error')}</p>
+            {generalErrors.length > 0 && (
+              <div
+                role="alert"
+                className="rounded-xl border border-state-danger/30 bg-state-danger/10 p-3 text-sm text-state-danger"
+              >
+                {generalErrors.map((message, index) => (
+                  <p key={index}>{message}</p>
+                ))}
+              </div>
             )}
-            <Button type="submit" disabled={mutation.isPending}>
+            <Button type="submit" isLoading={mutation.isPending}>
               {mutation.isPending ? t('auth:register.submitting') : t('auth:register.submit')}
             </Button>
           </form>
