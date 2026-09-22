@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { isValidNic, isValidPhone, normalizeNic, normalizePhone } from './validation'
+import {
+  isValidNic,
+  isValidPhone,
+  normalizeNic,
+  normalizePhone,
+  normalizeUsername,
+  usernameProblem,
+} from './validation'
 
 describe('NIC', () => {
   it.each([
@@ -41,5 +48,32 @@ describe('phone', () => {
   it('strips spaces and dashes', () => {
     expect(normalizePhone('077 123 4567')).toBe('0771234567')
     expect(normalizePhone('077-123-4567')).toBe('0771234567')
+  })
+})
+
+describe('username', () => {
+  it.each([
+    ['abc', null],
+    ['nimal.perera', null],
+    ['nimal_perera', null],
+    ['farmer42', null],
+    ['a'.repeat(30), null],
+    ['ab', 'tooShort'],
+    ['a'.repeat(31), 'tooLong'],
+    ['.nimal', 'invalid'],
+    ['nimal.', 'invalid'],
+    ['_nimal', 'invalid'],
+    ['nimal..perera', 'invalid'],
+    ['nimal perera', 'invalid'],
+    ['nimal-perera', 'invalid'],
+    ['admin', 'reserved'],
+    ['support', 'reserved'],
+  ])('%s -> %s', (username, expected) => {
+    expect(usernameProblem(username)).toBe(expected)
+  })
+
+  it('normalizes by trimming and lowercasing, matching the server', () => {
+    expect(normalizeUsername('  Nimal.Perera ')).toBe('nimal.perera')
+    expect(usernameProblem(normalizeUsername(' ADMIN '))).toBe('reserved')
   })
 })

@@ -16,6 +16,21 @@ public class ApplicationUser : IdentityUser<int>
     public RegistrationStatus RegistrationStatus { get; set; } = RegistrationStatus.Approved;
     public string? RejectionReason { get; set; }
 
+    /// <summary>Optional name shown in the header and on the profile; the UI falls back to FullName.</summary>
+    public string? DisplayName { get; set; }
+
+    /// <summary>Public delivery URL of the user's own photo; null means the role's default avatar.</summary>
+    public string? ProfilePhotoUrl { get; set; }
+
+    /// <summary>Storage id of <see cref="ProfilePhotoUrl"/>, kept so the old photo can be deleted on replace.</summary>
+    public string? ProfilePhotoKey { get; set; }
+
+    /// <summary>
+    /// When the user last chose a new username themselves (UTC). Null means the next change is free —
+    /// which covers usernames the system generated and the one picked at sign-up.
+    /// </summary>
+    public DateTime? UsernameChangedAt { get; set; }
+
     public FarmerProfile? FarmerProfile { get; set; }
     public BuyerProfile? BuyerProfile { get; set; }
     public OfficerProfile? OfficerProfile { get; set; }

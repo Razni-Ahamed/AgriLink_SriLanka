@@ -19,6 +19,8 @@ public class OrderResponse
     public string? FarmerPhone { get; set; }
     public string FarmerEmail { get; set; } = string.Empty;
     public string FarmerDistrict { get; set; } = string.Empty;
+    /// <summary>The farmer's public profile photo URL; null shows the default Farmer avatar.</summary>
+    public string? FarmerPhotoUrl { get; set; }
 
     public string BuyerName { get; set; } = string.Empty;
     public string BuyerBusinessName { get; set; } = string.Empty;
@@ -26,6 +28,8 @@ public class OrderResponse
     public string? BuyerPhone { get; set; }
     public string BuyerEmail { get; set; } = string.Empty;
     public string BuyerDistrict { get; set; } = string.Empty;
+    /// <summary>The buyer's public profile photo URL; null shows the default Buyer avatar.</summary>
+    public string? BuyerPhotoUrl { get; set; }
 
     // Listing context, resolved through the order's originating request/listing so neither
     // side has to look the crop or price up separately.

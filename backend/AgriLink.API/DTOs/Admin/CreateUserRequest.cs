@@ -10,6 +10,10 @@ public class CreateUserRequest
     [Required, EmailAddress]
     public string Email { get; set; } = string.Empty;
 
+    /// <summary>Optional. When blank, one is generated from the full name.</summary>
+    [MaxLength(256)]
+    public string? Username { get; set; }
+
     [Required, MinLength(8)]
     public string Password { get; set; } = string.Empty;
 

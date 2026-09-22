@@ -145,6 +145,22 @@ public class OrdersControllerTests
     }
 
     [Fact]
+    public async Task GetById_IncludesEachSidesProfilePhoto_OrNullForTheDefault()
+    {
+        using var db = CreateDb();
+        SeedConfirmedOrder(db);
+        var farmerUser = await db.Users.SingleAsync(u => u.Id == FarmerUserId);
+        farmerUser.ProfilePhotoUrl = "https://res.cloudinary.com/demo/image/upload/farmer.jpg";
+        await db.SaveChangesAsync();
+
+        var result = await CreateController(db, BuyerUserId, "Buyer").GetById(1);
+
+        var response = Assert.IsType<OrderResponse>(Assert.IsType<OkObjectResult>(result.Result).Value);
+        Assert.Equal("https://res.cloudinary.com/demo/image/upload/farmer.jpg", response.FarmerPhotoUrl);
+        Assert.Null(response.BuyerPhotoUrl);
+    }
+
+    [Fact]
     public async Task GetById_ByTheOwningFarmer_IncludesBothSidesContactAndListingDetails()
     {
         using var db = CreateDb();

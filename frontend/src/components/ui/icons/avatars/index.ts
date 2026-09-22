@@ -1,0 +1,5 @@
+export type { AvatarIllustrationProps } from './AvatarBadge'
+export { FarmerAvatar } from './FarmerAvatar'
+export { BuyerAvatar } from './BuyerAvatar'
+export { OfficerAvatar } from './OfficerAvatar'
+export { AdminAvatar } from './AdminAvatar'

@@ -4,30 +4,41 @@ using AgriLink.API.DTOs.Auth;
 using AgriLink.API.DTOs.Users;
 using AgriLink.API.Models;
 using AgriLink.API.Services;
+using AgriLink.API.Services.Images;
 using AgriLink.API.Tests.TestSupport;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 
 namespace AgriLink.API.Tests.Controllers;
 
 public class UsersControllerTests
 {
-    private static async Task<(AgriLinkDbContext Db, UserManager<ApplicationUser> Users)> CreateAsync()
+    internal static async Task<(AgriLinkDbContext Db, UserManager<ApplicationUser> Users)> CreateAsync()
     {
         var (db, userManager, roleManager) = IdentityTestHarness.Create();
         await IdentityTestHarness.SeedRolesAsync(roleManager);
         return (db, userManager);
     }
 
-    private static UsersController BuildController(
+    internal static UsersController BuildController(
         AgriLinkDbContext db,
         UserManager<ApplicationUser> users,
         int actingUserId,
         string role,
-        IJwtTokenService? tokenService = null) => new(users, db, new CurrentUserService(db), new AuditLogService(db), tokenService ?? Mock.Of<IJwtTokenService>())
+        IJwtTokenService? tokenService = null,
+        IProfilePhotoStorage? photoStorage = null) => new(
+            users,
+            db,
+            new CurrentUserService(db),
+            new AuditLogService(db),
+            tokenService ?? Mock.Of<IJwtTokenService>(),
+            new ProfilePhotoProcessor(),
+            photoStorage ?? Mock.Of<IProfilePhotoStorage>(),
+            NullLogger<UsersController>.Instance)
         {
             ControllerContext = new ControllerContext
             {
@@ -38,7 +49,7 @@ public class UsersControllerTests
             },
         };
 
-    private static async Task<ApplicationUser> CreateUserAsync(
+    internal static async Task<ApplicationUser> CreateUserAsync(
         UserManager<ApplicationUser> users,
         string email,
         string fullName,
@@ -181,5 +192,52 @@ public class UsersControllerTests
         });
 
         Assert.IsType<BadRequestObjectResult>(result.Result);
+    }
+
+    private static async Task<UsernameAvailabilityResponse> CheckAvailabilityAsync(UsersController controller, string? username)
+    {
+        var result = await controller.UsernameAvailable(username);
+        return Assert.IsType<UsernameAvailabilityResponse>(Assert.IsType<OkObjectResult>(result.Result).Value);
+    }
+
+    [Fact]
+    public async Task UsernameAvailable_ReportsAllFourOutcomes_ToAnAnonymousCaller()
+    {
+        var (db, users) = await CreateAsync();
+        await CreateUserAsync(users, "nimal.perera", "Nimal Perera", "Farmer");
+        var controller = BuildController(db, users, actingUserId: 0, role: "Farmer");
+        // No token: the registration form calls this before an account exists.
+        controller.ControllerContext.HttpContext = new DefaultHttpContext();
+
+        var free = await CheckAvailabilityAsync(controller, "kumari.silva");
+        Assert.True(free.Available);
+        Assert.Null(free.Reason);
+
+        var taken = await CheckAvailabilityAsync(controller, " Nimal.PERERA ");
+        Assert.False(taken.Available);
+        Assert.Equal("taken", taken.Reason);
+
+        var reserved = await CheckAvailabilityAsync(controller, "admin");
+        Assert.False(reserved.Available);
+        Assert.Equal("reserved", reserved.Reason);
+
+        var invalid = await CheckAvailabilityAsync(controller, "no..dots");
+        Assert.False(invalid.Available);
+        Assert.Equal("invalid", invalid.Reason);
+
+        var missing = await CheckAvailabilityAsync(controller, null);
+        Assert.Equal("invalid", missing.Reason);
+    }
+
+    [Fact]
+    public async Task UsernameAvailable_CallersOwnUsername_CountsAsAvailable()
+    {
+        var (db, users) = await CreateAsync();
+        var user = await CreateUserAsync(users, "nimal.perera", "Nimal Perera", "Farmer");
+        await CreateUserAsync(users, "kumari.silva", "Kumari Silva", "Buyer");
+        var controller = BuildController(db, users, user.Id, "Farmer");
+
+        Assert.True((await CheckAvailabilityAsync(controller, "nimal.perera")).Available);
+        Assert.Equal("taken", (await CheckAvailabilityAsync(controller, "kumari.silva")).Reason);
     }
 }

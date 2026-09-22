@@ -94,7 +94,7 @@ public class IssuePhotoProcessorTests
     public void Orient_RightTop_RotatesClockwise()
     {
         using var source = RedThenBlue();
-        using var result = IssuePhotoProcessor.Orient(source, SKEncodedOrigin.RightTop);
+        using var result = PhotoDecoding.Orient(source, SKEncodedOrigin.RightTop);
 
         Assert.Equal((1, 2), (result.Width, result.Height));
         Assert.Equal(SKColors.Red, result.GetPixel(0, 0));
@@ -105,7 +105,7 @@ public class IssuePhotoProcessorTests
     public void Orient_LeftBottom_RotatesCounterClockwise()
     {
         using var source = RedThenBlue();
-        using var result = IssuePhotoProcessor.Orient(source, SKEncodedOrigin.LeftBottom);
+        using var result = PhotoDecoding.Orient(source, SKEncodedOrigin.LeftBottom);
 
         Assert.Equal((1, 2), (result.Width, result.Height));
         Assert.Equal(SKColors.Blue, result.GetPixel(0, 0));
@@ -116,7 +116,7 @@ public class IssuePhotoProcessorTests
     public void Orient_TopRight_MirrorsHorizontally()
     {
         using var source = RedThenBlue();
-        using var result = IssuePhotoProcessor.Orient(source, SKEncodedOrigin.TopRight);
+        using var result = PhotoDecoding.Orient(source, SKEncodedOrigin.TopRight);
 
         Assert.Equal((2, 1), (result.Width, result.Height));
         Assert.Equal(SKColors.Blue, result.GetPixel(0, 0));
@@ -127,7 +127,7 @@ public class IssuePhotoProcessorTests
     public void Orient_TopLeft_LeavesPixelsInPlace()
     {
         using var source = RedThenBlue();
-        using var result = IssuePhotoProcessor.Orient(source, SKEncodedOrigin.TopLeft);
+        using var result = PhotoDecoding.Orient(source, SKEncodedOrigin.TopLeft);
 
         Assert.Equal(SKColors.Red, result.GetPixel(0, 0));
         Assert.Equal(SKColors.Blue, result.GetPixel(1, 0));

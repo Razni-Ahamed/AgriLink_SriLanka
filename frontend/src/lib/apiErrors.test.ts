@@ -48,12 +48,28 @@ describe('parseApiError', () => {
     ])
   })
 
-  it('maps DuplicateUserName/DuplicateEmail codes to the account-exists message', () => {
+  it('maps the DuplicateEmail code to the account-exists message', () => {
     const error = axiosErrorWithResponse(400, {
       errors: [{ code: 'DuplicateEmail', description: "Email 'x@y.com' is already taken." }],
     })
     const result = parseApiError(error, i18n.t)
     expect(result.generalErrors).toEqual(['An account with this email already exists.'])
+  })
+
+  it('maps the DuplicateUserName code to the username-taken message, not the email one', () => {
+    const error = axiosErrorWithResponse(400, {
+      errors: [{ code: 'DuplicateUserName', description: "Username 'nimal' is already taken." }],
+    })
+    const result = parseApiError(error, i18n.t)
+    expect(result.generalErrors).toEqual(['That username is taken.'])
+  })
+
+  it('tells a 409 username clash apart from a 409 email clash by its code', () => {
+    const error = axiosErrorWithResponse(409, {
+      errors: [{ code: 'DuplicateUserName', description: 'That username is taken.' }],
+    })
+    const result = parseApiError(error, i18n.t)
+    expect(result.generalErrors).toEqual(['That username is taken.'])
   })
 
   it('falls back to the raw description for an unmapped Identity code', () => {

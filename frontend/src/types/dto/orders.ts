@@ -15,6 +15,8 @@ export interface OrderResponse {
   farmerPhone?: string | null
   farmerEmail: string
   farmerDistrict: string
+  /** Public https URL; null shows the default Farmer avatar. */
+  farmerPhotoUrl?: string | null
 
   buyerName: string
   buyerBusinessName: string
@@ -22,6 +24,8 @@ export interface OrderResponse {
   buyerPhone?: string | null
   buyerEmail: string
   buyerDistrict: string
+  /** Public https URL; null shows the default Buyer avatar. */
+  buyerPhotoUrl?: string | null
 
   cropType: string
   pricePerUnit: number

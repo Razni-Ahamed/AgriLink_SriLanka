@@ -110,6 +110,112 @@ public class AdminControllerTests
     }
 
     [Fact]
+    public async Task CreateUser_WithoutUsername_GeneratesOneFromTheFullName()
+    {
+        var (controller, db, _, _) = await CreateAsync();
+
+        var result = await controller.CreateUser(new CreateUserRequest
+        {
+            FullName = "Saman Kumara",
+            Email = "saman@agrilink.lk",
+            Password = "Buyer@AgriLink.2026!",
+            Role = "Buyer",
+            District = "Galle",
+            BusinessName = "Saman Traders",
+        });
+
+        var created = Assert.IsType<CreateUserResponse>(Assert.IsType<ObjectResult>(result.Result).Value);
+        Assert.Equal("saman.kumara", created.Username);
+        var user = await db.Users.SingleAsync(u => u.Id == created.UserId);
+        Assert.Equal("saman.kumara", user.UserName);
+        Assert.Equal("saman@agrilink.lk", user.Email);
+        Assert.Null(user.UsernameChangedAt);
+    }
+
+    [Fact]
+    public async Task CreateUser_WithoutUsername_SuffixesAGeneratedNameThatIsTaken()
+    {
+        var (controller, _, users, _) = await CreateAsync();
+        await users.CreateAsync(new ApplicationUser { UserName = "saman.kumara", Email = "other@agrilink.lk", FullName = "Saman Kumara" }, "Other@AgriLink.2026!");
+
+        var result = await controller.CreateUser(new CreateUserRequest
+        {
+            FullName = "Saman Kumara",
+            Email = "saman@agrilink.lk",
+            Password = "Buyer@AgriLink.2026!",
+            Role = "Buyer",
+            District = "Galle",
+            BusinessName = "Saman Traders",
+        });
+
+        var created = Assert.IsType<CreateUserResponse>(Assert.IsType<ObjectResult>(result.Result).Value);
+        Assert.Equal("saman.kumara2", created.Username);
+    }
+
+    [Fact]
+    public async Task CreateUser_WithUsername_UsesItNormalized()
+    {
+        var (controller, _, _, _) = await CreateAsync();
+
+        var result = await controller.CreateUser(new CreateUserRequest
+        {
+            FullName = "Saman Kumara",
+            Email = "saman@agrilink.lk",
+            Username = " Saman_K ",
+            Password = "Buyer@AgriLink.2026!",
+            Role = "Buyer",
+            District = "Galle",
+            BusinessName = "Saman Traders",
+        });
+
+        var created = Assert.IsType<CreateUserResponse>(Assert.IsType<ObjectResult>(result.Result).Value);
+        Assert.Equal("saman_k", created.Username);
+    }
+
+    [Fact]
+    public async Task CreateUser_WithTakenUsername_Returns409()
+    {
+        var (controller, db, _, _) = await CreateAsync();
+        db.Users.Add(new ApplicationUser { UserName = "taken.name", NormalizedUserName = "TAKEN.NAME", Email = "t@agrilink.lk", FullName = "T" });
+        await db.SaveChangesAsync();
+        var before = await db.Users.CountAsync();
+
+        var result = await controller.CreateUser(new CreateUserRequest
+        {
+            FullName = "Saman Kumara",
+            Email = "saman@agrilink.lk",
+            Username = "Taken.Name",
+            Password = "Buyer@AgriLink.2026!",
+            Role = "Buyer",
+            District = "Galle",
+            BusinessName = "Saman Traders",
+        });
+
+        var conflict = Assert.IsType<ConflictObjectResult>(result.Result);
+        Assert.Contains("DuplicateUserName", ResponseBodyHelpers.ErrorCodes(conflict.Value));
+        Assert.Equal(before, await db.Users.CountAsync());
+    }
+
+    [Fact]
+    public async Task CreateUser_WithReservedUsername_ReturnsBadRequest()
+    {
+        var (controller, _, _, _) = await CreateAsync();
+
+        var result = await controller.CreateUser(new CreateUserRequest
+        {
+            FullName = "Saman Kumara",
+            Email = "saman@agrilink.lk",
+            Username = "support",
+            Password = "Buyer@AgriLink.2026!",
+            Role = "Buyer",
+            District = "Galle",
+            BusinessName = "Saman Traders",
+        });
+
+        Assert.IsType<BadRequestObjectResult>(result.Result);
+    }
+
+    [Fact]
     public async Task CreateUser_WeakPassword_ReturnsIdentityErrorsWithCodes()
     {
         var (controller, db, _, _) = await CreateAsync();
@@ -237,6 +343,24 @@ public class AdminControllerTests
         var farmerSummary = summaries.Single(s => s.UserId == farmer.Id);
         Assert.Equal("Farmer", farmerSummary.Role);
         Assert.Equal("Galle", farmerSummary.District);
+    }
+
+    [Fact]
+    public async Task GetUsers_IncludesUsernameAndProfilePhoto()
+    {
+        var (controller, db, users, _) = await CreateAsync();
+        var farmer = await CreateFarmerAsync(users, db);
+        farmer.UserName = "test.farmer";
+        farmer.ProfilePhotoUrl = "https://res.cloudinary.com/demo/image/upload/f.jpg";
+        await db.SaveChangesAsync();
+
+        var result = await controller.GetUsers();
+
+        var summaries = Assert.IsType<List<AdminUserSummary>>(Assert.IsType<OkObjectResult>(result.Result).Value);
+        var summary = summaries.Single(s => s.UserId == farmer.Id);
+        Assert.Equal("test.farmer", summary.Username);
+        Assert.Equal("https://res.cloudinary.com/demo/image/upload/f.jpg", summary.ProfilePhotoUrl);
+        Assert.Null(summaries.Single(s => s.Role == "Admin").ProfilePhotoUrl);
     }
 
     [Fact]

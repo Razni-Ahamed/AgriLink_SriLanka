@@ -77,7 +77,9 @@
     "resetPasswordSubmit": "Reset Password",
     "resettingPassword": "Resetting…",
     "passwordReset": "{{name}}'s password was reset.",
-    "resetPasswordError": "Could not reset this user's password. Check the details and try again."
+    "resetPasswordError": "Could not reset this user's password. Check the details and try again.",
+    "usernameHint": "Leave blank to generate one from the full name.",
+    "userCreatedWithUsername": "{{name}} was created as {{role}} with the username {{username}}."
   },
   "auditLog": {
     "title": "Audit Log",

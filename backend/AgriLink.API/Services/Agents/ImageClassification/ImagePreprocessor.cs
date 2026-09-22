@@ -39,7 +39,7 @@ public static class ImagePreprocessor
             ?? throw new InvalidDataException("The photo could not be decoded for classification.");
         using var decoded = SKBitmap.Decode(codec)
             ?? throw new InvalidDataException("The photo could not be decoded for classification.");
-        using var upright = IssuePhotoProcessor.Orient(decoded, codec.EncodedOrigin);
+        using var upright = PhotoDecoding.Orient(decoded, codec.EncodedOrigin);
 
         var info = new SKImageInfo(upright.Width, upright.Height, SKColorType.Rgba8888, SKAlphaType.Unpremul);
         using var rgba = new SKBitmap(info);

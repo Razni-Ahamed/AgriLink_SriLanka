@@ -35,9 +35,13 @@ interface AuthState {
   login: (token: string, role: Role) => void
   logout: () => void
   hydrate: () => void
+  /** Replaces the cached profile, e.g. with the one a profile update just returned. */
+  setUser: (user: UserProfileResponse) => void
+  /** Re-reads the profile from GET /api/users/me so the header and every other reader stay current. */
+  refreshUser: () => Promise<void>
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
+export const useAuthStore = create<AuthState>((set, get) => ({
   token: null,
   role: null,
   user: null,
@@ -54,6 +58,27 @@ export const useAuthStore = create<AuthState>((set) => ({
   logout: () => {
     writeStoredSession(null)
     set({ token: null, role: null, user: null, isHydrated: true })
+  },
+
+  setUser: (user) => {
+    if (get().token) {
+      set({ user })
+    }
+  },
+
+  refreshUser: async () => {
+    if (!get().token) {
+      return
+    }
+    try {
+      const user = await getCurrentUser()
+      // A logout while the request was in flight wins.
+      if (get().token) {
+        set({ user })
+      }
+    } catch {
+      // The profile shown is merely stale; a rejected session is handled by the apiClient interceptor.
+    }
   },
 
   hydrate: () => {

@@ -10,6 +10,8 @@ const officer: AdminUserSummary = {
   userId: 1,
   fullName: 'Officer One',
   email: 'officer@agrilink.lk',
+  username: 'officer.one',
+  profilePhotoUrl: 'https://res.cloudinary.com/demo/image/upload/officer.jpg',
   role: 'Officer',
   district: 'Kandy',
   isActive: true,
@@ -20,6 +22,7 @@ const farmer: AdminUserSummary = {
   userId: 2,
   fullName: 'Farmer One',
   email: 'farmer@agrilink.lk',
+  username: 'farmer.one',
   role: 'Farmer',
   district: 'Galle',
   isActive: false,
@@ -30,6 +33,7 @@ const admin: AdminUserSummary = {
   userId: 3,
   fullName: 'Admin One',
   email: 'admin@agrilink.lk',
+  username: 'admin.one',
   role: 'Admin',
   district: null,
   isActive: true,
@@ -115,5 +119,19 @@ describe('UserManagementTable', () => {
 
     const row = within(rowFor('Admin One'))
     expect(row.queryByRole('button')).not.toBeInTheDocument()
+  })
+
+  it('shows usernames in their own column, and each photo or role default beside the name', () => {
+    render(
+      <UserManagementTable users={[officer, farmer]} onChangeRole={vi.fn()} onToggleStatus={vi.fn()} onResetPassword={vi.fn()} />,
+    )
+
+    expect(screen.getByRole('columnheader', { name: 'Username' })).toBeInTheDocument()
+    expect(within(rowFor('Officer One')).getByText('officer.one')).toBeInTheDocument()
+
+    const officerAvatar = within(rowFor('Officer One')).getByRole('img', { name: 'Officer One' })
+    expect(officerAvatar).toHaveAttribute('src', officer.profilePhotoUrl)
+    // No photo: the role's default picture, still named for screen readers.
+    expect(within(rowFor('Farmer One')).getByRole('img', { name: 'Farmer One' }).tagName).toBe('SPAN')
   })
 })

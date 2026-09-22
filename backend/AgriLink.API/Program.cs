@@ -152,6 +152,31 @@ else
     });
 }
 
+// ----- Profile photos -----
+// Chosen the same way as issue photos above, but stored publicly: see CloudinaryProfilePhotoStorage.
+builder.Services.AddSingleton<IProfilePhotoProcessor, ProfilePhotoProcessor>();
+builder.Services.AddHttpContextAccessor();
+if (cloudinaryOptions.IsConfigured)
+{
+    builder.Services.AddSingleton<IProfilePhotoStorage>(new CloudinaryProfilePhotoStorage(cloudinaryOptions));
+}
+else
+{
+    builder.Services.AddSingleton<IProfilePhotoStorage>(sp =>
+    {
+        var env = sp.GetRequiredService<IWebHostEnvironment>();
+        var root = Path.Combine(env.ContentRootPath, "App_Data", "avatars");
+        if (!env.IsDevelopment())
+        {
+            sp.GetRequiredService<ILogger<LocalProfilePhotoStorage>>().LogWarning(
+                "Cloudinary is not configured; profile photos are being stored on local disk at {Root}, which is not durable outside development.",
+                root);
+        }
+
+        return new LocalProfilePhotoStorage(root, sp.GetRequiredService<IHttpContextAccessor>());
+    });
+}
+
 // ----- CORS -----
 // Cors:AllowedOrigins is a comma-separated list (env var Cors__AllowedOrigins on a host); with none
 // configured, only the local dev servers are allowed.
@@ -203,12 +228,17 @@ using (var scope = app.Services.CreateScope())
 {
     await scope.ServiceProvider.GetRequiredService<AgriLinkDbContext>().Database.MigrateAsync();
 
+    var loggerFactory = scope.ServiceProvider.GetRequiredService<ILoggerFactory>();
+    await UsernameBackfill.RunAsync(
+        scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>(),
+        loggerFactory.CreateLogger("UsernameBackfill"));
+
     var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole<int>>>();
     await RoleSeeder.SeedAsync(roleManager);
 
     var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
     var adminSeed = scope.ServiceProvider.GetRequiredService<IOptions<AdminSeedOptions>>().Value;
-    var seedLogger = scope.ServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("AdminSeeder");
+    var seedLogger = loggerFactory.CreateLogger("AdminSeeder");
     await AdminSeeder.SeedAsync(userManager, adminSeed, seedLogger);
 }
 

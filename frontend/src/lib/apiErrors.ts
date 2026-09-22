@@ -14,7 +14,8 @@ export interface ParseApiErrorOptions {
   genericErrorKey?: string
   /** Translation key shown when the request never reached the server. */
   networkErrorKey?: string
-  /** Translation key for a 409 conflict and for Identity's DuplicateUserName/DuplicateEmail codes. */
+  /** Translation key for a 409 conflict and for Identity's DuplicateEmail code. A DuplicateUserName
+   *  code always maps to the "username is taken" message instead, whatever the status. */
   conflictKey?: string
 }
 
@@ -37,12 +38,20 @@ const IDENTITY_CODE_MESSAGE_KEYS: Record<string, string> = {
   InvalidEmail: 'common:validation.emailInvalid',
 }
 
-const DUPLICATE_IDENTITY_CODES = new Set(['DuplicateUserName', 'DuplicateEmail'])
+const DUPLICATE_EMAIL_CODE = 'DuplicateEmail'
+
+/**
+ * Usernames are now separate from emails, so a username clash gets its own message. It used to
+ * share the "email already exists" wording, back when every UserName was the email.
+ */
+const DUPLICATE_USERNAME_CODE = 'DuplicateUserName'
+const USERNAME_TAKEN_KEY = 'common:validation.usernameTaken'
 
 /** ASP.NET ValidationProblemDetails field names (from [Required]/[MaxLength]/... on the DTO) mapped to this form's field names. */
 const SERVER_FIELD_TO_FORM_FIELD: Record<string, string> = {
   FullName: 'fullName',
   Email: 'email',
+  Username: 'username',
   Password: 'password',
   NIC: 'nic',
   District: 'district',
@@ -60,6 +69,14 @@ interface IdentityErrorItem {
 
 function isIdentityErrorItem(value: unknown): value is IdentityErrorItem {
   return typeof value === 'object' && value !== null && 'description' in value
+}
+
+function hasErrorCode(data: unknown, code: string): boolean {
+  if (!data || typeof data !== 'object') {
+    return false
+  }
+  const errors = (data as Record<string, unknown>).errors
+  return Array.isArray(errors) && errors.some((item) => isIdentityErrorItem(item) && item.code === code)
 }
 
 /**
@@ -101,7 +118,8 @@ export function parseApiError(error: unknown, tArg: unknown, options: ParseApiEr
   const { status, data } = error.response
 
   if (status === 409) {
-    generalErrors.push(t(conflictKey))
+    // Both an email clash and a username clash are 409s; only the body says which.
+    generalErrors.push(t(hasErrorCode(data, DUPLICATE_USERNAME_CODE) ? USERNAME_TAKEN_KEY : conflictKey))
     return { fieldErrors, generalErrors }
   }
 
@@ -111,9 +129,13 @@ export function parseApiError(error: unknown, tArg: unknown, options: ParseApiEr
     if (Array.isArray(body.errors)) {
       for (const item of body.errors) {
         if (isIdentityErrorItem(item)) {
-          const messageKey = item.code
-            ? (DUPLICATE_IDENTITY_CODES.has(item.code) ? conflictKey : IDENTITY_CODE_MESSAGE_KEYS[item.code])
-            : undefined
+          const messageKey = !item.code
+            ? undefined
+            : item.code === DUPLICATE_USERNAME_CODE
+              ? USERNAME_TAKEN_KEY
+              : item.code === DUPLICATE_EMAIL_CODE
+                ? conflictKey
+                : IDENTITY_CODE_MESSAGE_KEYS[item.code]
           generalErrors.push(messageKey ? t(messageKey) : (item.description ?? t(genericErrorKey)))
         } else {
           generalErrors.push(String(item))
