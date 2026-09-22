@@ -49,10 +49,11 @@ describe('UserManagementTable', () => {
     await i18n.changeLanguage('en')
   })
 
-  it('offers Change Role, Deactivate and Reset password for an active Officer, and calls back with that user', async () => {
+  it('offers Edit, Change Role, Deactivate and Reset password for an active Officer, and calls back with that user', async () => {
     const onChangeRole = vi.fn()
     const onToggleStatus = vi.fn()
     const onResetPassword = vi.fn()
+    const onEditUser = vi.fn()
     const user = userEvent.setup()
 
     render(
@@ -61,10 +62,14 @@ describe('UserManagementTable', () => {
         onChangeRole={onChangeRole}
         onToggleStatus={onToggleStatus}
         onResetPassword={onResetPassword}
+        onEditUser={onEditUser}
       />,
     )
 
     const row = within(rowFor('Officer One'))
+    await user.click(row.getByRole('button', { name: 'Edit' }))
+    expect(onEditUser).toHaveBeenCalledWith(officer)
+
     await user.click(row.getByRole('button', { name: 'Change Role' }))
     expect(onChangeRole).toHaveBeenCalledWith(officer)
 
@@ -82,6 +87,7 @@ describe('UserManagementTable', () => {
         onChangeRole={vi.fn()}
         onToggleStatus={vi.fn()}
         onResetPassword={vi.fn()}
+        onEditUser={vi.fn()}
       />,
     )
 
@@ -90,23 +96,25 @@ describe('UserManagementTable', () => {
     expect(row.getByRole('button', { name: 'Activate' })).toBeInTheDocument()
   })
 
-  it('offers only Reset password for another Admin account', () => {
+  it('offers Edit and Reset password, but not Change Role or Deactivate, for another Admin account', () => {
     render(
       <UserManagementTable
         users={[admin]}
         onChangeRole={vi.fn()}
         onToggleStatus={vi.fn()}
         onResetPassword={vi.fn()}
+        onEditUser={vi.fn()}
       />,
     )
 
     const row = within(rowFor('Admin One'))
+    expect(row.getByRole('button', { name: 'Edit' })).toBeInTheDocument()
     expect(row.getByRole('button', { name: 'Reset password' })).toBeInTheDocument()
     expect(row.queryByRole('button', { name: 'Change Role' })).not.toBeInTheDocument()
     expect(row.queryByRole('button', { name: 'Deactivate' })).not.toBeInTheDocument()
   })
 
-  it('hides Reset password on the signed-in admin\'s own row', () => {
+  it('offers only Edit on the signed-in admin\'s own row', () => {
     render(
       <UserManagementTable
         users={[admin]}
@@ -114,16 +122,24 @@ describe('UserManagementTable', () => {
         onChangeRole={vi.fn()}
         onToggleStatus={vi.fn()}
         onResetPassword={vi.fn()}
+        onEditUser={vi.fn()}
       />,
     )
 
     const row = within(rowFor('Admin One'))
-    expect(row.queryByRole('button')).not.toBeInTheDocument()
+    expect(row.getAllByRole('button')).toHaveLength(1)
+    expect(row.getByRole('button', { name: 'Edit' })).toBeInTheDocument()
   })
 
   it('shows usernames in their own column, and each photo or role default beside the name', () => {
     render(
-      <UserManagementTable users={[officer, farmer]} onChangeRole={vi.fn()} onToggleStatus={vi.fn()} onResetPassword={vi.fn()} />,
+      <UserManagementTable
+        users={[officer, farmer]}
+        onChangeRole={vi.fn()}
+        onToggleStatus={vi.fn()}
+        onResetPassword={vi.fn()}
+        onEditUser={vi.fn()}
+      />,
     )
 
     expect(screen.getByRole('columnheader', { name: 'Username' })).toBeInTheDocument()

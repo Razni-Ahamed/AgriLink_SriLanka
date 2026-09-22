@@ -19,6 +19,7 @@ interface UserManagementTableProps {
   onChangeRole: (user: AdminUserSummary) => void
   onToggleStatus: (user: AdminUserSummary) => void
   onResetPassword: (user: AdminUserSummary) => void
+  onEditUser: (user: AdminUserSummary) => void
 }
 
 export function UserManagementTable({
@@ -28,6 +29,7 @@ export function UserManagementTable({
   onChangeRole,
   onToggleStatus,
   onResetPassword,
+  onEditUser,
 }: UserManagementTableProps) {
   const { t } = useTranslation(['orders', 'common'])
 
@@ -67,6 +69,9 @@ export function UserManagementTable({
               </td>
               <td className="px-4 py-3">
                 <div className="flex flex-wrap gap-2">
+                  <Button size="sm" variant="ghost" disabled={isMutating} onClick={() => onEditUser(user)}>
+                    {t('orders:admin.editUser')}
+                  </Button>
                   {(user.role === 'Officer' || user.role === 'Buyer') && (
                     <Button
                       size="sm"

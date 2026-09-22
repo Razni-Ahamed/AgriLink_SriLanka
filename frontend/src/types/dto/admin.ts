@@ -62,6 +62,33 @@ export interface UpdateUserStatusRequest {
   isActive: boolean
 }
 
+/**
+ * Allowed-fields DTO for PUT /api/admin/users/{id}/profile — mirrors the backend's own DTO,
+ * which is deliberately not the entity (role, IsActive, RegistrationStatus and anything
+ * password-related aren't on it, so they can never be set through this endpoint).
+ *
+ * Every field is optional: omitting it (not sending the key at all) means "leave this alone".
+ * The admin table has no way to show a user's current NIC/phone/display name/business details
+ * beforehand, so this form only pre-fills what it already knows (full name, email, district) —
+ * every other field is typed fresh or left out, never sent as an empty-string clear.
+ */
+export interface AdminUpdateUserProfileRequest {
+  fullName?: string
+  displayName?: string
+  email?: string
+  phoneNumber?: string
+  /** Farmer/Buyer only. */
+  nic?: string
+  /** Farmer/Buyer/Officer only. */
+  district?: string
+  /** Buyer only. */
+  businessRegistrationNumber?: string
+  /** Buyer only. */
+  businessName?: string
+  /** Farmer only. */
+  fieldPlotNumber?: string
+}
+
 export interface AdminResetPasswordRequest {
   newPassword: string
 }

@@ -9,12 +9,14 @@ import { useCreateUser } from '../hooks/useAdminMetrics'
 import {
   useAdminResetPassword,
   useAdminUsers,
+  useUpdateUserProfile,
   useUpdateUserRole,
   useUpdateUserStatus,
 } from '../hooks/useAdminUsers'
 import { UserCreateForm } from '../components/UserCreateForm'
 import { ChangeRoleForm } from '../components/ChangeRoleForm'
 import { AdminResetPasswordForm } from '../components/AdminResetPasswordForm'
+import { EditUserForm } from '../components/EditUserForm'
 import { UserManagementTable } from '../components/UserManagementTable'
 import type { AdminUserSummary } from '@/types/dto/admin'
 
@@ -29,9 +31,12 @@ export function AdminUsersPage() {
   const updateRole = useUpdateUserRole()
   const updateStatus = useUpdateUserStatus()
   const resetPassword = useAdminResetPassword()
+  const updateProfile = useUpdateUserProfile()
 
   const [roleTarget, setRoleTarget] = useState<AdminUserSummary | null>(null)
   const [passwordTarget, setPasswordTarget] = useState<AdminUserSummary | null>(null)
+  const [editTarget, setEditTarget] = useState<AdminUserSummary | null>(null)
+  const [editError, setEditError] = useState<string | null>(null)
   const [feedback, setFeedback] = useState<{ tone: 'success' | 'danger'; text: string } | null>(null)
 
   const handleToggleStatus = (user: AdminUserSummary) => {
@@ -109,6 +114,10 @@ export function AdminUsersPage() {
             onChangeRole={setRoleTarget}
             onToggleStatus={handleToggleStatus}
             onResetPassword={setPasswordTarget}
+            onEditUser={(user) => {
+              setEditError(null)
+              setEditTarget(user)
+            }}
           />
         )}
 
@@ -172,6 +181,50 @@ export function AdminUsersPage() {
               )
             }
           />
+        )}
+      </Modal>
+
+      <Modal
+        open={editTarget !== null}
+        onClose={() => setEditTarget(null)}
+        title={editTarget ? t('orders:admin.editUserFor', { name: editTarget.fullName }) : ''}
+      >
+        {editTarget && (
+          <div className="flex flex-col gap-3">
+            {editError && <p className="text-sm text-state-danger">{editError}</p>}
+            <EditUserForm
+              user={editTarget}
+              isSubmitting={updateProfile.isPending}
+              onSubmit={(changes) => {
+                if (Object.keys(changes).length === 0) {
+                  setEditError(null)
+                  setFeedback({ tone: 'success', text: t('orders:admin.editUserNoChanges') })
+                  setEditTarget(null)
+                  return
+                }
+                updateProfile.mutate(
+                  { userId: editTarget.userId, request: changes },
+                  {
+                    onSuccess: () => {
+                      setEditError(null)
+                      setFeedback({
+                        tone: 'success',
+                        text: t('orders:admin.editUserUpdated', { name: editTarget.fullName }),
+                      })
+                      setEditTarget(null)
+                    },
+                    onError: (error) => {
+                      const parsed = parseApiError(error, t, {
+                        genericErrorKey: 'orders:admin.editUserError',
+                        conflictKey: 'orders:admin.editUserEmailTaken',
+                      })
+                      setEditError(parsed.generalErrors[0] ?? t('orders:admin.editUserError'))
+                    },
+                  },
+                )
+              }}
+            />
+          </div>
         )}
       </Modal>
     </div>
