@@ -220,8 +220,40 @@ public class PurchaseRequestsController : ControllerBase
             PurchaseRequestStatus.Pending.ToString(),
             PurchaseRequestStatus.Accepted.ToString());
 
+        // Other still-pending requests on this listing that no longer fit the quantity left —
+        // every one of them if the listing just sold out — can never be filled. Close them in
+        // the same SaveChanges as the acceptance rather than leaving them stuck Pending forever.
+        var staleRequests = await _db.PurchaseRequests
+            .Include(r => r.BuyerProfile)
+            .Where(r => r.HarvestId == listing.HarvestId
+                && r.RequestId != purchaseRequest.RequestId
+                && r.Status == PurchaseRequestStatus.Pending
+                && r.RequestedQuantity > listing.AvailableQuantity)
+            .ToListAsync();
+
+        foreach (var stale in staleRequests)
+        {
+            stale.Status = PurchaseRequestStatus.Cancelled;
+            _auditLog.Record(
+                _currentUser.GetUserId(User),
+                "PurchaseRequestAutoCancelled",
+                "PurchaseRequest",
+                stale.RequestId,
+                PurchaseRequestStatus.Pending.ToString(),
+                PurchaseRequestStatus.Cancelled.ToString());
+        }
+
         await _db.SaveChangesAsync();
         await NotifyBuyerAsync(purchaseRequest, accepted: true);
+
+        var crop = listing.Crop.CropType;
+        foreach (var stale in staleRequests)
+        {
+            await _notifications.NotifyAsync(
+                stale.BuyerProfile.UserId,
+                "Purchase request closed",
+                $"The listing for {crop} is no longer available, so your request was closed.");
+        }
 
         return Ok(ToResponse(purchaseRequest));
     }

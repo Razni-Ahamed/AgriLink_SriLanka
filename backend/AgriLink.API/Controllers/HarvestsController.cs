@@ -15,12 +15,18 @@ public class HarvestsController : ControllerBase
     private readonly AgriLinkDbContext _db;
     private readonly ICurrentUserService _currentUser;
     private readonly IAuditLogService _auditLog;
+    private readonly INotificationService _notifications;
 
-    public HarvestsController(AgriLinkDbContext db, ICurrentUserService currentUser, IAuditLogService auditLog)
+    public HarvestsController(
+        AgriLinkDbContext db,
+        ICurrentUserService currentUser,
+        IAuditLogService auditLog,
+        INotificationService notifications)
     {
         _db = db;
         _currentUser = currentUser;
         _auditLog = auditLog;
+        _notifications = notifications;
     }
 
     [HttpGet]
@@ -196,7 +202,40 @@ public class HarvestsController : ControllerBase
                 listing.Status.ToString());
         }
 
+        // The listing can no longer fill anything once it's Sold or Cancelled, so any request
+        // still waiting on it would otherwise stay Pending forever.
+        var justClosed = oldStatus != listing.Status
+            && (listing.Status == HarvestStatus.Sold || listing.Status == HarvestStatus.Cancelled);
+
+        var staleRequests = justClosed
+            ? await _db.PurchaseRequests
+                .Include(r => r.BuyerProfile)
+                .Where(r => r.HarvestId == listing.HarvestId && r.Status == PurchaseRequestStatus.Pending)
+                .ToListAsync()
+            : new List<PurchaseRequest>();
+
+        foreach (var stale in staleRequests)
+        {
+            stale.Status = PurchaseRequestStatus.Cancelled;
+            _auditLog.Record(
+                _currentUser.GetUserId(User),
+                "PurchaseRequestAutoCancelled",
+                "PurchaseRequest",
+                stale.RequestId,
+                PurchaseRequestStatus.Pending.ToString(),
+                PurchaseRequestStatus.Cancelled.ToString());
+        }
+
         await _db.SaveChangesAsync();
+
+        foreach (var stale in staleRequests)
+        {
+            await _notifications.NotifyAsync(
+                stale.BuyerProfile.UserId,
+                "Purchase request closed",
+                $"The listing for {listing.Crop.CropType} is no longer available, so your request was closed.");
+        }
+
         return Ok(ToResponse(listing));
     }
 
