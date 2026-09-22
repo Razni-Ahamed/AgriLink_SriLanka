@@ -1,6 +1,10 @@
 {
   "pending": {
-    "title": "Pending Registrations",
+    "pageTitle": "Approvals",
+    "tabs": {
+      "registrations": "Registrations",
+      "profileChanges": "Profile changes"
+    },
     "scopedToDistrict": "Showing Farmer applications in {{district}}",
     "empty": "No applications are waiting for review right now.",
     "farmerLabel": "Farmer application",
@@ -18,6 +22,32 @@
     "rejectPrompt": "Reason for rejection",
     "rejectPlaceholder": "Explain why this application is being rejected",
     "rejectSubmit": "Reject application",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "changes": {
+      "scopedToDistrict": "Showing Farmer requests in {{district}}",
+      "empty": "No profile changes are waiting for review right now.",
+      "fieldLabel": {
+        "FullName": "Full name",
+        "NIC": "NIC",
+        "Email": "Email"
+      },
+      "oldValue": "Current: {{value}}",
+      "newValue": "Requested: {{value}}",
+      "requestedOn": "Requested {{date}}",
+      "approve": "Approve",
+      "reject": "Reject",
+      "approveTitle": "Approve this change",
+      "approvePrompt": "Enter your password to approve this change.",
+      "approveConfirm": "Approve change",
+      "approveError": "Could not approve this change. Please try again.",
+      "approved": "The change was approved.",
+      "wrongPassword": "Current password is incorrect.",
+      "rejectPrompt": "Reason for rejection",
+      "rejectPlaceholder": "Explain why this change is being rejected",
+      "rejectSubmit": "Reject change",
+      "rejectError": "Could not reject this change. Please try again.",
+      "rejected": "The change was rejected.",
+      "cancel": "Cancel"
+    }
   }
 }
