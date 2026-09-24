@@ -51,9 +51,30 @@ export function HomePage() {
   )
 }
 
-function Section({ children, className }: { children: ReactNode; className?: string }) {
+/**
+ * Full-width background bands. The band spans the whole window so a wide screen doesn't look
+ * empty at the sides, while the content inside stays capped at a readable width.
+ */
+const bandClasses = {
+  plain: '',
+  hero: 'bg-gradient-to-br from-brand-harvest/15 via-bg-canvas to-brand-forest/10',
+  tint: 'border-y border-brand-forest/10 bg-brand-forest/5',
+} as const
+
+interface SectionProps {
+  children: ReactNode
+  band?: keyof typeof bandClasses
+  /** Classes for the centred content column, not the band. */
+  className?: string
+}
+
+function Section({ children, band = 'plain', className }: SectionProps) {
   return (
-    <section className={cn('mx-auto max-w-6xl px-4 py-14 sm:px-6', className)}>{children}</section>
+    <section className={bandClasses[band]}>
+      <div className={cn('mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8', className)}>
+        {children}
+      </div>
+    </section>
   )
 }
 
@@ -64,7 +85,7 @@ function HomeHeader() {
     <header className="sticky top-0 z-40 border-b border-brand-forest/10 bg-bg-surface/80 backdrop-blur-md">
       {/* Same two-row trick as AppLayout: on phones the language and theme controls drop below,
           or the sign-in buttons get pushed off the screen. */}
-      <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3 sm:flex-nowrap sm:px-6">
+      <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3 sm:flex-nowrap sm:px-6 lg:px-8">
         <Link to="/" className="mr-auto font-display text-xl text-brand-forest">
           {t('common:appName')}
         </Link>
@@ -91,7 +112,7 @@ function Hero() {
   const { t } = useTranslation('home')
 
   return (
-    <Section className="grid items-center gap-10 pt-12 md:grid-cols-2 md:pt-20">
+    <Section band="hero" className="grid items-center gap-10 pt-12 md:grid-cols-2 md:py-20">
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
@@ -219,7 +240,7 @@ function MarketplacePreview() {
   const preview = harvests?.slice(0, PREVIEW_COUNT)
 
   return (
-    <Section>
+    <Section band="tint">
       <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
         <div>
           <h2 className="font-display text-3xl text-text-primary">{t('marketplace.title')}</h2>
@@ -301,8 +322,8 @@ function HomeFooter() {
   const linkClass = 'text-sm text-text-secondary hover:text-brand-forest hover:underline'
 
   return (
-    <footer className="mt-8 border-t border-brand-forest/10 bg-bg-surface">
-      <div className="mx-auto grid max-w-6xl gap-8 px-4 py-10 sm:grid-cols-3 sm:px-6">
+    <footer className="border-t border-brand-forest/10 bg-bg-surface">
+      <div className="mx-auto grid max-w-7xl gap-8 px-4 py-10 sm:grid-cols-3 sm:px-6 lg:px-8">
         <div>
           <p className="font-display text-xl text-brand-forest">{t('common:appName')}</p>
           <p className="mt-2 text-sm text-text-secondary">{t('home:footer.tagline')}</p>
