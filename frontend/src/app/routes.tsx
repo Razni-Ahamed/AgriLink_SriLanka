@@ -3,9 +3,12 @@ import { AdminLoginPage } from '@/auth/AdminLoginPage'
 import { LoginPage } from '@/auth/LoginPage'
 import { RegisterPage } from '@/auth/RegisterPage'
 import { AppLayout } from './AppLayout'
+import { HomeRoute } from './HomeRoute'
 import { pageRoutes } from './pageRoutes'
 
 export const router = createBrowserRouter([
+  // Outside AppLayout: the landing page has its own header, and it isn't behind RequireAuth.
+  { path: '/', element: <HomeRoute /> },
   { path: '/login', element: <LoginPage /> },
   { path: '/admin/login', element: <AdminLoginPage /> },
   { path: '/register', element: <RegisterPage /> },

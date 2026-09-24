@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useMutation } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { motion } from 'motion/react'
@@ -60,7 +60,11 @@ export function LoginPage() {
             <ThemeToggle variant="compact" />
           </div>
 
-          <h1 className="mb-1 font-display text-2xl text-brand-forest">{t('common:appName')}</h1>
+          <h1 className="mb-1 font-display text-2xl text-brand-forest">
+            <Link to="/" className="hover:underline">
+              {t('common:appName')}
+            </Link>
+          </h1>
           <p className="mb-6 text-sm text-text-secondary">{t('auth:login.subtitle')}</p>
 
           <form

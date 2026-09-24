@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { MemoryRouter } from 'react-router-dom'
 import { AxiosError, AxiosHeaders } from 'axios'
 import '@/i18n/config'
 import i18n from '@/i18n/config'
@@ -20,11 +21,13 @@ function axiosErrorWithResponse(status: number, data: unknown): AxiosError {
   return error
 }
 
-function renderPage() {
+function renderPage(initialEntry = '/register') {
   const client = new QueryClient({ defaultOptions: { mutations: { retry: false } } })
   return render(
     <QueryClientProvider client={client}>
-      <RegisterPage />
+      <MemoryRouter initialEntries={[initialEntry]}>
+        <RegisterPage />
+      </MemoryRouter>
     </QueryClientProvider>,
   )
 }
@@ -68,6 +71,13 @@ describe('RegisterPage', () => {
     expect(screen.getByLabelText('Field/plot number')).toBeInTheDocument()
     expect(screen.getByLabelText('Phone number')).toBeInTheDocument()
     expect(screen.queryByLabelText('Legal business name')).not.toBeInTheDocument()
+  })
+
+  it('opens on Buyer when the home page links here with ?role=Buyer', () => {
+    renderPage('/register?role=Buyer')
+
+    expect(screen.getByLabelText('Legal business name')).toBeInTheDocument()
+    expect(screen.queryByLabelText('Field/plot number')).not.toBeInTheDocument()
   })
 
   it('switching to Buyer swaps in the business fields and drops the farmer ones', async () => {
