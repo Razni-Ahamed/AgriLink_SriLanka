@@ -4,6 +4,7 @@ import { initReactI18next } from 'react-i18next'
 import enAuth from './locales/en/auth.json'
 import enCommon from './locales/en/common.json'
 import enFarms from './locales/en/farms.json'
+import enHome from './locales/en/home.json'
 import enIssues from './locales/en/issues.json'
 import enMarketplace from './locales/en/marketplace.json'
 import enOfficer from './locales/en/officer.json'
@@ -13,6 +14,7 @@ import enRegistrations from './locales/en/registrations.json'
 import siAuth from './locales/si/auth.json'
 import siCommon from './locales/si/common.json'
 import siFarms from './locales/si/farms.json'
+import siHome from './locales/si/home.json'
 import siIssues from './locales/si/issues.json'
 import siMarketplace from './locales/si/marketplace.json'
 import siOfficer from './locales/si/officer.json'
@@ -22,6 +24,7 @@ import siRegistrations from './locales/si/registrations.json'
 import taAuth from './locales/ta/auth.json'
 import taCommon from './locales/ta/common.json'
 import taFarms from './locales/ta/farms.json'
+import taHome from './locales/ta/home.json'
 import taIssues from './locales/ta/issues.json'
 import taMarketplace from './locales/ta/marketplace.json'
 import taOfficer from './locales/ta/officer.json'
@@ -66,6 +69,7 @@ export const resources = {
     common: enCommon,
     auth: enAuth,
     farms: enFarms,
+    home: enHome,
     issues: enIssues,
     marketplace: enMarketplace,
     officer: enOfficer,
@@ -76,6 +80,7 @@ export const resources = {
     common: siCommon,
     auth: siAuth,
     farms: siFarms,
+    home: siHome,
     issues: siIssues,
     marketplace: siMarketplace,
     officer: siOfficer,
@@ -86,6 +91,7 @@ export const resources = {
     common: taCommon,
     auth: taAuth,
     farms: taFarms,
+    home: taHome,
     issues: taIssues,
     marketplace: taMarketplace,
     officer: taOfficer,
@@ -101,7 +107,7 @@ void i18n.use(initReactI18next).init({
   lng: readStoredLanguage(),
   fallbackLng: DEFAULT_LANGUAGE,
   defaultNS: 'common',
-  ns: ['common', 'auth', 'farms', 'issues', 'marketplace', 'officer', 'orders', 'registrations'],
+  ns: ['common', 'auth', 'farms', 'home', 'issues', 'marketplace', 'officer', 'orders', 'registrations'],
   // React escapes interpolated values already.
   interpolation: { escapeValue: false },
 })

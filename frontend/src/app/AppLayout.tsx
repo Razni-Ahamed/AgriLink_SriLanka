@@ -1,5 +1,6 @@
 import { AnimatePresence, motion } from 'motion/react'
 import {
+  Link,
   NavLink,
   Outlet,
   matchRoutes,
@@ -68,7 +69,10 @@ export function AppLayout() {
       {/* On phones the language and theme controls drop to a second row: all of them in one row
           is wider than the screen, which pushed the profile button out of reach. */}
       <header className="sticky top-0 z-40 flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-brand-forest/10 bg-bg-surface/80 px-4 py-3 backdrop-blur-md sm:flex-nowrap sm:px-6">
-        <span className="mr-auto font-display text-xl text-brand-forest">{t('appName')}</span>
+        {/* `/` sends a signed-in user to their role's home, and a visitor to the landing page. */}
+        <Link to="/" className="mr-auto font-display text-xl text-brand-forest">
+          {t('appName')}
+        </Link>
 
         <div className="order-last flex w-full items-center justify-between gap-2 sm:order-none sm:w-auto sm:justify-end sm:gap-4">
           <LanguageSwitcher variant="compact" />

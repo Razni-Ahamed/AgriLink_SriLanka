@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useMutation } from '@tanstack/react-query'
+import { Link, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { motion } from 'motion/react'
 import { Button } from '@/components/ui/Button'
@@ -26,7 +27,10 @@ type Role = 'Farmer' | 'Buyer'
 
 export function RegisterPage() {
   const { t } = useTranslation(['auth', 'common'])
-  const [role, setRole] = useState<Role>('Farmer')
+  const [searchParams] = useSearchParams()
+  // The home page's role cards link here with ?role= so the form opens on the role they picked.
+  const initialRole: Role = searchParams.get('role') === 'Buyer' ? 'Buyer' : 'Farmer'
+  const [role, setRole] = useState<Role>(initialRole)
   const [generalErrors, setGeneralErrors] = useState<string[]>([])
   const passwordChecklistId = useId()
   const usernameHintId = useId()
@@ -136,7 +140,7 @@ export function RegisterPage() {
   } = useForm<FormInput, unknown, FormOutput>({
     resolver: zodResolver(schema),
     mode: 'onTouched',
-    defaultValues: { role: 'Farmer' } as Partial<FormInput>,
+    defaultValues: { role: initialRole } as Partial<FormInput>,
   })
 
   const passwordValue = watch('password') ?? ''
@@ -229,6 +233,9 @@ export function RegisterPage() {
             <ThemeToggle variant="compact" />
           </div>
 
+          <Link to="/" className="mb-2 inline-block text-sm text-brand-forest hover:underline">
+            {t('common:appName')}
+          </Link>
           <h1 className="mb-1 font-display text-2xl text-brand-forest">
             {t('auth:register.title')}
           </h1>

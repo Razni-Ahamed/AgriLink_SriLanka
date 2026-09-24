@@ -1,0 +1,64 @@
+{
+  "nav": {
+    "login": "Log in",
+    "register": "Register"
+  },
+  "hero": {
+    "eyebrow": "Made for Sri Lankan agriculture",
+    "title": "From the field to the market, all in one place",
+    "subtitle": "AgriLink brings farmers, agricultural officers and buyers together — report crop problems, get expert advice and sell your harvest directly.",
+    "register": "Create a free account",
+    "browse": "Browse harvests"
+  },
+  "roles": {
+    "title": "Who is AgriLink for?",
+    "farmer": {
+      "title": "Farmers",
+      "description": "Keep track of your farms, fields and crops, report crop problems with photos, get advice from officers and list your harvest for sale.",
+      "cta": "Register as a farmer"
+    },
+    "officer": {
+      "title": "Agricultural officers",
+      "description": "Review the problems farmers in your area report, send advisories and approve new farmer registrations.",
+      "note": "Officer accounts are created by an administrator."
+    },
+    "buyer": {
+      "title": "Buyers",
+      "description": "Browse fresh harvests from across the island and send purchase requests straight to the farmer.",
+      "cta": "Register as a buyer"
+    }
+  },
+  "marketplace": {
+    "title": "Fresh on the marketplace",
+    "subtitle": "Harvests farmers have listed recently.",
+    "viewAll": "See all harvests",
+    "empty": "No harvests are listed right now. Check back soon.",
+    "error": "The marketplace couldn't be loaded right now."
+  },
+  "steps": {
+    "title": "How it works",
+    "register": {
+      "title": "Register",
+      "description": "Sign up as a farmer or a buyer in a few minutes."
+    },
+    "approval": {
+      "title": "Get approved",
+      "description": "An officer checks your details so everyone on AgriLink is genuine."
+    },
+    "setUp": {
+      "title": "Add your farm or browse",
+      "description": "Farmers add their farms and crops; buyers start browsing harvests."
+    },
+    "connect": {
+      "title": "Connect and trade",
+      "description": "Get advice on crop problems and buy or sell directly."
+    }
+  },
+  "footer": {
+    "tagline": "Connecting Sri Lankan farmers, officers and buyers.",
+    "explore": "Explore",
+    "account": "Account",
+    "adminLogin": "Admin sign in",
+    "rights": "© {{year}} AgriLink Sri Lanka"
+  }
+}

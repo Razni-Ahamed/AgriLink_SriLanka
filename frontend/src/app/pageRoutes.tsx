@@ -7,7 +7,6 @@ import { officerRoutes } from '@/features/officer/routes'
 import { ordersRoutes } from '@/features/orders/routes'
 import { registrationsRoutes } from '@/features/registrations/routes'
 import { RequireAuth } from './RequireAuth'
-import { RoleHomeRedirect } from './RoleHomeRedirect'
 import { UnauthorizedPage } from './UnauthorizedPage'
 
 /**
@@ -20,7 +19,6 @@ export const pageRoutes: RouteObject[] = [
   {
     element: <RequireAuth />,
     children: [
-      { path: '/', element: <RoleHomeRedirect /> },
       // Each feature's own routes.tsx wraps its sub-routes in RequireRole scoped to
       // exactly what its backend endpoints authorize (see the comments there) — no
       // single coarse role list here, since farms/issues/marketplace mix Farmer-only,
