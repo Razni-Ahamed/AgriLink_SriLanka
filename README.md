@@ -223,14 +223,14 @@ AgriLink Sri Lanka was designed and built by:
 
 - **Razni Ahamed M. R.**
 - **Gayathri M. G. K.**
-- **Jayaweera A. D. J.**
+- **Jayaweera A.J.D.**
 - **Fernando C. P. H. A. C.**
 
 ---
 
 ## Licence
 
-**Copyright © 2026 Razni Ahamed M. R., Gayathri M. G. K., Jayaweera A. D. J. and Fernando C. P. H. A. C. All rights reserved.**
+**Copyright © 2026 Razni Ahamed M. R., Gayathri M. G. K., Jayaweera A.J.D. and Fernando C. P. H. A. C. All rights reserved.**
 
 This is **not** open-source software. The repository is public so that it can be viewed. No permission is granted to copy, modify, distribute or deploy the code, or to present any part of it as your own work. That includes submitting it for any academic assessment. Any other use needs written permission from all of the authors. See [`LICENSE`](LICENSE) for the full terms.
 
