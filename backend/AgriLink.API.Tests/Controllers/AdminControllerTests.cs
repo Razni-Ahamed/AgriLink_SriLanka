@@ -394,6 +394,50 @@ public class AdminControllerTests
     }
 
     [Fact]
+    public async Task UpdateUserRole_EndsTheUsersExistingSessions()
+    {
+        var (controller, db, users, _) = await CreateAsync();
+        var officer = await CreateOfficerAsync(users, db);
+        var stampBefore = officer.SecurityStamp;
+
+        await controller.UpdateUserRole(officer.Id, new UpdateUserRoleRequest
+        {
+            Role = "Buyer",
+            District = "Kandy",
+            BusinessName = "Kandy Produce Traders",
+        });
+
+        Assert.NotEqual(stampBefore, (await users.FindByIdAsync(officer.Id.ToString()))!.SecurityStamp);
+    }
+
+    [Fact]
+    public async Task UpdateUserRole_BuyerWithPurchaseHistory_IsRefusedAndNothingChanges()
+    {
+        var (controller, db, users, _) = await CreateAsync();
+        var buyer = new ApplicationUser { UserName = "buyer@agrilink.lk", Email = "buyer@agrilink.lk", FullName = "Test Buyer" };
+        await users.CreateAsync(buyer, "Buyer@AgriLink.2026!");
+        await users.AddToRoleAsync(buyer, "Buyer");
+        var buyerProfile = new BuyerProfile { UserId = buyer.Id, BusinessName = "Buyer Co", District = "Colombo" };
+        db.BuyerProfiles.Add(buyerProfile);
+        await db.SaveChangesAsync();
+        db.PurchaseRequests.Add(new PurchaseRequest { HarvestId = 1, BuyerProfileId = buyerProfile.BuyerProfileId, RequestedQuantity = 5 });
+        await db.SaveChangesAsync();
+        var departmentId = await EnsureDepartmentAsync(db);
+
+        var result = await controller.UpdateUserRole(buyer.Id, new UpdateUserRoleRequest
+        {
+            Role = "Officer",
+            District = "Colombo",
+            DepartmentId = departmentId,
+        });
+
+        Assert.IsType<BadRequestObjectResult>(result.Result);
+        Assert.Equal(new[] { "Buyer" }, await users.GetRolesAsync(buyer));
+        Assert.NotNull(await db.BuyerProfiles.FirstOrDefaultAsync(b => b.UserId == buyer.Id));
+        Assert.Null(await db.OfficerProfiles.FirstOrDefaultAsync(o => o.UserId == buyer.Id));
+    }
+
+    [Fact]
     public async Task UpdateUserRole_TargetIsFarmer_ReturnsBadRequest()
     {
         var (controller, db, users, _) = await CreateAsync();
@@ -448,6 +492,18 @@ public class AdminControllerTests
 
         var auditLog = await db.AuditLogs.FirstOrDefaultAsync(a => a.EntityId == officer.Id && a.Action == "UserDeactivated");
         Assert.NotNull(auditLog);
+    }
+
+    [Fact]
+    public async Task UpdateUserStatus_Deactivate_EndsTheUsersExistingSessions()
+    {
+        var (controller, db, users, _) = await CreateAsync();
+        var officer = await CreateOfficerAsync(users, db);
+        var stampBefore = officer.SecurityStamp;
+
+        await controller.UpdateUserStatus(officer.Id, new UpdateUserStatusRequest { IsActive = false });
+
+        Assert.NotEqual(stampBefore, (await users.FindByIdAsync(officer.Id.ToString()))!.SecurityStamp);
     }
 
     [Fact]
@@ -568,6 +624,19 @@ public class AdminControllerTests
         var notification = await db.Notifications.FirstOrDefaultAsync(n => n.UserId == officer.Id);
         Assert.NotNull(notification);
         Assert.Contains("administrator", notification!.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task ResetPassword_UnlocksAnAccountLockedByWrongPasswords()
+    {
+        var (controller, db, users, _) = await CreateAsync();
+        var officer = await CreateOfficerAsync(users, db);
+        await users.SetLockoutEndDateAsync(officer, DateTimeOffset.UtcNow.AddMinutes(15));
+        Assert.True(await users.IsLockedOutAsync(officer));
+
+        await controller.ResetPassword(officer.Id, new AdminResetPasswordRequest { NewPassword = "BrandNewPassword@2026!" });
+
+        Assert.False(await users.IsLockedOutAsync(officer));
     }
 
     [Fact]

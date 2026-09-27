@@ -140,7 +140,18 @@ public class OrdersController : ControllerBase
             order.OrderId,
             OrderStatus.Confirmed.ToString(),
             newStatus.ToString());
-        await _db.SaveChangesAsync();
+
+        try
+        {
+            await _db.SaveChangesAsync();
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            // The other party completed or cancelled this order (or the listing changed) at the
+            // same moment. Without this both calls used to succeed, leaving e.g. a cancelled order
+            // whose quantity had also been counted as sold.
+            return Conflict(new { message = "This order was changed at the same time by someone else. Refresh and try again." });
+        }
 
         var counterpartUserId = isFarmer ? order.BuyerProfile.UserId : order.FarmerProfile.UserId;
         var crop = order.Request.Harvest.Crop.CropType;
@@ -188,7 +199,7 @@ public class OrdersController : ControllerBase
         BuyerDistrict = order.BuyerProfile.District,
         BuyerPhotoUrl = order.BuyerProfile.User.ProfilePhotoUrl,
         CropType = order.Request.Harvest.Crop.CropType,
-        PricePerUnit = order.Request.Harvest.PricePerUnit,
+        PricePerUnit = order.PricePerUnit,
         HarvestLocation = order.Request.Harvest.Location,
     };
 }

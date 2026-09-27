@@ -60,6 +60,7 @@ public class OrdersControllerTests
             Harvest = listing,
             BuyerProfileId = 1,
             RequestedQuantity = 100,
+            PricePerUnit = 50,
             Status = PurchaseRequestStatus.Accepted,
         };
         var order = new Order
@@ -69,6 +70,7 @@ public class OrdersControllerTests
             FarmerProfile = farmer,
             BuyerProfile = buyer,
             TotalQuantity = 100,
+            PricePerUnit = 50,
             TotalAmount = 5000,
             Status = OrderStatus.Confirmed,
         };
@@ -116,6 +118,21 @@ public class OrdersControllerTests
         Assert.Equal(100, listing.AvailableQuantity);
         Assert.Equal(HarvestStatus.Active, listing.Status);
         Assert.Contains(await db.Notifications.ToListAsync(), n => n.UserId == BuyerUserId);
+    }
+
+    [Fact]
+    public async Task GetById_KeepsTheOrdersAgreedPrice_WhenTheListingPriceChangesLater()
+    {
+        using var db = CreateDb();
+        SeedConfirmedOrder(db);
+        (await db.HarvestListings.SingleAsync()).PricePerUnit = 80;
+        await db.SaveChangesAsync();
+
+        var result = await CreateController(db, BuyerUserId, "Buyer").GetById(1);
+
+        var response = Assert.IsType<OrderResponse>(Assert.IsType<OkObjectResult>(result.Result).Value);
+        Assert.Equal(50, response.PricePerUnit);
+        Assert.Equal(5000, response.TotalAmount);
     }
 
     [Fact]

@@ -130,6 +130,10 @@ public class AuthController : ControllerBase
             RegistrationStatus = RegistrationStatus.Pending,
         };
 
+        // The account, its role and its profile land together: a failure part-way used to leave an
+        // account with no role or profile that no approval queue showed and nobody could fix.
+        await using var transaction = await _db.Database.BeginIfSupportedAsync();
+
         var createResult = await UsernameErrors.CreateOrNullOnDuplicateAsync(_userManager, user, request.Password);
         if (createResult is null)
         {
@@ -169,6 +173,11 @@ public class AuthController : ControllerBase
 
         await _db.SaveChangesAsync();
 
+        if (transaction is not null)
+        {
+            await transaction.CommitAsync();
+        }
+
         if (role == "Farmer")
         {
             var officerUserIds = await _db.OfficerProfiles
@@ -206,9 +215,15 @@ public class AuthController : ControllerBase
     public async Task<ActionResult<AuthResponse>> Login(LoginRequest request)
     {
         var user = await _userManager.FindByEmailAsync(request.Email);
-        if (user is null || !await _userManager.CheckPasswordAsync(user, request.Password))
+        if (user is null)
         {
             return Unauthorized(new { message = "Invalid email or password." });
+        }
+
+        var passwordFailure = await CheckPasswordWithLockoutAsync(user, request.Password);
+        if (passwordFailure is not null)
+        {
+            return passwordFailure;
         }
 
         if (user.RegistrationStatus == RegistrationStatus.Pending)
@@ -240,9 +255,15 @@ public class AuthController : ControllerBase
     public async Task<ActionResult<AuthResponse>> AdminLogin(LoginRequest request)
     {
         var user = await _userManager.FindByEmailAsync(request.Email);
-        if (user is null || !user.IsActive || !await _userManager.CheckPasswordAsync(user, request.Password))
+        if (user is null || !user.IsActive)
         {
             return Unauthorized(new { message = "Invalid email or password." });
+        }
+
+        var passwordFailure = await CheckPasswordWithLockoutAsync(user, request.Password);
+        if (passwordFailure is not null)
+        {
+            return passwordFailure;
         }
 
         var roles = await _userManager.GetRolesAsync(user);
@@ -257,5 +278,40 @@ public class AuthController : ControllerBase
 
         var token = _tokenService.GenerateToken(user, roles);
         return Ok(new AuthResponse { Token = token, Role = AdminSeeder.AdminRole });
+    }
+
+    /// <summary>
+    /// Checks the password while counting failures: 5 wrong passwords in a row lock the account for
+    /// the lockout period set in Program.cs, and while it is locked even the right password is
+    /// refused. Returns null when the password is right, or the response to send otherwise.
+    /// </summary>
+    private async Task<ActionResult?> CheckPasswordWithLockoutAsync(ApplicationUser user, string password)
+    {
+        if (await _userManager.IsLockedOutAsync(user))
+        {
+            return LockedOut(user);
+        }
+
+        if (!await _userManager.CheckPasswordAsync(user, password))
+        {
+            await _userManager.AccessFailedAsync(user);
+            return await _userManager.IsLockedOutAsync(user)
+                ? LockedOut(user)
+                : Unauthorized(new { message = "Invalid email or password." });
+        }
+
+        await _userManager.ResetAccessFailedCountAsync(user);
+        return null;
+    }
+
+    private ObjectResult LockedOut(ApplicationUser user)
+    {
+        var minutes = user.LockoutEnd is { } end
+            ? Math.Max(1, (int)Math.Ceiling((end - DateTimeOffset.UtcNow).TotalMinutes))
+            : 1;
+        return StatusCode(StatusCodes.Status429TooManyRequests, new
+        {
+            message = $"Too many failed sign-in attempts. Try again in {minutes} minute{(minutes == 1 ? string.Empty : "s")}.",
+        });
     }
 }

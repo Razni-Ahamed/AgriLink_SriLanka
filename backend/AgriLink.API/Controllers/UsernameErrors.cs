@@ -29,9 +29,15 @@ internal static class UsernameErrors
     public static bool IsUniqueViolation(DbUpdateException exception) =>
         exception.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation };
 
+    /// <summary>True when the clash was on the unique email index rather than the username one.</summary>
+    private static bool IsEmailIndexViolation(DbUpdateException exception) =>
+        exception.InnerException is PostgresException { ConstraintName: "EmailIndex" };
+
     /// <summary>
     /// Creates the account, turning a username clash — whether Identity's validator or the unique index
-    /// catches it — into null so the caller can answer 409 instead of 400 or 500.
+    /// catches it — into null so the caller can answer 409 instead of 400 or 500. An email clash that
+    /// only the unique email index caught (two sign-ups at the same moment) comes back as Identity's
+    /// own DuplicateEmail error, the same one its validator gives.
     /// </summary>
     public static async Task<IdentityResult?> CreateOrNullOnDuplicateAsync(
         UserManager<ApplicationUser> userManager, ApplicationUser user, string password)
@@ -43,7 +49,9 @@ internal static class UsernameErrors
         }
         catch (DbUpdateException ex) when (IsUniqueViolation(ex))
         {
-            return null;
+            return IsEmailIndexViolation(ex)
+                ? IdentityResult.Failed(new IdentityErrorDescriber().DuplicateEmail(user.Email ?? string.Empty))
+                : null;
         }
 
         return !result.Succeeded && ContainsDuplicateUserName(result) ? null : result;

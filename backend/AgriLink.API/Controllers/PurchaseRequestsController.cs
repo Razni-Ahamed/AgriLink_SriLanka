@@ -5,6 +5,7 @@ using AgriLink.API.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 
 namespace AgriLink.API.Controllers;
 
@@ -66,6 +67,7 @@ public class PurchaseRequestsController : ControllerBase
             BuyerProfileId = buyerProfile.BuyerProfileId,
             BuyerProfile = buyerProfile,
             RequestedQuantity = request.RequestedQuantity,
+            PricePerUnit = listing.PricePerUnit,
             Message = request.Message ?? string.Empty,
             Status = PurchaseRequestStatus.Pending,
         };
@@ -176,7 +178,11 @@ public class PurchaseRequestsController : ControllerBase
                 purchaseRequest.RequestId,
                 PurchaseRequestStatus.Pending.ToString(),
                 PurchaseRequestStatus.Declined.ToString());
-            await _db.SaveChangesAsync();
+            if (!await TrySaveAsync())
+            {
+                return ConcurrentChangeConflict();
+            }
+
             await NotifyBuyerAsync(purchaseRequest, accepted: false);
             return Ok(ToResponse(purchaseRequest));
         }
@@ -206,7 +212,10 @@ public class PurchaseRequestsController : ControllerBase
             FarmerProfileId = farmerProfileId.Value,
             BuyerProfileId = purchaseRequest.BuyerProfileId,
             TotalQuantity = purchaseRequest.RequestedQuantity,
-            TotalAmount = purchaseRequest.RequestedQuantity * listing.PricePerUnit,
+            // The price the buyer asked at, not the listing's current one: the farmer may have
+            // changed the listing since, and the buyer never agreed to that price.
+            PricePerUnit = purchaseRequest.PricePerUnit,
+            TotalAmount = purchaseRequest.RequestedQuantity * purchaseRequest.PricePerUnit,
             Status = OrderStatus.Confirmed,
         };
 
@@ -243,7 +252,11 @@ public class PurchaseRequestsController : ControllerBase
                 PurchaseRequestStatus.Cancelled.ToString());
         }
 
-        await _db.SaveChangesAsync();
+        if (!await TrySaveAsync())
+        {
+            return ConcurrentChangeConflict();
+        }
+
         await NotifyBuyerAsync(purchaseRequest, accepted: true);
 
         var crop = listing.Crop.CropType;
@@ -257,6 +270,34 @@ public class PurchaseRequestsController : ControllerBase
 
         return Ok(ToResponse(purchaseRequest));
     }
+
+    /// <summary>
+    /// Saves, or returns false when someone else changed the same request or listing first — for
+    /// example two requests on one listing accepted at the same moment, which used to oversell it.
+    /// The same request accepted twice at once (a double tap) can instead trip the one-order-per-
+    /// request unique index before the concurrency check does; that is the same conflict.
+    /// </summary>
+    private async Task<bool> TrySaveAsync()
+    {
+        try
+        {
+            await _db.SaveChangesAsync();
+            return true;
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            return false;
+        }
+        catch (DbUpdateException ex) when (ex.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation })
+        {
+            return false;
+        }
+    }
+
+    private ObjectResult ConcurrentChangeConflict() => Conflict(new
+    {
+        message = "This request or its listing was changed at the same time by someone else. Refresh and try again.",
+    });
 
     private async Task NotifyBuyerAsync(PurchaseRequest purchaseRequest, bool accepted)
     {
@@ -289,7 +330,7 @@ public class PurchaseRequestsController : ControllerBase
         CreatedAt = request.CreatedAt,
         CropType = request.Harvest.Crop.CropType,
         District = request.Harvest.Crop.Field.Farm.District,
-        PricePerUnit = request.Harvest.PricePerUnit,
+        PricePerUnit = request.PricePerUnit,
         BuyerName = request.BuyerProfile.User.FullName,
         BuyerBusinessName = request.BuyerProfile.BusinessName,
     };

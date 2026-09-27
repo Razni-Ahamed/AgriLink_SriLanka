@@ -13,6 +13,13 @@ public class HarvestListing
     public HarvestStatus Status { get; set; } = HarvestStatus.Active;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
+    /// <summary>
+    /// Postgres's xmin, used as a concurrency token: two people changing this row at the same moment
+    /// (accepting requests on one listing, completing and cancelling one order) can no longer both
+    /// win — the second save fails instead of silently overwriting the first.
+    /// </summary>
+    public uint Version { get; set; }
+
     public FarmerProfile FarmerProfile { get; set; } = null!;
     public Crop Crop { get; set; } = null!;
     public ICollection<PurchaseRequest> PurchaseRequests { get; set; } = new List<PurchaseRequest>();

@@ -15,6 +15,9 @@ public class PurchaseRequestResponse
     // which crop/price the request was actually about without a second round trip.
     public string CropType { get; set; } = string.Empty;
     public string District { get; set; } = string.Empty;
+
+    // The request's own agreed price (the listing's price when it was sent), not the listing's
+    // current one — it is what an accepted request is charged.
     public decimal PricePerUnit { get; set; }
 
     // Who sent it — deliberately no phone/email here (unlike OrderResponse): a purchase

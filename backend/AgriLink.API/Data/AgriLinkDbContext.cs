@@ -43,6 +43,11 @@ public class AgriLinkDbContext : IdentityDbContext<ApplicationUser, IdentityRole
             entity.Property(u => u.DisplayName).HasMaxLength(ProfileFieldLimits.DisplayName);
             entity.Property(u => u.ProfilePhotoUrl).HasMaxLength(ProfileFieldLimits.ProfilePhotoUrl);
             entity.Property(u => u.ProfilePhotoKey).HasMaxLength(ProfileFieldLimits.ProfilePhotoKey);
+
+            // Identity only checks "is this email taken?" before inserting, so two sign-ups sent at
+            // the same moment could both pass and share one email — after which every lookup by
+            // that email threw. The unique index makes the database the final judge.
+            entity.HasIndex(u => u.NormalizedEmail).HasDatabaseName("EmailIndex").IsUnique();
         });
 
         builder.Entity<FarmerProfile>(entity =>
@@ -219,6 +224,7 @@ public class AgriLinkDbContext : IdentityDbContext<ApplicationUser, IdentityRole
             entity.Property(h => h.Quantity).HasColumnType("decimal(10,2)");
             entity.Property(h => h.AvailableQuantity).HasColumnType("decimal(10,2)");
             entity.Property(h => h.PricePerUnit).HasColumnType("decimal(10,2)");
+            entity.Property(h => h.Version).IsRowVersion();
             entity.Property(h => h.Location).HasMaxLength(150).IsRequired();
             entity.Property(h => h.Status).HasConversion<string>().HasMaxLength(20);
             entity.HasIndex(h => h.Status);
@@ -236,6 +242,8 @@ public class AgriLinkDbContext : IdentityDbContext<ApplicationUser, IdentityRole
         {
             entity.HasKey(r => r.RequestId);
             entity.Property(r => r.RequestedQuantity).HasColumnType("decimal(10,2)");
+            entity.Property(r => r.PricePerUnit).HasColumnType("decimal(10,2)");
+            entity.Property(r => r.Version).IsRowVersion();
             entity.Property(r => r.Message).HasMaxLength(500);
             entity.Property(r => r.Status).HasConversion<string>().HasMaxLength(20);
             entity.HasIndex(r => r.Status);
@@ -253,6 +261,8 @@ public class AgriLinkDbContext : IdentityDbContext<ApplicationUser, IdentityRole
         {
             entity.Property(o => o.TotalQuantity).HasColumnType("decimal(10,2)");
             entity.Property(o => o.TotalAmount).HasColumnType("decimal(10,2)");
+            entity.Property(o => o.PricePerUnit).HasColumnType("decimal(10,2)");
+            entity.Property(o => o.Version).IsRowVersion();
             entity.Property(o => o.Status).HasConversion<string>().HasMaxLength(20);
             entity.HasIndex(o => o.Status);
             entity.HasOne(o => o.Request)
