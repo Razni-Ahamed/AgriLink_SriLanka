@@ -183,6 +183,49 @@ public class AuthControllerTests
         Assert.IsType<UnauthorizedObjectResult>(result.Result);
     }
 
+    private static async Task ApproveAsync(AgriLinkDbContext db, string email)
+    {
+        var user = await db.Users.FirstAsync(u => u.Email == email);
+        user.RegistrationStatus = RegistrationStatus.Approved;
+        user.IsActive = true;
+        await db.SaveChangesAsync();
+    }
+
+    [Fact]
+    public async Task Login_FiveWrongPasswords_LockTheAccount_EvenAgainstTheRightPassword()
+    {
+        var (controller, db, _) = await CreateAsync();
+        await controller.Register(FarmerRequest());
+        await ApproveAsync(db, "new.farmer@agrilink.lk");
+
+        ActionResult<AuthResponse>? last = null;
+        for (var i = 0; i < 5; i++)
+        {
+            last = await controller.Login(new LoginRequest { Email = "new.farmer@agrilink.lk", Password = "WrongPassword123!" });
+        }
+
+        Assert.Equal(429, Assert.IsType<ObjectResult>(last!.Result).StatusCode);
+        var withRightPassword = await controller.Login(new LoginRequest { Email = "new.farmer@agrilink.lk", Password = "Farmer@AgriLink.2026!" });
+        Assert.Equal(429, Assert.IsType<ObjectResult>(withRightPassword.Result).StatusCode);
+    }
+
+    [Fact]
+    public async Task Login_ASuccessfulSignIn_ResetsTheWrongPasswordCount()
+    {
+        var (controller, db, _) = await CreateAsync();
+        await controller.Register(FarmerRequest());
+        await ApproveAsync(db, "new.farmer@agrilink.lk");
+
+        for (var i = 0; i < 4; i++)
+        {
+            await controller.Login(new LoginRequest { Email = "new.farmer@agrilink.lk", Password = "WrongPassword123!" });
+        }
+
+        Assert.IsType<OkObjectResult>((await controller.Login(new LoginRequest { Email = "new.farmer@agrilink.lk", Password = "Farmer@AgriLink.2026!" })).Result);
+        var afterOneMoreMistake = await controller.Login(new LoginRequest { Email = "new.farmer@agrilink.lk", Password = "WrongPassword123!" });
+        Assert.IsType<UnauthorizedObjectResult>(afterOneMoreMistake.Result);
+    }
+
     [Fact]
     public async Task Login_ApprovedAccount_Succeeds()
     {

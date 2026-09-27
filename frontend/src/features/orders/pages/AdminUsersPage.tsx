@@ -148,7 +148,15 @@ export function AdminUsersPage() {
                     })
                     setRoleTarget(null)
                   },
-                  onError: () => setFeedback({ tone: 'danger', text: t('orders:admin.roleUpdateError') }),
+                  // The server says why a change is refused (e.g. a buyer with purchase history
+                  // can't become an Officer), which the generic message alone would hide.
+                  onError: (error) =>
+                    setFeedback({
+                      tone: 'danger',
+                      text:
+                        parseApiError(error, t, { genericErrorKey: 'orders:admin.roleUpdateError' })
+                          .generalErrors[0] ?? t('orders:admin.roleUpdateError'),
+                    }),
                 },
               )
             }

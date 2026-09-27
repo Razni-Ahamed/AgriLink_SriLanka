@@ -60,6 +60,7 @@ public class PurchaseRequestsControllerTests
             Harvest = listing,
             BuyerProfileId = 1,
             RequestedQuantity = 20,
+            PricePerUnit = 50,
             Status = PurchaseRequestStatus.Pending,
         };
         db.PurchaseRequests.Add(request);
@@ -96,6 +97,23 @@ public class PurchaseRequestsControllerTests
         Assert.Equal(10, auditLog!.UserId);
         Assert.Equal(nameof(PurchaseRequestStatus.Pending), auditLog.OldValue);
         Assert.Equal(nameof(PurchaseRequestStatus.Accepted), auditLog.NewValue);
+    }
+
+    [Fact]
+    public async Task Respond_Accept_ChargesThePriceTheBuyerAskedAt_NotALaterListingPrice()
+    {
+        using var db = CreateDb();
+        var request = SeedPendingRequest(db, farmerUserId: 10);
+        (await db.HarvestListings.SingleAsync()).PricePerUnit = 200;
+        await db.SaveChangesAsync();
+
+        var result = await CreateController(db, actingUserId: 10).Respond(request.RequestId, new RespondPurchaseRequestRequest { Action = "accept" });
+
+        var response = Assert.IsType<PurchaseRequestResponse>(Assert.IsType<OkObjectResult>(result.Result).Value);
+        Assert.Equal(50, response.PricePerUnit);
+        var order = await db.Orders.SingleAsync(o => o.RequestId == request.RequestId);
+        Assert.Equal(50, order.PricePerUnit);
+        Assert.Equal(20 * 50, order.TotalAmount);
     }
 
     [Fact]
@@ -152,6 +170,7 @@ public class PurchaseRequestsControllerTests
         Assert.Equal("Rice", response.CropType);
         Assert.Equal("Kandy", response.District);
         Assert.Equal(75, response.PricePerUnit);
+        Assert.Equal(75, (await db.PurchaseRequests.SingleAsync()).PricePerUnit);
         Assert.Equal("Buyer One", response.BuyerName);
         Assert.Equal("Buyer Co", response.BuyerBusinessName);
     }

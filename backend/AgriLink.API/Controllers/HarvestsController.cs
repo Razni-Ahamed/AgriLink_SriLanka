@@ -226,7 +226,15 @@ public class HarvestsController : ControllerBase
                 PurchaseRequestStatus.Cancelled.ToString());
         }
 
-        await _db.SaveChangesAsync();
+        try
+        {
+            await _db.SaveChangesAsync();
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            // A request on this listing was accepted (or an order on it cancelled) at the same moment.
+            return Conflict(new { message = "This listing was changed at the same time by someone else. Refresh and try again." });
+        }
 
         foreach (var stale in staleRequests)
         {

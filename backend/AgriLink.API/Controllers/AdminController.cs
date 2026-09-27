@@ -109,6 +109,9 @@ public class AdminController : ControllerBase
             FullName = request.FullName,
         };
 
+        // As in AuthController.Register: the account, its role and its profile land together.
+        await using var transaction = await _db.Database.BeginIfSupportedAsync();
+
         var createResult = await UsernameErrors.CreateOrNullOnDuplicateAsync(_userManager, user, request.Password);
         if (createResult is null)
         {
@@ -147,6 +150,11 @@ public class AdminController : ControllerBase
         _auditLog.Record(_currentUser.GetUserId(User), "UserCreated", "User", user.Id, null, role);
 
         await _db.SaveChangesAsync();
+
+        if (transaction is not null)
+        {
+            await transaction.CommitAsync();
+        }
 
         return StatusCode(StatusCodes.Status201Created, new CreateUserResponse
         {
@@ -259,6 +267,21 @@ public class AdminController : ControllerBase
             return BadRequest(new { message = "Business name is required when assigning the Buyer role." });
         }
 
+        // A buyer's requests and orders point at their buyer profile, which the switch below has to
+        // delete. Refuse up front rather than fail half-way and leave an Officer with no profile.
+        if (currentRole == "Buyer"
+            && await _db.PurchaseRequests.AnyAsync(r => r.BuyerProfile.UserId == userId))
+        {
+            return BadRequest(new
+            {
+                message = "This buyer has purchase requests or orders, so their account can't become an Officer. Create a separate Officer account instead.",
+            });
+        }
+
+        // UserManager saves on every call, so the role swap, the profile swap and the new security
+        // stamp are committed together or not at all.
+        await using var transaction = await _db.Database.BeginIfSupportedAsync();
+
         var removeResult = await _userManager.RemoveFromRoleAsync(user, currentRole);
         if (!removeResult.Succeeded)
         {
@@ -312,6 +335,15 @@ public class AdminController : ControllerBase
         _auditLog.Record(_currentUser.GetUserId(User), "RoleChanged", "User", userId, currentRole, newRole);
         await _db.SaveChangesAsync();
 
+        // A token carries the role it was issued with and lasts 8 hours; rotating the stamp makes
+        // AccountSessionValidator reject it, so a demoted officer loses officer access now.
+        await _userManager.UpdateSecurityStampAsync(user);
+
+        if (transaction is not null)
+        {
+            await transaction.CommitAsync();
+        }
+
         return Ok(new AdminUserSummary
         {
             UserId = user.Id,
@@ -356,6 +388,13 @@ public class AdminController : ControllerBase
         if (!updateResult.Succeeded)
         {
             return BadRequest(new { errors = updateResult.Errors.Select(e => e.Description) });
+        }
+
+        // Sessions from before a deactivation must not come back to life when the account is
+        // reactivated, so a deactivation also retires every token issued so far.
+        if (!request.IsActive)
+        {
+            await _userManager.UpdateSecurityStampAsync(user);
         }
 
         _auditLog.Record(
@@ -408,6 +447,10 @@ public class AdminController : ControllerBase
         {
             return BadRequest(new { errors = resetResult.Errors.Select(e => e.Description) });
         }
+
+        // A reset is also how an admin lets someone back in after too many wrong passwords.
+        await _userManager.SetLockoutEndDateAsync(user, null);
+        await _userManager.ResetAccessFailedCountAsync(user);
 
         _auditLog.Record(actingUserId, "PasswordResetByAdmin", "User", userId);
         await _db.SaveChangesAsync();

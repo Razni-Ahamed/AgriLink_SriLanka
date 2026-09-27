@@ -32,6 +32,12 @@ builder.Services.AddIdentityCore<ApplicationUser>(options =>
         options.Password.RequireLowercase = true;
         options.Password.RequireDigit = true;
         options.User.RequireUniqueEmail = true;
+
+        // Login used to allow unlimited guesses. After 5 wrong passwords in a row the account is
+        // locked for 15 minutes (AuthController); an admin password reset also unlocks it.
+        options.Lockout.AllowedForNewUsers = true;
+        options.Lockout.MaxFailedAccessAttempts = 5;
+        options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
     })
     .AddRoles<IdentityRole<int>>()
     .AddEntityFrameworkStores<AgriLinkDbContext>()

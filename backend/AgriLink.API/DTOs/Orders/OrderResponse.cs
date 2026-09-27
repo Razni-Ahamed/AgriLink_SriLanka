@@ -32,7 +32,8 @@ public class OrderResponse
     public string? BuyerPhotoUrl { get; set; }
 
     // Listing context, resolved through the order's originating request/listing so neither
-    // side has to look the crop or price up separately.
+    // side has to look the crop up separately. The price is the order's own agreed price, so it
+    // always matches TotalAmount even if the farmer edits the listing later.
     public string CropType { get; set; } = string.Empty;
     public decimal PricePerUnit { get; set; }
     public string HarvestLocation { get; set; } = string.Empty;

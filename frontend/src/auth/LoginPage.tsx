@@ -12,7 +12,7 @@ import { Card } from '@/components/ui/Card'
 import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
 import { useAuthStore } from './authStore'
-import { login } from './api'
+import { lockoutMessage, login } from './api'
 
 export function LoginPage() {
   const { t } = useTranslation(['auth', 'common'])
@@ -84,7 +84,9 @@ export function LoginPage() {
               {...register('password')}
             />
             {mutation.isError && (
-              <p className="text-sm text-state-danger">{t('auth:login.error')}</p>
+              <p className="text-sm text-state-danger">
+                {lockoutMessage(mutation.error) ?? t('auth:login.error')}
+              </p>
             )}
             <Button type="submit" disabled={mutation.isPending}>
               {mutation.isPending ? t('auth:login.submitting') : t('auth:login.submit')}
