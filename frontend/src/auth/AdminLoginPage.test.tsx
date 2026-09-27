@@ -94,6 +94,26 @@ describe('AdminLoginPage', () => {
     expect(await screen.findByText('Invalid email or password.')).toBeInTheDocument()
   })
 
+  it('shows the lockout message on 429 instead of blaming the password', async () => {
+    vi.spyOn(apiClient, 'post').mockRejectedValue(
+      Object.assign(new Error('Too Many Requests'), {
+        isAxiosError: true,
+        response: {
+          status: 429,
+          data: { message: 'Too many failed sign-in attempts. Try again in 15 minutes.' },
+        },
+      }),
+    )
+
+    renderPage()
+    await submit('admin@agrilink.lk', 'test-admin-password')
+
+    expect(
+      await screen.findByText('Too many failed sign-in attempts. Try again in 15 minutes.'),
+    ).toBeInTheDocument()
+    expect(screen.queryByText('Invalid email or password.')).not.toBeInTheDocument()
+  })
+
   it('renders in the selected language', async () => {
     const user = userEvent.setup()
     renderPage()

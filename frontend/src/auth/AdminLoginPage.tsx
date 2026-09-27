@@ -15,7 +15,7 @@ import { Gear } from '@/components/ui/icons'
 import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
 import { useAuthStore } from './authStore'
-import { adminLogin } from './api'
+import { adminLogin, lockoutMessage } from './api'
 
 export function AdminLoginPage() {
   const { t } = useTranslation(['auth', 'common'])
@@ -96,7 +96,9 @@ export function AdminLoginPage() {
             />
             {mutation.isError && (
               <p className="text-sm text-state-danger">
-                {isForbidden ? t('auth:adminLogin.forbidden') : t('auth:adminLogin.error')}
+                {isForbidden
+                  ? t('auth:adminLogin.forbidden')
+                  : (lockoutMessage(mutation.error) ?? t('auth:adminLogin.error'))}
               </p>
             )}
             <Button type="submit" disabled={mutation.isPending}>

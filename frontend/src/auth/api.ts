@@ -1,3 +1,4 @@
+import { isAxiosError } from 'axios'
 import { apiClient } from '@/lib/apiClient'
 import type { Role } from '@/types/common'
 
@@ -86,6 +87,18 @@ export type RegisterRequest = FarmerRegisterRequest | BuyerRegisterRequest
 export interface RegisterResponse {
   message: string
   status: 'Pending'
+}
+
+/**
+ * The API's "too many failed sign-in attempts" message (a 429 after 5 wrong passwords), or null for
+ * any other failure. Without it a locked-out user typing the right password was told it was wrong.
+ */
+export function lockoutMessage(error: unknown): string | null {
+  if (!isAxiosError(error) || error.response?.status !== 429) {
+    return null
+  }
+  const message = (error.response.data as { message?: unknown } | undefined)?.message
+  return typeof message === 'string' ? message : null
 }
 
 export async function login(request: LoginRequest): Promise<AuthResponse> {
