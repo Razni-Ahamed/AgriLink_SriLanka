@@ -48,6 +48,18 @@
       "rejectError": "Could not reject this change. Please try again.",
       "rejected": "The change was rejected.",
       "cancel": "Cancel"
+    },
+    "rejected": {
+      "title": "Rejected applications",
+      "description": "Rejected by mistake? Approve an application here to reverse the rejection.",
+      "empty": "No applications have been rejected.",
+      "rejectedOn": "Rejected {{date}}",
+      "reason": "Reason: {{reason}}",
+      "approveAnyway": "Approve anyway",
+      "confirm": "Approve {{name}}? They'll be able to sign in, and they'll be told their application was approved.",
+      "confirmYes": "Yes, approve",
+      "approved": "{{name}} has been approved.",
+      "approveError": "The application couldn't be approved. Please try again."
     }
   }
 }

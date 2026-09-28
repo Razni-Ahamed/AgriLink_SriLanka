@@ -15,6 +15,11 @@ export interface PendingRegistrationResponse {
   businessRegistrationNumber?: string
   businessPhone?: string
   legalBusinessName?: string
+
+  // Rejected applications only (GET /api/registrations/rejected)
+  rejectionReason?: string | null
+  /** From the audit log; null if the rejection wasn't logged. */
+  rejectedAt?: string | null
 }
 
 export interface RejectRegistrationRequest {

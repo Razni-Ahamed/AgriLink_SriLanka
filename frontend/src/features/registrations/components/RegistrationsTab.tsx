@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { MapPin, UserPlus } from '@phosphor-icons/react'
+import { ArrowCounterClockwise, MapPin, UserPlus } from '@phosphor-icons/react'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
@@ -10,8 +10,14 @@ import { Textarea } from '@/components/ui/Textarea'
 import { StaggerList } from '@/components/ui/motion/StaggerList'
 import { useAuthStore } from '@/auth/authStore'
 import { formatDate } from '@/lib/utils'
+import { useUiStore } from '@/lib/useUiStore'
 import type { PendingRegistrationResponse } from '@/types/dto/registrations'
-import { useApproveRegistration, usePendingRegistrations, useRejectRegistration } from '../hooks/useRegistrations'
+import {
+  useApproveRegistration,
+  usePendingRegistrations,
+  useRejectRegistration,
+  useRejectedRegistrations,
+} from '../hooks/useRegistrations'
 
 /** New-account applications (Farmer/Buyer) waiting for approval — the queue this page used to be
  *  the whole of, before it grew a second tab for profile-detail change requests. */
@@ -53,7 +59,119 @@ export function RegistrationsTab() {
           ))}
         </StaggerList>
       )}
+
+      <RejectedApplications />
     </div>
+  )
+}
+
+/**
+ * Applications turned down earlier, with the reason, so a rejection made by mistake can be
+ * reversed. Without this a mistaken rejection was final: the applicant's email is already taken,
+ * so they can't simply apply again. Approving asks for confirmation first.
+ */
+function RejectedApplications() {
+  const { t } = useTranslation('registrations')
+  const { data: rejected, isLoading } = useRejectedRegistrations()
+
+  return (
+    <section
+      aria-labelledby="rejected-applications"
+      className="flex flex-col gap-3 border-t border-brand-forest/10 pt-6"
+    >
+      <div>
+        <h2 id="rejected-applications" className="font-display text-lg text-text-primary">
+          {t('pending.rejected.title')}
+          {rejected && rejected.length > 0 && (
+            <span className="ml-2 font-body text-sm text-text-secondary">({rejected.length})</span>
+          )}
+        </h2>
+        <p className="text-sm text-text-secondary">{t('pending.rejected.description')}</p>
+      </div>
+
+      {isLoading && <Skeleton className="h-20" />}
+
+      {!isLoading && rejected && rejected.length === 0 && (
+        <p className="text-sm text-text-secondary">{t('pending.rejected.empty')}</p>
+      )}
+
+      {rejected?.map((application) => (
+        <RejectedApplicationCard key={application.userId} application={application} />
+      ))}
+    </section>
+  )
+}
+
+function RejectedApplicationCard({ application }: { application: PendingRegistrationResponse }) {
+  const { t } = useTranslation('registrations')
+  const [isConfirming, setIsConfirming] = useState(false)
+  const approve = useApproveRegistration()
+  const addToast = useUiStore((state) => state.addToast)
+  const isFarmer = application.role === 'Farmer'
+
+  function approveAnyway() {
+    approve.mutate(application.userId, {
+      onSuccess: () =>
+        addToast({
+          type: 'success',
+          message: t('pending.rejected.approved', { name: application.fullName }),
+        }),
+      onError: () => addToast({ type: 'error', message: t('pending.rejected.approveError') }),
+    })
+  }
+
+  return (
+    <Card className="flex flex-col gap-3">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h3 className="truncate font-display text-base text-text-primary">
+            {application.fullName}
+          </h3>
+          <p className="truncate text-xs text-text-secondary">
+            {application.email} · {t('pending.district', { district: application.district })}
+          </p>
+        </div>
+        <div className="flex shrink-0 flex-col items-end gap-1.5">
+          <Badge variant={isFarmer ? 'info' : 'neutral'}>
+            {isFarmer ? t('pending.farmerLabel') : t('pending.buyerLabel')}
+          </Badge>
+          {application.rejectedAt && (
+            <span className="text-xs text-text-secondary">
+              {t('pending.rejected.rejectedOn', { date: formatDate(application.rejectedAt) })}
+            </span>
+          )}
+        </div>
+      </div>
+
+      {application.rejectionReason && (
+        <p className="rounded-xl bg-state-danger/10 px-3 py-2 text-sm text-text-primary">
+          {t('pending.rejected.reason', { reason: application.rejectionReason })}
+        </p>
+      )}
+
+      {isConfirming ? (
+        <div className="flex flex-col gap-2 rounded-xl border border-brand-forest/15 p-3">
+          <p className="text-sm text-text-primary">
+            {t('pending.rejected.confirm', { name: application.fullName })}
+          </p>
+          <div className="flex justify-end gap-2">
+            <Button variant="ghost" onClick={() => setIsConfirming(false)}>
+              {t('pending.cancel')}
+            </Button>
+            <Button disabled={approve.isPending} onClick={approveAnyway}>
+              {t('pending.rejected.confirmYes')}
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <div className="flex justify-end">
+          <Button variant="ghost" onClick={() => setIsConfirming(true)}>
+            <ArrowCounterClockwise size={16} weight="bold" />
+            {t('pending.rejected.approveAnyway')}
+          </Button>
+        </div>
+      )}
+    </Card>
   )
 }
 
