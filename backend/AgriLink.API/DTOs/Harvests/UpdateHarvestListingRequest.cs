@@ -6,6 +6,7 @@ namespace AgriLink.API.DTOs.Harvests;
 public class UpdateHarvestListingRequest
 {
     public HarvestStatus? Status { get; set; }
+    [Range(0.01, HarvestLimits.MaxPricePerKg)]
     public decimal? PricePerUnit { get; set; }
     [MaxLength(150)]
     public string? Location { get; set; }

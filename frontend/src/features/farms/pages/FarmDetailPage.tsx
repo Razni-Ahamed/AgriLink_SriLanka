@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/Button'
 import { Modal } from '@/components/ui/Modal'
 import { Skeleton } from '@/components/ui/Skeleton'
+import { parseApiError } from '@/lib/apiErrors'
 import { formatQuantity } from '@/lib/utils'
 import { FieldForm } from '../components/FieldForm'
 import { FieldList } from '../components/FieldList'
@@ -72,7 +73,12 @@ export function FarmDetailPage() {
       </div>
 
       {deleteFarm.isError && (
-        <p className="text-sm text-state-danger">{t('farms:detail.deleteError')}</p>
+        <p className="text-sm text-state-danger">
+          {
+            parseApiError(deleteFarm.error, t, { genericErrorKey: 'farms:detail.deleteError' })
+              .generalErrors[0]
+          }
+        </p>
       )}
 
       <div className="flex items-center justify-between">

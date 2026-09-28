@@ -7,10 +7,20 @@ public class IssuePhotoProcessorTests
 {
     private readonly IssuePhotoProcessor _processor = new();
 
+    // A flat colour with darker stripes across it, so it isn't mistaken for a blank photo.
     private static byte[] EncodePng(int width, int height, SKColor color)
     {
         using var bitmap = new SKBitmap(width, height, SKColorType.Rgba8888, SKAlphaType.Premul);
         bitmap.Erase(color);
+        using (var canvas = new SKCanvas(bitmap))
+        using (var stripe = new SKPaint { Color = SKColors.Black })
+        {
+            for (var y = 0; y < height; y += 8)
+            {
+                canvas.DrawRect(0, y, width, 3, stripe);
+            }
+        }
+
         using var data = bitmap.Encode(SKEncodedImageFormat.Png, 100);
         return data.ToArray();
     }
@@ -41,8 +51,22 @@ public class IssuePhotoProcessorTests
         var result = _processor.Process(EncodePng(20, 20, SKColors.Transparent));
 
         using var decoded = SKBitmap.Decode(result.Content);
-        var pixel = decoded.GetPixel(10, 10);
+        var pixel = decoded.GetPixel(10, 5);
         Assert.True(pixel.Red > 245 && pixel.Green > 245 && pixel.Blue > 245, $"Expected white, got {pixel}.");
+    }
+
+    [Theory]
+    [InlineData(0xFFFFFFFF)]
+    [InlineData(0xFF000000)]
+    [InlineData(0xFF2E7D32)]
+    public void Process_BlankSingleColourPhoto_IsRejected(uint argb)
+    {
+        using var bitmap = new SKBitmap(300, 200, SKColorType.Rgba8888, SKAlphaType.Premul);
+        bitmap.Erase(new SKColor(argb));
+        using var data = bitmap.Encode(SKEncodedImageFormat.Png, 100);
+
+        var error = Assert.Throws<InvalidPhotoException>(() => _processor.Process(data.ToArray()));
+        Assert.Contains("blank", error.Message);
     }
 
     [Fact]

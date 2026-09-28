@@ -97,6 +97,14 @@ public class IssuesControllerCreatePhotoTests
     {
         using var bitmap = new SKBitmap(64, 48);
         bitmap.Erase(SKColors.ForestGreen);
+        // Some darker spots: a single flat colour would be refused as a blank photo.
+        using (var canvas = new SKCanvas(bitmap))
+        using (var spot = new SKPaint { Color = SKColors.SaddleBrown })
+        {
+            canvas.DrawCircle(16, 16, 6, spot);
+            canvas.DrawCircle(44, 30, 8, spot);
+        }
+
         using var data = bitmap.Encode(SKEncodedImageFormat.Png, 100);
         var bytes = data.ToArray();
         return new FormFile(new MemoryStream(bytes), 0, bytes.Length, "Photo", "leaf.png");

@@ -17,6 +17,7 @@ const farmer: AdminUserSummary = {
   role: 'Farmer',
   district: 'Kandy',
   isActive: true,
+  registrationStatus: 'Approved',
   createdAt: '2026-01-01T00:00:00Z',
 }
 
@@ -28,6 +29,7 @@ const buyer: AdminUserSummary = {
   role: 'Buyer',
   district: 'Colombo',
   isActive: true,
+  registrationStatus: 'Approved',
   createdAt: '2026-01-01T00:00:00Z',
 }
 
@@ -39,6 +41,7 @@ const officer: AdminUserSummary = {
   role: 'Officer',
   district: 'Galle',
   isActive: true,
+  registrationStatus: 'Approved',
   createdAt: '2026-01-01T00:00:00Z',
 }
 
@@ -50,6 +53,7 @@ const admin: AdminUserSummary = {
   role: 'Admin',
   district: null,
   isActive: true,
+  registrationStatus: 'Approved',
   createdAt: '2026-01-01T00:00:00Z',
 }
 

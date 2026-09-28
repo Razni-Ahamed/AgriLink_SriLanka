@@ -58,3 +58,19 @@ export function useCreateField(farmId: number) {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: fieldsKey(farmId) }),
   })
 }
+
+export function useUpdateField(farmId: number, fieldId: number) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (request: CreateFieldRequest) => farmsApi.updateField(farmId, fieldId, request),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: fieldsKey(farmId) }),
+  })
+}
+
+export function useDeleteField(farmId: number) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (fieldId: number) => farmsApi.deleteField(farmId, fieldId),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: fieldsKey(farmId) }),
+  })
+}

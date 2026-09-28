@@ -24,6 +24,17 @@ import { pageRoutes } from './pageRoutes'
 import { ProfileMenu } from './ProfileMenu'
 import { roleHome } from './roleHome'
 
+// Either set of colours, never both: cn() only joins class names, so when both were applied
+// text-text-secondary won and the active item's label was grey on green.
+function navLinkClass({ isActive }: { isActive: boolean }) {
+  return cn(
+    'flex shrink-0 items-center gap-2 whitespace-nowrap rounded-xl px-3 py-2 text-sm font-medium',
+    isActive
+      ? 'bg-brand-forest text-bg-surface'
+      : 'text-text-secondary hover:bg-brand-forest/10 hover:text-brand-forest',
+  )
+}
+
 interface ProfileRouteState {
   /** Where the user was when they opened the pop-up; that page stays visible behind it. */
   backgroundLocation?: Location
@@ -88,27 +99,35 @@ export function AppLayout() {
         </div>
       </header>
 
+      {/* Phones: the sidebar is hidden below `sm`, so the same links sit in a row that scrolls
+          sideways. Without it a signed-in user on a phone had no way to reach any other page. */}
+      {navItems.length > 0 && (
+        <nav
+          aria-label={t('nav.menu')}
+          className="flex gap-1 overflow-x-auto border-b border-brand-forest/10 px-4 py-2 sm:hidden"
+        >
+          {navItems.map((item) => (
+            <NavLink key={item.path} to={item.path} className={navLinkClass}>
+              {item.icon}
+              {t(item.labelKey)}
+            </NavLink>
+          ))}
+        </nav>
+      )}
+
       <div className="flex">
         <aside className="hidden w-56 shrink-0 flex-col gap-1 border-r border-brand-forest/10 p-4 sm:flex">
           {navItems.map((item) => (
-            <NavLink
-              key={item.path}
-              to={item.path}
-              className={({ isActive }) =>
-                cn(
-                  'flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium text-text-secondary hover:bg-brand-forest/10 hover:text-brand-forest',
-                  isActive &&
-                    'bg-brand-forest text-bg-surface hover:bg-brand-forest hover:text-bg-surface',
-                )
-              }
-            >
+            <NavLink key={item.path} to={item.path} className={navLinkClass}>
               {item.icon}
               {t(item.labelKey)}
             </NavLink>
           ))}
         </aside>
 
-        <main className="flex-1 p-6">
+        {/* min-w-0 lets the page shrink to the screen: a flex item otherwise grows to its widest
+            child, which pushed whole pages past the edge of a phone. */}
+        <main className="min-w-0 flex-1 p-4 sm:p-6">
           <AnimatePresence mode="wait">
             <motion.div
               key={displayedPathname}

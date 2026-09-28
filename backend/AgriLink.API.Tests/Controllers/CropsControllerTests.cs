@@ -164,4 +164,50 @@ public class CropsControllerTests
         var crops = Assert.IsType<List<FarmerCropSummary>>(Assert.IsType<OkObjectResult>(result.Result).Value);
         Assert.Empty(crops);
     }
+
+    private static Crop SeedCrop(AgriLinkDbContext db)
+    {
+        var crop = new Crop { CropId = 50, FieldId = 1, CropType = "Tomato", Variety = "Roma" };
+        db.Crops.Add(crop);
+        db.SaveChanges();
+        return crop;
+    }
+
+    [Fact]
+    public async Task DeleteCrop_WithoutIssuesOrListings_RemovesIt()
+    {
+        var db = SeedTwoFarmers();
+        var crop = SeedCrop(db);
+
+        var result = await CreateController(db, OwnerUserId, "Farmer").DeleteCrop(crop.CropId);
+
+        Assert.IsType<NoContentResult>(result);
+        Assert.Empty(db.Crops);
+    }
+
+    [Fact]
+    public async Task DeleteCrop_WithAReportedIssue_IsRefusedAndKept()
+    {
+        var db = SeedTwoFarmers();
+        var crop = SeedCrop(db);
+        db.CropIssues.Add(new CropIssue { CropId = crop.CropId, FarmerProfileId = OwnerProfileId, Title = "Spots", Description = "Brown spots" });
+        db.SaveChanges();
+
+        var result = await CreateController(db, OwnerUserId, "Farmer").DeleteCrop(crop.CropId);
+
+        Assert.IsType<BadRequestObjectResult>(result);
+        Assert.Single(db.Crops);
+    }
+
+    [Fact]
+    public async Task DeleteCrop_AnotherFarmersCrop_IsForbidden()
+    {
+        var db = SeedTwoFarmers();
+        var crop = SeedCrop(db);
+
+        var result = await CreateController(db, StrangerUserId, "Farmer").DeleteCrop(crop.CropId);
+
+        Assert.IsType<ForbidResult>(result);
+        Assert.Single(db.Crops);
+    }
 }

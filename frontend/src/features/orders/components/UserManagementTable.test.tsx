@@ -15,6 +15,7 @@ const officer: AdminUserSummary = {
   role: 'Officer',
   district: 'Kandy',
   isActive: true,
+  registrationStatus: 'Approved',
   createdAt: '2026-01-01T00:00:00Z',
 }
 
@@ -26,6 +27,7 @@ const farmer: AdminUserSummary = {
   role: 'Farmer',
   district: 'Galle',
   isActive: false,
+  registrationStatus: 'Approved',
   createdAt: '2026-01-02T00:00:00Z',
 }
 
@@ -37,6 +39,7 @@ const admin: AdminUserSummary = {
   role: 'Admin',
   district: null,
   isActive: true,
+  registrationStatus: 'Approved',
   createdAt: '2026-01-03T00:00:00Z',
 }
 
@@ -95,6 +98,30 @@ describe('UserManagementTable', () => {
     expect(row.queryByRole('button', { name: 'Change Role' })).not.toBeInTheDocument()
     expect(row.getByRole('button', { name: 'Activate' })).toBeInTheDocument()
   })
+
+  it.each([
+    ['Pending', 'Waiting for approval'],
+    ['Rejected', 'Rejected'],
+  ] as const)(
+    'labels a %s sign-up by its status and offers Approve rather than Activate',
+    (registrationStatus, label) => {
+      render(
+        <UserManagementTable
+          users={[{ ...farmer, registrationStatus }]}
+          onChangeRole={vi.fn()}
+          onToggleStatus={vi.fn()}
+          onResetPassword={vi.fn()}
+          onEditUser={vi.fn()}
+        />,
+      )
+
+      const row = within(rowFor('Farmer One'))
+      expect(row.getByText(label)).toBeInTheDocument()
+      expect(row.queryByText('Inactive')).not.toBeInTheDocument()
+      expect(row.getByRole('button', { name: 'Approve' })).toBeInTheDocument()
+      expect(row.queryByRole('button', { name: 'Activate' })).not.toBeInTheDocument()
+    },
+  )
 
   it('offers Edit and Reset password, but not Change Role or Deactivate, for another Admin account', () => {
     render(

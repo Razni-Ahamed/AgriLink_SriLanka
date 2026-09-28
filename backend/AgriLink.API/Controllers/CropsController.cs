@@ -117,6 +117,37 @@ public class CropsController : ControllerBase
     }
 
     /// <summary>
+    /// Removes a crop planted by mistake. Farm deletion tells the farmer to remove crops first,
+    /// and until this existed nothing could. A crop with reported issues or harvest listings is
+    /// kept: officers' advisories and buyers' requests and orders point at it.
+    /// </summary>
+    [HttpDelete("crops/{cropId:int}")]
+    public async Task<IActionResult> DeleteCrop(int cropId)
+    {
+        var crop = await _db.Crops.Include(c => c.Field).ThenInclude(f => f.Farm).FirstOrDefaultAsync(c => c.CropId == cropId);
+        if (crop is null)
+        {
+            return NotFound();
+        }
+
+        if (!await IsOwnerOrAdminAsync(crop.Field.Farm.FarmerProfileId))
+        {
+            return Forbid();
+        }
+
+        var hasHistory = await _db.CropIssues.AnyAsync(i => i.CropId == cropId)
+            || await _db.HarvestListings.AnyAsync(h => h.CropId == cropId);
+        if (hasHistory)
+        {
+            return BadRequest(new { message = "This crop has reported issues or harvest listings, so it can't be deleted." });
+        }
+
+        _db.Crops.Remove(crop);
+        await _db.SaveChangesAsync();
+        return NoContent();
+    }
+
+    /// <summary>
     /// The crops planted in one field. Without this the client had no way to list a field's
     /// crops at all: it cached the crops it had just created in memory and lost them on the
     /// next refresh, which left every crop — and so every "report an issue" and "list for

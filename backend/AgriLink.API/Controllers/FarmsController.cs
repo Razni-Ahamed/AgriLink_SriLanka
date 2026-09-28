@@ -190,6 +190,55 @@ public class FarmsController : ControllerBase
         return CreatedAtAction(nameof(GetFields), new { farmId = farm.FarmId }, ToDto(field));
     }
 
+    [HttpPut("{farmId:int}/fields/{fieldId:int}")]
+    public async Task<ActionResult<FieldDto>> UpdateField(int farmId, int fieldId, CreateFieldRequest request)
+    {
+        var field = await _db.Fields.Include(f => f.Farm).FirstOrDefaultAsync(f => f.FieldId == fieldId && f.FarmId == farmId);
+        if (field is null)
+        {
+            return NotFound();
+        }
+
+        if (!await IsOwnerOrAdminAsync(field.Farm.FarmerProfileId))
+        {
+            return Forbid();
+        }
+
+        field.Name = request.Name;
+        field.Area = request.Area;
+        await _db.SaveChangesAsync();
+
+        return Ok(ToDto(field));
+    }
+
+    /// <summary>Removes an empty field. Its crops go first (CropsController.DeleteCrop).</summary>
+    [HttpDelete("{farmId:int}/fields/{fieldId:int}")]
+    public async Task<IActionResult> DeleteField(int farmId, int fieldId)
+    {
+        var field = await _db.Fields
+            .Include(f => f.Farm)
+            .Include(f => f.Crops)
+            .FirstOrDefaultAsync(f => f.FieldId == fieldId && f.FarmId == farmId);
+        if (field is null)
+        {
+            return NotFound();
+        }
+
+        if (!await IsOwnerOrAdminAsync(field.Farm.FarmerProfileId))
+        {
+            return Forbid();
+        }
+
+        if (field.Crops.Count > 0)
+        {
+            return BadRequest(new { message = "Cannot delete a field that has crops planted. Remove its crops first." });
+        }
+
+        _db.Fields.Remove(field);
+        await _db.SaveChangesAsync();
+        return NoContent();
+    }
+
     private async Task<bool> IsOwnerOrAdminAsync(int farmerProfileId)
     {
         if (_currentUser.IsAdmin(User))

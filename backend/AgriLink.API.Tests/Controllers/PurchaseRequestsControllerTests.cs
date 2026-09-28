@@ -117,6 +117,21 @@ public class PurchaseRequestsControllerTests
     }
 
     [Fact]
+    public async Task Create_OnADeactivatedFarmersListing_IsRejected()
+    {
+        using var db = CreateDb();
+        SeedPendingRequest(db, farmerUserId: 10, buyerUserId: 20);
+        (await db.Users.SingleAsync(u => u.Id == 10)).IsActive = false;
+        await db.SaveChangesAsync();
+
+        var result = await CreateController(db, actingUserId: 20, role: "Buyer")
+            .Create(new CreatePurchaseRequestRequest { HarvestId = 1, RequestedQuantity = 5 });
+
+        Assert.IsType<BadRequestObjectResult>(result.Result);
+        Assert.Single(db.PurchaseRequests);
+    }
+
+    [Fact]
     public async Task Respond_Decline_RecordsAuditWithoutCreatingAnOrder()
     {
         using var db = CreateDb();

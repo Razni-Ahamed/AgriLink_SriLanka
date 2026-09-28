@@ -35,3 +35,17 @@ export async function createField(farmId: number, request: CreateFieldRequest): 
   const { data } = await apiClient.post<FieldDto>(`/api/farms/${farmId}/fields`, request)
   return data
 }
+
+export async function updateField(
+  farmId: number,
+  fieldId: number,
+  request: CreateFieldRequest,
+): Promise<FieldDto> {
+  const { data } = await apiClient.put<FieldDto>(`/api/farms/${farmId}/fields/${fieldId}`, request)
+  return data
+}
+
+/** Only an empty field can go; the API refuses one that still has crops. */
+export async function deleteField(farmId: number, fieldId: number): Promise<void> {
+  await apiClient.delete(`/api/farms/${farmId}/fields/${fieldId}`)
+}

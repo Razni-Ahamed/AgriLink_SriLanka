@@ -260,7 +260,9 @@ public class AgriLinkDbContext : IdentityDbContext<ApplicationUser, IdentityRole
         builder.Entity<Order>(entity =>
         {
             entity.Property(o => o.TotalQuantity).HasColumnType("decimal(10,2)");
-            entity.Property(o => o.TotalAmount).HasColumnType("decimal(10,2)");
+            // Wider than the per-kg columns: the largest allowed order (a million kg at a million
+            // rupees a kg) is 10^12, which decimal(10,2) couldn't hold.
+            entity.Property(o => o.TotalAmount).HasColumnType("decimal(18,2)");
             entity.Property(o => o.PricePerUnit).HasColumnType("decimal(10,2)");
             entity.Property(o => o.Version).IsRowVersion();
             entity.Property(o => o.Status).HasConversion<string>().HasMaxLength(20);

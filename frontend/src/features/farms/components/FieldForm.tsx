@@ -8,12 +8,14 @@ import { Input } from '@/components/ui/Input'
 import type { CreateFieldRequest } from '@/types/dto/farms'
 
 interface FieldFormProps {
+  /** Pre-fills the form when editing an existing field. */
+  defaultValues?: CreateFieldRequest
   submitLabel: string
   isSubmitting?: boolean
   onSubmit: (values: CreateFieldRequest) => void
 }
 
-export function FieldForm({ submitLabel, isSubmitting, onSubmit }: FieldFormProps) {
+export function FieldForm({ defaultValues, submitLabel, isSubmitting, onSubmit }: FieldFormProps) {
   const { t } = useTranslation(['farms', 'common'])
 
   const schema = useMemo(
@@ -31,6 +33,7 @@ export function FieldForm({ submitLabel, isSubmitting, onSubmit }: FieldFormProp
     formState: { errors },
   } = useForm<z.input<typeof schema>, unknown, z.output<typeof schema>>({
     resolver: zodResolver(schema),
+    defaultValues,
   })
 
   return (

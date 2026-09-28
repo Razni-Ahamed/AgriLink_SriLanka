@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using AgriLink.API.Controllers;
 using AgriLink.API.Data;
 using AgriLink.API.DTOs.Harvests;
@@ -240,5 +241,52 @@ public class HarvestsControllerTests
         Assert.IsType<OkObjectResult>(result.Result);
         Assert.Equal(PurchaseRequestStatus.Pending, (await db.PurchaseRequests.SingleAsync(r => r.RequestId == request.RequestId)).Status);
         Assert.Empty(await db.Notifications.ToListAsync());
+    }
+
+    [Fact]
+    public async Task GetAll_HidesTheListingsOfADeactivatedFarmer()
+    {
+        using var db = CreateDb();
+        SeedListing(db, farmerProfileId: 1, farmerUserId: 10);
+        db.Users.Add(new ApplicationUser { Id = 10, UserName = "farmer", Email = "farmer@agrilink.lk", FullName = "Farmer", IsActive = true });
+        db.SaveChanges();
+        var controller = CreateController(db, actingUserId: 99, role: "Buyer");
+
+        var visible = Assert.IsAssignableFrom<IEnumerable<HarvestListingResponse>>(Assert.IsType<OkObjectResult>((await controller.GetAll(null, null)).Result).Value);
+        Assert.Single(visible);
+
+        (await db.Users.SingleAsync()).IsActive = false;
+        db.SaveChanges();
+
+        var hidden = Assert.IsAssignableFrom<IEnumerable<HarvestListingResponse>>(Assert.IsType<OkObjectResult>((await controller.GetAll(null, null)).Result).Value);
+        Assert.Empty(hidden);
+    }
+
+    private static bool IsValid(object request) =>
+        Validator.TryValidateObject(request, new ValidationContext(request), new List<ValidationResult>(), validateAllProperties: true);
+
+    [Theory]
+    [InlineData(1_000_000, 1_000_000, true)]
+    [InlineData(500_000_000, 50, false)]
+    [InlineData(10, 1_000_000_000_000, false)]
+    public void CreateRequest_QuantityAndPrice_AreBoundedBelowTheColumnLimits(double quantity, double price, bool valid)
+    {
+        var request = new CreateHarvestListingRequest
+        {
+            CropId = 1,
+            Quantity = (decimal)quantity,
+            PricePerUnit = (decimal)price,
+            HarvestDate = DateOnly.FromDateTime(DateTime.UtcNow),
+            Location = "Kandy",
+        };
+
+        Assert.Equal(valid, IsValid(request));
+    }
+
+    [Fact]
+    public void UpdateRequest_AbsurdPrice_IsInvalid()
+    {
+        Assert.False(IsValid(new UpdateHarvestListingRequest { PricePerUnit = 1_000_000_000_000m }));
+        Assert.True(IsValid(new UpdateHarvestListingRequest { Location = "Kandy" }));
     }
 }

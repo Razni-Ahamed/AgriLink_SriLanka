@@ -24,16 +24,31 @@ public static class AdminSeeder
             return;
         }
 
+        // Only ever bootstraps the first admin. Looking the admin up by the configured email alone
+        // went wrong once the admin changed their own email: the next restart created a second
+        // admin with the seed password — or granted Admin to whoever had since registered with the
+        // old address.
+        if ((await userManager.GetUsersInRoleAsync(AdminRole)).Count > 0)
+        {
+            return;
+        }
+
         var existing = await userManager.FindByEmailAsync(options.Email);
         if (existing is not null)
         {
-            // Recover from a half-finished seed (user row created, role assignment failed).
-            if (!await userManager.IsInRoleAsync(existing, AdminRole))
+            // Recover from a half-finished seed (user row created, role assignment failed) — but
+            // never promote an account that already has a role, such as a farmer who registered
+            // with this address.
+            if ((await userManager.GetRolesAsync(existing)).Count > 0)
             {
-                await userManager.AddToRoleAsync(existing, AdminRole);
-                logger.LogInformation("Granted the Admin role to the existing {Email} account.", options.Email);
+                logger.LogError(
+                    "Admin seeding skipped: {Email} already belongs to a non-admin account. Set AdminSeed:Email to an unused address.",
+                    options.Email);
+                return;
             }
 
+            await userManager.AddToRoleAsync(existing, AdminRole);
+            logger.LogInformation("Granted the Admin role to the existing {Email} account.", options.Email);
             return;
         }
 
