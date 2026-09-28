@@ -102,6 +102,36 @@ public class AdvisoriesControllerTests
     }
 
     [Fact]
+    public async Task Approve_DraftAdvisory_NoLongerTellsTheFarmerToWaitForApproval()
+    {
+        using var db = CreateDb();
+        var advisory = SeedDraftAdvisory(db);
+        advisory.Recommendation = "Likely cause(s): Nitrogen deficiency. This is an AI-generated suggestion pending review by an " +
+            "agricultural officer — do not apply any treatment until it has been approved.";
+        await db.SaveChangesAsync();
+
+        await CreateController(db, officerUserId: 5).Approve(advisory.AdvisoryId);
+
+        var saved = await db.AIAdvisories.SingleAsync();
+        Assert.DoesNotContain("until it has been approved", saved.Recommendation);
+        Assert.Equal(
+            "Likely cause(s): Nitrogen deficiency. This advice has been reviewed and approved by an agricultural officer.",
+            saved.Recommendation);
+    }
+
+    [Fact]
+    public async Task Reject_DraftAdvisory_KeepsTheAiRecommendationAsItWas()
+    {
+        using var db = CreateDb();
+        var advisory = SeedDraftAdvisory(db);
+        var original = advisory.Recommendation;
+
+        await CreateController(db, officerUserId: 5).Reject(advisory.AdvisoryId);
+
+        Assert.Equal(original, (await db.AIAdvisories.SingleAsync()).Recommendation);
+    }
+
+    [Fact]
     public async Task Reject_DraftAdvisory_RecordsAuditLogWithReviewer()
     {
         using var db = CreateDb();

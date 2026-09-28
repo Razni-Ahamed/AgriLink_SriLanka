@@ -170,6 +170,10 @@ public class AdvisoriesController : ControllerBase
         advisory.ReviewedAt = DateTime.UtcNow;
         advisory.ReviewNote = note;
         advisory.OfficerTreatment = treatment;
+        if (approve)
+        {
+            advisory.Recommendation = ValidationAgent.WithApprovedClosing(advisory.Recommendation);
+        }
         // A rejection that comes with the officer's own treatment still resolves the farmer's issue.
         advisory.Issue.Status = approve || treatment is not null ? IssueStatus.Resolved : IssueStatus.Rejected;
 
