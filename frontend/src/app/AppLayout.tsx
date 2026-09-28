@@ -9,19 +9,18 @@ import {
   useNavigate,
   type Location,
 } from 'react-router-dom'
-import { useTranslation } from 'react-i18next'
 import { useAuthStore } from '@/auth/authStore'
 import { cn } from '@/lib/utils'
 import { getNavItemsForRole } from './navConfig'
-import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher'
-import { ThemeToggle } from '@/components/ui/ThemeToggle'
+import { BrandMark } from '@/components/ui/BrandMark'
+import { LanguageCycleButton, ThemeCycleButton } from '@/components/ui/PreferenceCycleButtons'
 import { ToastViewport } from '@/components/ui/Toast'
 import { NotificationBell } from '@/features/orders/components/NotificationBell'
 import { ProfileDialog, type ProfileTab } from '@/features/account/components/ProfileDialog'
 import { PROFILE_PATH, PROFILE_SECURITY_PATH } from '@/features/account/routes'
 import { pageRoutes } from './pageRoutes'
 import { NavTabs } from './NavTabs'
-import { ProfileMenu } from './ProfileMenu'
+import { LogoutButton, ProfileButton } from './AccountButtons'
 import { roleHome } from './roleHome'
 
 interface ProfileRouteState {
@@ -30,7 +29,6 @@ interface ProfileRouteState {
 }
 
 export function AppLayout() {
-  const { t } = useTranslation()
   const location = useLocation()
   const navigate = useNavigate()
   const role = useAuthStore((state) => state.role)
@@ -70,36 +68,34 @@ export function AppLayout() {
   return (
     <div className="min-h-screen bg-bg-canvas">
       <ToastViewport />
-      {/* The role's pages sit in the header as tabs from `lg` up: below that the admin's eight
-          tabs, with two names open (the current one and the hovered one), don't fit on one row,
-          and Sinhala and Tamil names are longer still. Language and theme live in the profile
-          menu for a signed-in user, keeping the bar to logo · tabs · bell · profile; a visitor
-          browsing the public marketplace has no profile menu, so they stay here. */}
-      <header className="sticky top-0 z-40 flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-brand-forest/10 bg-bg-surface/80 px-4 py-2.5 backdrop-blur-md sm:px-6 lg:flex-nowrap">
+      {/* Logo · tabs · controls. The two sides are flex-1 from a zero basis, so with room to
+          spare they're equal and the tabs sit centred on the page; when space runs short neither
+          shrinks below its content, so the smaller logo side gives way and the tabs drift left
+          rather than anything overflowing. Below `xl` the admin's eight tabs, with names open,
+          don't fit beside the controls, so the tabs move to the bottom bar. Language and theme
+          stay in the header for everyone, since both matter before anyone finds a menu.
+          overflow-x-clip keeps any extreme case from scrolling the page sideways. */}
+      <header className="sticky top-0 z-40 flex items-center gap-3 overflow-x-clip border-b border-brand-forest/10 bg-bg-surface/80 px-4 py-2.5 backdrop-blur-md sm:px-6 xl:gap-6">
         {/* `/` sends a signed-in user to their role's home, and a visitor to the landing page. */}
-        <Link to="/" className="font-display text-xl text-brand-forest">
-          {t('appName')}
-        </Link>
+        <div className="flex flex-1">
+          <Link to="/" className="shrink-0">
+            <BrandMark />
+          </Link>
+        </div>
 
-        {/* Lined up after the logo rather than centred: a name sliding out then only grows the
-            bar to the right, so the tab under the cursor stays put. Centred, the whole bar shifted
-            left as it grew, slid the tab out from under the cursor, and the names flickered. */}
-        {navItems.length > 0 && (
-          <NavTabs items={navItems} variant="top" className="ml-2 hidden lg:block" />
-        )}
+        {navItems.length > 0 ? (
+          <NavTabs items={navItems} variant="top" className="hidden xl:block" />
+        ) : null}
 
-        <div className="ml-auto flex items-center justify-end gap-3 sm:gap-4">
-          {!user && (
-            <>
-              <LanguageSwitcher variant="compact" />
-              <ThemeToggle variant="compact" />
-            </>
-          )}
+        <div className="flex flex-1 items-center justify-end gap-2 sm:gap-3 xl:gap-2">
+          <LanguageCycleButton />
+          <ThemeCycleButton />
           {/* Gated on the token, not on `user`: this layout also wraps the public
               marketplace browse route, and the bell polls GET /api/notifications/mine,
               which 401s for an anonymous visitor. */}
           {token && <NotificationBell />}
-          {user && <ProfileMenu user={user} />}
+          {user && <ProfileButton user={user} />}
+          {token && <LogoutButton />}
         </div>
       </header>
 
@@ -109,7 +105,7 @@ export function AppLayout() {
         <NavTabs
           items={navItems}
           variant="bottom"
-          className="fixed inset-x-0 bottom-0 z-40 border-t border-brand-forest/10 bg-bg-surface/85 pt-1.5 pb-[max(0.375rem,env(safe-area-inset-bottom))] backdrop-blur-md lg:hidden"
+          className="fixed inset-x-0 bottom-0 z-40 border-t border-brand-forest/10 bg-bg-surface/85 pt-1.5 pb-[max(0.375rem,env(safe-area-inset-bottom))] backdrop-blur-md xl:hidden"
         />
       )}
 
@@ -118,7 +114,7 @@ export function AppLayout() {
       <main
         className={cn(
           'mx-auto w-full max-w-7xl min-w-0 p-4 sm:p-6',
-          navItems.length > 0 && 'pb-24 lg:pb-6',
+          navItems.length > 0 && 'pb-24 xl:pb-6',
         )}
       >
         <AnimatePresence mode="wait">

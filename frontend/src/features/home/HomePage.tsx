@@ -8,9 +8,9 @@ import { buttonClasses } from '@/components/ui/buttonClasses'
 import { Card } from '@/components/ui/Card'
 import { CropIcon } from '@/components/ui/CropIcon'
 import { IconBadge } from '@/components/ui/IconBadge'
-import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher'
+import { BrandMark } from '@/components/ui/BrandMark'
 import { Skeleton } from '@/components/ui/Skeleton'
-import { ThemeToggle } from '@/components/ui/ThemeToggle'
+import { LanguageCycleButton, ThemeCycleButton } from '@/components/ui/PreferenceCycleButtons'
 import { StaggerList } from '@/components/ui/motion/StaggerList'
 import { HarvestCard } from '@/features/marketplace/components/HarvestCard'
 import { useHarvests } from '@/features/marketplace/hooks/useHarvests'
@@ -83,17 +83,15 @@ function HomeHeader() {
 
   return (
     <header className="sticky top-0 z-40 border-b border-brand-forest/10 bg-bg-surface/80 backdrop-blur-md">
-      {/* Same two-row trick as AppLayout: on phones the language and theme controls drop below,
-          or the sign-in buttons get pushed off the screen. */}
-      <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3 sm:flex-nowrap sm:px-6 lg:px-8">
-        <Link to="/" className="mr-auto font-display text-xl text-brand-forest">
-          {t('common:appName')}
+      {/* The same logo and language and theme buttons as the signed-in header. On phones the
+          logo shrinks to its leaf, so the two buttons and the sign-in links fit on one row. */}
+      <div className="mx-auto flex max-w-7xl items-center gap-2 px-4 py-3 sm:gap-3 sm:px-6 lg:px-8">
+        <Link to="/" aria-label={t('common:appName')} className="mr-auto shrink-0">
+          <BrandMark nameClassName="max-sm:sr-only" />
         </Link>
 
-        <div className="order-last flex w-full items-center justify-between gap-2 sm:order-none sm:w-auto sm:justify-end sm:gap-4">
-          <LanguageSwitcher variant="compact" />
-          <ThemeToggle variant="compact" />
-        </div>
+        <LanguageCycleButton />
+        <ThemeCycleButton />
 
         <nav className="flex items-center gap-2">
           <Link to="/login" className={buttonClasses('ghost', 'sm')}>

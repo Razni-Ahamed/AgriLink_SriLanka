@@ -37,7 +37,9 @@ export function AdminUsersPage() {
   const [passwordTarget, setPasswordTarget] = useState<AdminUserSummary | null>(null)
   const [editTarget, setEditTarget] = useState<AdminUserSummary | null>(null)
   const [editError, setEditError] = useState<string | null>(null)
-  const [feedback, setFeedback] = useState<{ tone: 'success' | 'danger'; text: string } | null>(null)
+  const [feedback, setFeedback] = useState<{ tone: 'success' | 'danger'; text: string } | null>(
+    null,
+  )
 
   const handleToggleStatus = (user: AdminUserSummary) => {
     updateStatus.mutate(
@@ -64,7 +66,7 @@ export function AdminUsersPage() {
         <p className="text-sm text-text-secondary">{t('orders:admin.usersSubtitle')}</p>
       </div>
 
-      <Card className="max-w-md">
+      <Card>
         <UserCreateForm
           isSubmitting={createUser.isPending}
           onSubmit={(values) =>
@@ -80,7 +82,9 @@ export function AdminUsersPage() {
                 )
               },
               onError: (error) => {
-                const parsed = parseApiError(error, t, { genericErrorKey: 'orders:admin.createUserError' })
+                const parsed = parseApiError(error, t, {
+                  genericErrorKey: 'orders:admin.createUserError',
+                })
                 setCreateUserError(parsed.generalErrors[0] ?? t('orders:admin.createUserError'))
               },
             })
@@ -92,7 +96,9 @@ export function AdminUsersPage() {
       {createUserError && <p className="text-sm text-state-danger">{createUserError}</p>}
 
       <div className="flex flex-col gap-3">
-        <h2 className="font-display text-xl text-text-primary">{t('orders:admin.manageExisting')}</h2>
+        <h2 className="font-display text-xl text-text-primary">
+          {t('orders:admin.manageExisting')}
+        </h2>
 
         {isLoadingUsers && (
           <div className="flex flex-col gap-2">
@@ -102,7 +108,9 @@ export function AdminUsersPage() {
           </div>
         )}
 
-        {isUsersError && <p className="text-sm text-state-danger">{t('orders:admin.loadUsersError')}</p>}
+        {isUsersError && (
+          <p className="text-sm text-state-danger">{t('orders:admin.loadUsersError')}</p>
+        )}
 
         {!isLoadingUsers && !isUsersError && users && users.length === 0 && (
           <p className="text-sm text-text-secondary">{t('orders:admin.noUsers')}</p>
@@ -124,7 +132,13 @@ export function AdminUsersPage() {
         )}
 
         {feedback && (
-          <p className={feedback.tone === 'success' ? 'text-sm text-state-success' : 'text-sm text-state-danger'}>
+          <p
+            className={
+              feedback.tone === 'success'
+                ? 'text-sm text-state-success'
+                : 'text-sm text-state-danger'
+            }
+          >
             {feedback.text}
           </p>
         )}
@@ -146,7 +160,10 @@ export function AdminUsersPage() {
                   onSuccess: () => {
                     setFeedback({
                       tone: 'success',
-                      text: t('orders:admin.roleUpdated', { name: roleTarget.fullName, role: values.role }),
+                      text: t('orders:admin.roleUpdated', {
+                        name: roleTarget.fullName,
+                        role: values.role,
+                      }),
                     })
                     setRoleTarget(null)
                   },
@@ -169,7 +186,11 @@ export function AdminUsersPage() {
       <Modal
         open={passwordTarget !== null}
         onClose={() => setPasswordTarget(null)}
-        title={passwordTarget ? t('orders:admin.resetPasswordFor', { name: passwordTarget.fullName }) : ''}
+        title={
+          passwordTarget
+            ? t('orders:admin.resetPasswordFor', { name: passwordTarget.fullName })
+            : ''
+        }
       >
         {passwordTarget && (
           <AdminResetPasswordForm

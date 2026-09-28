@@ -5,6 +5,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { RouterProvider, createMemoryRouter } from 'react-router-dom'
 import i18n from '@/i18n/config'
 import { useAuthStore } from '@/auth/authStore'
+import { useLanguageStore } from '@/lib/useLanguageStore'
+import { useUiStore } from '@/lib/useUiStore'
 import { farmerProfile } from '@/test/profileFixtures'
 import { AppLayout } from './AppLayout'
 import { pageRoutes } from './pageRoutes'
@@ -47,6 +49,7 @@ function renderAt(path: string) {
 describe('AppLayout profile pop-up', () => {
   beforeEach(async () => {
     await i18n.changeLanguage('en')
+    useLanguageStore.getState().setLanguage('en')
     useAuthStore.setState({ token: 'jwt', role: 'Farmer', user: farmerProfile(), isHydrated: true })
   })
 
@@ -54,12 +57,11 @@ describe('AppLayout profile pop-up', () => {
     useAuthStore.setState({ token: null, role: null, user: null })
   })
 
-  it('opens from the header menu over the current page, and closing returns to that page', async () => {
+  it('opens from the header profile button over the current page, and closing returns to that page', async () => {
     const user = userEvent.setup()
     const router = renderAt('/orders/mine')
 
-    await user.click(screen.getByRole('button', { name: /Account menu/ }))
-    await user.click(screen.getByRole('menuitem', { name: 'My profile' }))
+    await user.click(screen.getByRole('button', { name: /^My profile/ }))
 
     expect(await screen.findByRole('dialog', { name: 'My profile' })).toBeInTheDocument()
     expect(router.state.location.pathname).toBe('/profile')
@@ -74,8 +76,7 @@ describe('AppLayout profile pop-up', () => {
   it('switching tabs changes the address without adding history, so one Back leaves the pop-up', async () => {
     const user = userEvent.setup()
     const router = renderAt('/orders/mine')
-    await user.click(screen.getByRole('button', { name: /Account menu/ }))
-    await user.click(screen.getByRole('menuitem', { name: 'My profile' }))
+    await user.click(screen.getByRole('button', { name: /^My profile/ }))
 
     await user.click(await screen.findByRole('tab', { name: 'Security settings' }))
     expect(router.state.location.pathname).toBe('/profile/security')
@@ -125,28 +126,46 @@ describe('AppLayout profile pop-up', () => {
     expect(screen.queryByRole('link', { name: 'Notifications' })).not.toBeInTheDocument()
   })
 
-  it('moves language and theme into the profile menu once signed in', () => {
+  it('shows the language and theme buttons, the profile button and Log out once signed in', () => {
     renderAt('/farms')
 
-    expect(screen.queryByRole('group', { name: 'Language' })).not.toBeInTheDocument()
-    expect(screen.queryByRole('group', { name: 'Theme' })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Language: English → සිංහල' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /^Theme: / })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'My profile (Nimal Perera)' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Log out' })).toBeInTheDocument()
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 
-  it('keeps language and theme in the header for a visitor, who has no tabs or profile menu', () => {
+  it('cycles the language English → Sinhala → Tamil → English from the header', async () => {
+    const user = userEvent.setup()
+    renderAt('/farms')
+
+    await user.click(screen.getByRole('button', { name: /^Language: English/ }))
+    expect(useLanguageStore.getState().language).toBe('si')
+    await user.click(screen.getByRole('button', { name: /→ தமிழ்$/ }))
+    expect(useLanguageStore.getState().language).toBe('ta')
+    await user.click(screen.getByRole('button', { name: /→ English$/ }))
+    expect(useLanguageStore.getState().language).toBe('en')
+  })
+
+  it('cycles the theme Light → System → Dark → Light from the header', async () => {
+    const user = userEvent.setup()
+    useUiStore.getState().setThemePreference('light')
+    renderAt('/farms')
+
+    for (const expected of ['system', 'dark', 'light'] as const) {
+      await user.click(screen.getByRole('button', { name: /^Theme: / }))
+      expect(useUiStore.getState().themePreference).toBe(expected)
+    }
+  })
+
+  it('gives a visitor the language and theme buttons, but no tabs, profile or Log out', () => {
     useAuthStore.setState({ token: null, role: null, user: null })
     renderAt('/marketplace/browse')
 
-    expect(screen.getByRole('group', { name: 'Language' })).toBeInTheDocument()
-    expect(screen.getByRole('group', { name: 'Theme' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /^Language: / })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /^Theme: / })).toBeInTheDocument()
     expect(screen.queryByRole('navigation', { name: 'Main menu' })).not.toBeInTheDocument()
-  })
-
-  it('shows the header profile button and no pop-up on ordinary pages', () => {
-    renderAt('/farms')
-
-    expect(
-      screen.getByRole('button', { name: 'Account menu for Nimal Perera' }),
-    ).toBeInTheDocument()
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Log out' })).not.toBeInTheDocument()
   })
 })

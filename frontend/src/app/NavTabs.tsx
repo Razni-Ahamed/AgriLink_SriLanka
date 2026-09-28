@@ -32,7 +32,7 @@ export function NavTabs({ items, variant, className }: NavTabsProps) {
         className={cn(
           'flex items-center',
           variant === 'top'
-            ? 'gap-1 rounded-2xl border border-brand-forest/10 bg-brand-forest/[0.04] p-1'
+            ? 'gap-2 rounded-2xl border border-brand-forest/10 bg-brand-forest/[0.04] p-1.5'
             : 'justify-around gap-1 px-2',
         )}
       >
@@ -55,7 +55,7 @@ export function NavTabs({ items, variant, className }: NavTabsProps) {
                   cn(
                     'group relative flex items-center rounded-xl text-sm font-medium transition-colors',
                     'outline-none focus-visible:ring-2 focus-visible:ring-brand-forest/60',
-                    variant === 'top' ? 'h-9 px-2.5' : 'h-11 w-full max-w-16 justify-center',
+                    variant === 'top' ? 'h-10 px-3' : 'h-11 w-full max-w-16 justify-center',
                     isActive
                       ? 'text-brand-forest'
                       : 'text-text-secondary hover:bg-brand-forest/[0.07] hover:text-brand-forest',
@@ -72,13 +72,20 @@ export function NavTabs({ items, variant, className }: NavTabsProps) {
                         aria-hidden="true"
                       />
                     )}
-                    <span className="relative flex shrink-0 [&_svg]:size-[18px]">{item.icon}</span>
+                    <span
+                      className={cn(
+                        'relative flex shrink-0',
+                        variant === 'top' ? '[&_svg]:size-[22px]' : '[&_svg]:size-[20px]',
+                      )}
+                    >
+                      {item.icon}
+                    </span>
                     {variant === 'top' ? (
                       // Slides open by animating the grid column from 0fr to 1fr, which reaches
                       // the name's natural width without measuring it. The name stays in the
                       // accessibility tree while closed, so screen readers always hear it.
-                      // Below xl a name is capped (with "…"): the longest Tamil ones, two open at
-                      // once, would otherwise push the header past a 1024px screen.
+                      // A name is capped (with "…"): the longest Tamil ones, two open at once,
+                      // would otherwise push the centred header past a laptop screen.
                       <span
                         className={cn(
                           'relative grid transition-[grid-template-columns,opacity,margin] duration-300 ease-out motion-reduce:transition-none',
@@ -87,7 +94,7 @@ export function NavTabs({ items, variant, className }: NavTabsProps) {
                             : 'ml-0 grid-cols-[0fr] opacity-0 group-hover:ml-2 group-hover:grid-cols-[1fr] group-hover:opacity-100 group-focus-visible:ml-2 group-focus-visible:grid-cols-[1fr] group-focus-visible:opacity-100',
                         )}
                       >
-                        <span className="max-w-44 overflow-hidden text-ellipsis whitespace-nowrap xl:max-w-none">
+                        <span className="max-w-40 overflow-hidden text-ellipsis whitespace-nowrap">
                           {label}
                         </span>
                       </span>
