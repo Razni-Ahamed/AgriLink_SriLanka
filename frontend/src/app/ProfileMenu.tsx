@@ -77,7 +77,8 @@ export function ProfileMenu({ user }: ProfileMenuProps) {
   function handleLogout() {
     close({ returnFocus: false })
     logout()
-    navigate('/login', { replace: true })
+    // The public home page, which has its own sign-in link for anyone who wants to come back.
+    navigate('/', { replace: true })
   }
 
   // Enter and Space already fire the button's click, which opens the menu on its first item.
