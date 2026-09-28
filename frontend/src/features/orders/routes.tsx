@@ -1,5 +1,5 @@
 import type { RouteObject } from 'react-router-dom'
-import { Bell, Building, Gear, ClipboardText, UserCircle } from '@/components/ui/icons'
+import { Building, Gear, ClipboardText, UserCircle } from '@/components/ui/icons'
 import { OrderTruckIcon } from '@/components/ui/icons/custom'
 import { RequireRole } from '@/app/RequireRole'
 import type { NavItem } from '@/types/common'
@@ -32,18 +32,13 @@ export const ordersRoutes: RouteObject[] = [
   },
 ]
 
+// No Notifications tab: the header's bell opens them, and its "View all" link reaches /notifications.
 export const ordersNavItems: NavItem[] = [
   {
     labelKey: 'nav.orders',
     path: '/orders/mine',
     icon: <OrderTruckIcon size={18} />,
     allowedRoles: ['Farmer', 'Buyer'],
-  },
-  {
-    labelKey: 'nav.notifications',
-    path: '/notifications',
-    icon: <Bell size={18} weight="duotone" />,
-    allowedRoles: ['Farmer', 'Officer', 'Buyer', 'Admin'],
   },
   {
     labelKey: 'nav.adminDashboard',

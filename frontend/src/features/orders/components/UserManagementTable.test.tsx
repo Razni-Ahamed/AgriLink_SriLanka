@@ -103,7 +103,7 @@ describe('UserManagementTable', () => {
     ['Pending', 'Waiting for approval'],
     ['Rejected', 'Rejected'],
   ] as const)(
-    'labels a %s sign-up by its status and offers Approve rather than Activate',
+    'labels a %s sign-up by its status, leaving the decision to the Approvals tab',
     (registrationStatus, label) => {
       render(
         <UserManagementTable
@@ -118,8 +118,9 @@ describe('UserManagementTable', () => {
       const row = within(rowFor('Farmer One'))
       expect(row.getByText(label)).toBeInTheDocument()
       expect(row.queryByText('Inactive')).not.toBeInTheDocument()
-      expect(row.getByRole('button', { name: 'Approve' })).toBeInTheDocument()
+      expect(row.queryByRole('button', { name: 'Approve' })).not.toBeInTheDocument()
       expect(row.queryByRole('button', { name: 'Activate' })).not.toBeInTheDocument()
+      expect(row.queryByRole('button', { name: 'Deactivate' })).not.toBeInTheDocument()
     },
   )
 
@@ -141,7 +142,7 @@ describe('UserManagementTable', () => {
     expect(row.queryByRole('button', { name: 'Deactivate' })).not.toBeInTheDocument()
   })
 
-  it('offers only Edit on the signed-in admin\'s own row', () => {
+  it("offers only Edit on the signed-in admin's own row", () => {
     render(
       <UserManagementTable
         users={[admin]}
@@ -175,6 +176,8 @@ describe('UserManagementTable', () => {
     const officerAvatar = within(rowFor('Officer One')).getByRole('img', { name: 'Officer One' })
     expect(officerAvatar).toHaveAttribute('src', officer.profilePhotoUrl)
     // No photo: the role's default picture, still named for screen readers.
-    expect(within(rowFor('Farmer One')).getByRole('img', { name: 'Farmer One' }).tagName).toBe('SPAN')
+    expect(within(rowFor('Farmer One')).getByRole('img', { name: 'Farmer One' }).tagName).toBe(
+      'SPAN',
+    )
   })
 })

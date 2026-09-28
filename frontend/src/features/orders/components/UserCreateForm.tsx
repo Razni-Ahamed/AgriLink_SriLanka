@@ -13,7 +13,13 @@ import { useUsernameAvailability } from '@/lib/useUsernameAvailability'
 import { useDepartments } from '../hooks/useDepartments'
 import type { CreateUserRequest } from '@/types/dto/admin'
 
-const USERNAME_MESSAGE_KEYS: Record<UsernameProblem, 'common:validation.usernameTooShort' | 'common:validation.usernameTooLong' | 'common:validation.usernameInvalid' | 'common:validation.usernameReserved'> = {
+const USERNAME_MESSAGE_KEYS: Record<
+  UsernameProblem,
+  | 'common:validation.usernameTooShort'
+  | 'common:validation.usernameTooLong'
+  | 'common:validation.usernameInvalid'
+  | 'common:validation.usernameReserved'
+> = {
   tooShort: 'common:validation.usernameTooShort',
   tooLong: 'common:validation.usernameTooLong',
   invalid: 'common:validation.usernameInvalid',
@@ -79,7 +85,9 @@ export function UserCreateForm({ isSubmitting, onSubmit }: UserCreateFormProps) 
   const usernameStatus = useUsernameAvailability(username, { enabled: username.trim().length > 0 })
 
   return (
-    <form className="flex flex-col gap-4" onSubmit={handleSubmit(onSubmit)}>
+    // Two columns from `sm` up, so the form spans the page like the users table below it
+    // instead of sitting in a narrow strip on the left.
+    <form className="grid gap-4 sm:grid-cols-2" onSubmit={handleSubmit(onSubmit)}>
       <Input
         label={t('common:fields.fullName')}
         error={errors.fullName?.message}
@@ -145,9 +153,15 @@ export function UserCreateForm({ isSubmitting, onSubmit }: UserCreateFormProps) 
         />
       )}
       {role === 'Officer' && departments && departments.length === 0 && !isLoadingDepartments && (
-        <p className="text-sm text-state-danger">{t('orders:departments.noneYetForCreateUser')}</p>
+        <p className="text-sm text-state-danger sm:col-span-2">
+          {t('orders:departments.noneYetForCreateUser')}
+        </p>
       )}
-      <Button type="submit" disabled={isSubmitting}>
+      <Button
+        type="submit"
+        disabled={isSubmitting}
+        className="sm:col-span-2 sm:justify-self-end sm:px-8"
+      >
         {isSubmitting ? t('orders:admin.creating') : t('orders:admin.createUser')}
       </Button>
     </form>
