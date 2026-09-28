@@ -80,12 +80,4 @@ describe('HomePage photos', () => {
     )
     expect(within(section).getByRole('link', { name: 'Log in' })).toHaveAttribute('href', '/login')
   })
-
-  it('credits the photographers in the footer', () => {
-    renderHome()
-
-    expect(
-      screen.getByText(/^Photos by Indika Sriyan, .*via Unsplash and Pexels\.$/),
-    ).toBeInTheDocument()
-  })
 })

@@ -14,7 +14,7 @@ import { StaggerList } from '@/components/ui/motion/StaggerList'
 import { HarvestCard } from '@/features/marketplace/components/HarvestCard'
 import { useHarvests } from '@/features/marketplace/hooks/useHarvests'
 import { cn } from '@/lib/utils'
-import { PHOTOGRAPHERS, PHOTOS, type HomePhoto } from './homePhotos'
+import { PHOTOS, type HomePhoto } from './homePhotos'
 
 const PREVIEW_COUNT = 6
 
@@ -615,10 +615,9 @@ function HomeFooter() {
         </div>
       </div>
 
-      <div className="border-t border-brand-forest/10 px-4 py-4 text-center text-xs text-text-secondary">
-        <p>{t('home:footer.rights', { year: new Date().getFullYear() })}</p>
-        <p className="mt-1">{t('home:footer.photoCredits', { names: PHOTOGRAPHERS.join(', ') })}</p>
-      </div>
+      <p className="border-t border-brand-forest/10 py-4 text-center text-xs text-text-secondary">
+        {t('home:footer.rights', { year: new Date().getFullYear() })}
+      </p>
     </footer>
   )
 }

@@ -23,7 +23,7 @@ import walkingFields1280 from '@/assets/home/walking-fields-1280.webp'
 
 /**
  * The home page's photographs: all taken in Sri Lanka, all free to use under the Unsplash or
- * Pexels licence (no credit required, though the footer gives one). Each is WebP at 640 and 1280px
+ * Pexels licence, which requires no credit; the photographer and source are kept here as a record. Each is WebP at 640 and 1280px
  * wide, so the browser downloads the smaller one wherever it's enough. The captions only describe
  * the scene: these are stock photos, not AgriLink's own farmers, officers or buyers.
  */
@@ -144,6 +144,3 @@ export const PHOTOS = {
     'https://www.pexels.com/photo/37052004/',
   ),
 } as const satisfies Record<PhotoKey, HomePhoto>
-
-/** Everyone whose work appears on the page, once each, for the footer's credit line. */
-export const PHOTOGRAPHERS = [...new Set(Object.values(PHOTOS).map((p) => p.photographer))]

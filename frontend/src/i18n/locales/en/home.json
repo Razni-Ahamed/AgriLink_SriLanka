@@ -91,7 +91,6 @@
     "explore": "Explore",
     "account": "Account",
     "adminLogin": "Admin sign in",
-    "rights": "© {{year}} AgriLink Sri Lanka",
-    "photoCredits": "Photos by {{names}}, via Unsplash and Pexels."
+    "rights": "© {{year}} AgriLink Sri Lanka"
   }
 }

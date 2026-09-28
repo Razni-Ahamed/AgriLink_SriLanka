@@ -91,7 +91,6 @@
     "explore": "ගවේෂණය",
     "account": "ගිණුම",
     "adminLogin": "පරිපාලක පිවිසුම",
-    "rights": "© {{year}} AgriLink Sri Lanka",
-    "photoCredits": "ඡායාරූප: {{names}}, Unsplash සහ Pexels හරහා."
+    "rights": "© {{year}} AgriLink Sri Lanka"
   }
 }
