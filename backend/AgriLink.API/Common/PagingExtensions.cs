@@ -13,13 +13,14 @@ public static class PagingExtensions
 
     /// <summary>
     /// Pages an already-filtered-and-ordered query. Invalid page/pageSize values are clamped,
-    /// never rejected — page &lt; 1 becomes 1, pageSize is clamped to [1, 100].
+    /// never rejected — page &lt; 1 becomes 1, pageSize is clamped to [1, 100], and page is capped
+    /// so the row offset fits in an int (?page=2147483647 used to overflow into a negative OFFSET).
     /// </summary>
     public static async Task<PagedResponse<T>> ToPagedResponseAsync<T>(
         this IQueryable<T> orderedQuery, int page, int pageSize, CancellationToken cancellationToken = default)
     {
-        var clampedPage = Math.Max(page, 1);
         var clampedPageSize = Math.Clamp(pageSize, 1, MaxPageSize);
+        var clampedPage = Math.Clamp(page, 1, int.MaxValue / clampedPageSize);
 
         var totalCount = await orderedQuery.CountAsync(cancellationToken);
         var items = await orderedQuery
