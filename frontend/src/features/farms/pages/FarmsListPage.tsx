@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/Button'
 import { Modal } from '@/components/ui/Modal'
 import { Skeleton } from '@/components/ui/Skeleton'
+import { mutationErrorMessage } from '@/lib/apiErrors'
 import { StaggerList } from '@/components/ui/motion/StaggerList'
 import { FarmCard } from '../components/FarmCard'
 import { FarmForm } from '../components/FarmForm'
@@ -47,10 +48,18 @@ export function FarmsListPage() {
         </StaggerList>
       )}
 
-      <Modal open={isModalOpen} onClose={() => setModalOpen(false)} title={t('list.newFarm')}>
+      <Modal
+        open={isModalOpen}
+        onClose={() => {
+          setModalOpen(false)
+          createFarm.reset()
+        }}
+        title={t('list.newFarm')}
+      >
         <FarmForm
           submitLabel={t('list.createFarm')}
           isSubmitting={createFarm.isPending}
+          error={mutationErrorMessage(createFarm, t, 'farms:form.saveError')}
           onSubmit={(values) => createFarm.mutate(values, { onSuccess: () => setModalOpen(false) })}
         />
       </Modal>

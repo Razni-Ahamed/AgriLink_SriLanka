@@ -46,6 +46,7 @@
     "plantingDate": "Planting date",
     "expectedHarvestDate": "Expected harvest date",
     "expectedQuantity": "Expected quantity (kg)",
-    "deleteError": "Could not delete this. Please try again."
+    "deleteError": "Could not delete this. Please try again.",
+    "saveError": "Could not save this. Please try again."
   }
 }
