@@ -6,6 +6,13 @@ export async function getPendingRegistrations(): Promise<PendingRegistrationResp
   return data
 }
 
+/** Rejected applications the caller could decide, newest rejection first. */
+export async function getRejectedRegistrations(): Promise<PendingRegistrationResponse[]> {
+  const { data } = await apiClient.get<PendingRegistrationResponse[]>('/api/registrations/rejected')
+  return data
+}
+
+/** Approves a pending application, or reverses the rejection of a rejected one. */
 export async function approveRegistration(userId: number): Promise<PendingRegistrationResponse> {
   const { data } = await apiClient.post<PendingRegistrationResponse>(
     `/api/registrations/${userId}/approve`,

@@ -9,6 +9,13 @@ export function usePendingRegistrations() {
   })
 }
 
+export function useRejectedRegistrations() {
+  return useQuery({
+    queryKey: ['registrations', 'rejected'],
+    queryFn: registrationsApi.getRejectedRegistrations,
+  })
+}
+
 // Approving/rejecting also changes what the Admin users table and metrics show (a Pending
 // account becomes Active), so both are invalidated alongside the registrations queue itself.
 export function useApproveRegistration() {

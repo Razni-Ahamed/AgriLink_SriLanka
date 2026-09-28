@@ -15,6 +15,8 @@ vi.mock('../hooks/useRegistrations', () => ({
   usePendingRegistrations: vi.fn(),
   useApproveRegistration: vi.fn(),
   useRejectRegistration: vi.fn(),
+  // The Rejected applications section isn't what these tests are about: always empty here.
+  useRejectedRegistrations: () => ({ data: [], isLoading: false }),
 }))
 vi.mock('../hooks/useProfileChangeRequests', () => ({
   usePendingChangeRequests: vi.fn(),

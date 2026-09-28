@@ -227,4 +227,108 @@ public class RegistrationsControllerTests
 
         Assert.IsType<BadRequestObjectResult>(result.Result);
     }
+
+    /// <summary>Rejects every seeded application, as the Admin, with an audit entry for each.</summary>
+    private static async Task RejectAllAsync(AgriLinkDbContext db, Microsoft.AspNetCore.Identity.UserManager<ApplicationUser> userManager)
+    {
+        var admin = CreateController(db, userManager, new Mock<IAuditLogService>(), new Mock<INotificationService>(), AdminUserId, "Admin");
+        foreach (var (userId, reason) in new[] { (KandyFarmerUserId, "NIC mismatch"), (GalleFarmerUserId, "Plot unknown"), (BuyerUserId, "No BRN") })
+        {
+            await admin.Reject(userId, new RejectRegistrationRequest { Reason = reason });
+        }
+
+        // The audit service is mocked above, so write the entries Rejected() dates from directly.
+        db.AuditLogs.AddRange(
+            new AuditLog { UserId = AdminUserId, Action = "RegistrationRejected", EntityName = "User", EntityId = KandyFarmerUserId, CreatedAt = new DateTime(2026, 9, 1, 0, 0, 0, DateTimeKind.Utc) },
+            new AuditLog { UserId = AdminUserId, Action = "RegistrationRejected", EntityName = "User", EntityId = GalleFarmerUserId, CreatedAt = new DateTime(2026, 9, 3, 0, 0, 0, DateTimeKind.Utc) },
+            new AuditLog { UserId = AdminUserId, Action = "RegistrationRejected", EntityName = "User", EntityId = BuyerUserId, CreatedAt = new DateTime(2026, 9, 2, 0, 0, 0, DateTimeKind.Utc) });
+        await db.SaveChangesAsync();
+    }
+
+    [Fact]
+    public async Task Rejected_Officer_SeesOnlyOwnDistrictFarmers_WithReasonAndDate()
+    {
+        var (db, userManager, auditLog, notifications) = await SeedDataAsync();
+        await RejectAllAsync(db, userManager);
+        var controller = CreateController(db, userManager, auditLog, notifications, KandyOfficerUserId, "Officer");
+
+        var result = await controller.Rejected();
+
+        var list = Assert.IsAssignableFrom<List<PendingRegistrationResponse>>(Assert.IsType<OkObjectResult>(result.Result).Value);
+        var entry = Assert.Single(list);
+        Assert.Equal("Kandy Farmer", entry.FullName);
+        Assert.Equal("NIC mismatch", entry.RejectionReason);
+        Assert.Equal(new DateTime(2026, 9, 1, 0, 0, 0, DateTimeKind.Utc), entry.RejectedAt);
+    }
+
+    [Fact]
+    public async Task Rejected_Admin_SeesEveryRejection_NewestFirst()
+    {
+        var (db, userManager, auditLog, notifications) = await SeedDataAsync();
+        await RejectAllAsync(db, userManager);
+        var controller = CreateController(db, userManager, auditLog, notifications, AdminUserId, "Admin");
+
+        var result = await controller.Rejected();
+
+        var list = Assert.IsAssignableFrom<List<PendingRegistrationResponse>>(Assert.IsType<OkObjectResult>(result.Result).Value);
+        Assert.Equal(new[] { "Galle Farmer", "Test Buyer", "Kandy Farmer" }, list.Select(r => r.FullName));
+    }
+
+    [Fact]
+    public async Task Rejected_DoesNotListPendingApplications()
+    {
+        var (db, userManager, auditLog, notifications) = await SeedDataAsync();
+        var controller = CreateController(db, userManager, auditLog, notifications, AdminUserId, "Admin");
+
+        var result = await controller.Rejected();
+
+        Assert.Empty(Assert.IsAssignableFrom<List<PendingRegistrationResponse>>(Assert.IsType<OkObjectResult>(result.Result).Value));
+    }
+
+    [Fact]
+    public async Task Approve_RejectedApplication_ReversesTheRejection()
+    {
+        var (db, userManager, auditLog, notifications) = await SeedDataAsync();
+        await RejectAllAsync(db, userManager);
+        var controller = CreateController(db, userManager, auditLog, notifications, KandyOfficerUserId, "Officer");
+
+        var result = await controller.Approve(KandyFarmerUserId);
+
+        Assert.IsType<OkObjectResult>(result.Result);
+        var user = await db.Users.FindAsync(KandyFarmerUserId);
+        Assert.True(user!.IsActive);
+        Assert.Equal(RegistrationStatus.Approved, user.RegistrationStatus);
+        Assert.Null(user.RejectionReason);
+        auditLog.Verify(a => a.Record(KandyOfficerUserId, "RegistrationApproved", "User", KandyFarmerUserId, "Rejected", "Approved"), Times.Once);
+        notifications.Verify(n => n.NotifyAsync(KandyFarmerUserId, It.IsAny<string>(), It.IsAny<string>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task Approve_RejectedApplication_KeepsTheSameScoping()
+    {
+        var (db, userManager, auditLog, notifications) = await SeedDataAsync();
+        await RejectAllAsync(db, userManager);
+
+        var galleOfficer = CreateController(db, userManager, auditLog, notifications, GalleOfficerUserId, "Officer");
+        Assert.IsType<ForbidResult>((await galleOfficer.Approve(KandyFarmerUserId)).Result);
+
+        var kandyOfficer = CreateController(db, userManager, auditLog, notifications, KandyOfficerUserId, "Officer");
+        Assert.IsType<ForbidResult>((await kandyOfficer.Approve(BuyerUserId)).Result);
+
+        Assert.Equal(RegistrationStatus.Rejected, (await db.Users.FindAsync(KandyFarmerUserId))!.RegistrationStatus);
+        Assert.Equal(RegistrationStatus.Rejected, (await db.Users.FindAsync(BuyerUserId))!.RegistrationStatus);
+    }
+
+    [Fact]
+    public async Task Reject_AlreadyRejectedApplication_ReturnsBadRequest()
+    {
+        var (db, userManager, auditLog, notifications) = await SeedDataAsync();
+        await RejectAllAsync(db, userManager);
+        var controller = CreateController(db, userManager, auditLog, notifications, AdminUserId, "Admin");
+
+        var result = await controller.Reject(KandyFarmerUserId, new RejectRegistrationRequest { Reason = "Again" });
+
+        Assert.IsType<BadRequestObjectResult>(result.Result);
+        Assert.Equal("NIC mismatch", (await db.Users.FindAsync(KandyFarmerUserId))!.RejectionReason);
+    }
 }
