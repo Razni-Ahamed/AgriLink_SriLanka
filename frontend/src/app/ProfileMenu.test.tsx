@@ -4,12 +4,15 @@ import userEvent from '@testing-library/user-event'
 import { RouterProvider, createMemoryRouter, useLocation } from 'react-router-dom'
 import i18n from '@/i18n/config'
 import { useAuthStore } from '@/auth/authStore'
+import { useLanguageStore } from '@/lib/useLanguageStore'
+import { useUiStore } from '@/lib/useUiStore'
 import { farmerProfile } from '@/test/profileFixtures'
 import { ProfileMenu } from './ProfileMenu'
 
 function CurrentLocation() {
   const location = useLocation()
-  const background = (location.state as { backgroundLocation?: { pathname: string } } | null)?.backgroundLocation
+  const background = (location.state as { backgroundLocation?: { pathname: string } } | null)
+    ?.backgroundLocation
   return (
     <p data-testid="location">
       {location.pathname}
@@ -42,6 +45,8 @@ function renderMenu(user = farmerProfile()) {
 describe('ProfileMenu', () => {
   beforeEach(async () => {
     await i18n.changeLanguage('en')
+    useLanguageStore.setState({ language: 'en' })
+    useUiStore.setState({ themePreference: 'system' })
     useAuthStore.setState({ token: 'jwt', role: 'Farmer', user: farmerProfile(), isHydrated: true })
   })
 
@@ -61,7 +66,9 @@ describe('ProfileMenu', () => {
   it('falls back to the full name when there is no display name', () => {
     renderMenu()
 
-    expect(screen.getByRole('button', { name: 'Account menu for Nimal Perera' })).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Account menu for Nimal Perera' }),
+    ).toBeInTheDocument()
   })
 
   it('opens on click with focus on the first item, and arrow keys move between items', async () => {
@@ -76,6 +83,10 @@ describe('ProfileMenu', () => {
     expect(screen.getByRole('menuitem', { name: 'My profile' })).toHaveFocus()
 
     await user.keyboard('{ArrowDown}')
+    expect(screen.getByRole('menuitemradio', { name: 'English' })).toHaveFocus()
+    await user.keyboard('{ArrowRight}')
+    expect(screen.getByRole('menuitemradio', { name: 'සිංහල' })).toHaveFocus()
+    await user.keyboard('{End}')
     expect(screen.getByRole('menuitem', { name: 'Log out' })).toHaveFocus()
     await user.keyboard('{ArrowDown}')
     expect(screen.getByRole('menuitem', { name: 'My profile' })).toHaveFocus()
@@ -83,6 +94,43 @@ describe('ProfileMenu', () => {
     expect(screen.getByRole('menuitem', { name: 'Log out' })).toHaveFocus()
     await user.keyboard('{Home}')
     expect(screen.getByRole('menuitem', { name: 'My profile' })).toHaveFocus()
+  })
+
+  it('switches the language from the menu, which stays open showing the new choice', async () => {
+    const user = userEvent.setup()
+    renderMenu()
+    await user.click(screen.getByRole('button', { name: /Account menu/ }))
+    expect(screen.getByRole('menuitemradio', { name: 'English' })).toHaveAttribute(
+      'aria-checked',
+      'true',
+    )
+
+    await user.click(screen.getByRole('menuitemradio', { name: 'தமிழ்' }))
+
+    expect(useLanguageStore.getState().language).toBe('ta')
+    expect(screen.getByRole('menu')).toBeInTheDocument()
+    expect(screen.getByRole('menuitemradio', { name: 'தமிழ்' })).toHaveAttribute(
+      'aria-checked',
+      'true',
+    )
+    expect(screen.getByRole('menuitemradio', { name: 'English' })).toHaveAttribute(
+      'aria-checked',
+      'false',
+    )
+  })
+
+  it('switches the theme from the menu', async () => {
+    const user = userEvent.setup()
+    renderMenu()
+    await user.click(screen.getByRole('button', { name: /Account menu/ }))
+
+    await user.click(screen.getByRole('menuitemradio', { name: 'Dark' }))
+
+    expect(useUiStore.getState().themePreference).toBe('dark')
+    expect(screen.getByRole('menuitemradio', { name: 'Dark' })).toHaveAttribute(
+      'aria-checked',
+      'true',
+    )
   })
 
   it('opens from the keyboard with ArrowDown', async () => {

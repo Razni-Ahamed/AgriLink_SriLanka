@@ -1,7 +1,6 @@
 import { AnimatePresence, motion } from 'motion/react'
 import {
   Link,
-  NavLink,
   Outlet,
   matchRoutes,
   renderMatches,
@@ -12,8 +11,8 @@ import {
 } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAuthStore } from '@/auth/authStore'
-import { getNavItemsForRole } from './navConfig'
 import { cn } from '@/lib/utils'
+import { getNavItemsForRole } from './navConfig'
 import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
 import { ToastViewport } from '@/components/ui/Toast'
@@ -21,19 +20,9 @@ import { NotificationBell } from '@/features/orders/components/NotificationBell'
 import { ProfileDialog, type ProfileTab } from '@/features/account/components/ProfileDialog'
 import { PROFILE_PATH, PROFILE_SECURITY_PATH } from '@/features/account/routes'
 import { pageRoutes } from './pageRoutes'
+import { NavTabs } from './NavTabs'
 import { ProfileMenu } from './ProfileMenu'
 import { roleHome } from './roleHome'
-
-// Either set of colours, never both: cn() only joins class names, so when both were applied
-// text-text-secondary won and the active item's label was grey on green.
-function navLinkClass({ isActive }: { isActive: boolean }) {
-  return cn(
-    'flex shrink-0 items-center gap-2 whitespace-nowrap rounded-xl px-3 py-2 text-sm font-medium',
-    isActive
-      ? 'bg-brand-forest text-bg-surface'
-      : 'text-text-secondary hover:bg-brand-forest/10 hover:text-brand-forest',
-  )
-}
 
 interface ProfileRouteState {
   /** Where the user was when they opened the pop-up; that page stays visible behind it. */
@@ -58,12 +47,16 @@ export function AppLayout() {
     : routeState?.backgroundLocation
   // Opened from the menu: the page the user was on. Opened from a link or a refresh: their home
   // page, which is also where closing the pop-up will take them.
-  const backgroundLocation = isProfileOpen && role ? (openedFrom ?? { pathname: roleHome[role] }) : null
+  const backgroundLocation =
+    isProfileOpen && role ? (openedFrom ?? { pathname: roleHome[role] }) : null
   const displayedPathname = backgroundLocation?.pathname ?? location.pathname
 
   function changeProfileTab(tab: ProfileTab) {
     // replace, so Back leaves the pop-up rather than stepping through its tabs.
-    navigate(tab === 'security' ? PROFILE_SECURITY_PATH : PROFILE_PATH, { replace: true, state: location.state })
+    navigate(tab === 'security' ? PROFILE_SECURITY_PATH : PROFILE_PATH, {
+      replace: true,
+      state: location.state,
+    })
   }
 
   function closeProfile() {
@@ -77,20 +70,31 @@ export function AppLayout() {
   return (
     <div className="min-h-screen bg-bg-canvas">
       <ToastViewport />
-      {/* On phones the language and theme controls drop to a second row: all of them in one row
-          is wider than the screen, which pushed the profile button out of reach. */}
-      <header className="sticky top-0 z-40 flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-brand-forest/10 bg-bg-surface/80 px-4 py-3 backdrop-blur-md sm:flex-nowrap sm:px-6">
+      {/* The role's pages sit in the header as tabs from `lg` up: below that the admin's eight
+          tabs, with two names open (the current one and the hovered one), don't fit on one row,
+          and Sinhala and Tamil names are longer still. Language and theme live in the profile
+          menu for a signed-in user, keeping the bar to logo · tabs · bell · profile; a visitor
+          browsing the public marketplace has no profile menu, so they stay here. */}
+      <header className="sticky top-0 z-40 flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-brand-forest/10 bg-bg-surface/80 px-4 py-2.5 backdrop-blur-md sm:px-6 lg:flex-nowrap">
         {/* `/` sends a signed-in user to their role's home, and a visitor to the landing page. */}
-        <Link to="/" className="mr-auto font-display text-xl text-brand-forest">
+        <Link to="/" className="font-display text-xl text-brand-forest">
           {t('appName')}
         </Link>
 
-        <div className="order-last flex w-full items-center justify-between gap-2 sm:order-none sm:w-auto sm:justify-end sm:gap-4">
-          <LanguageSwitcher variant="compact" />
-          <ThemeToggle variant="compact" />
-        </div>
+        {/* Lined up after the logo rather than centred: a name sliding out then only grows the
+            bar to the right, so the tab under the cursor stays put. Centred, the whole bar shifted
+            left as it grew, slid the tab out from under the cursor, and the names flickered. */}
+        {navItems.length > 0 && (
+          <NavTabs items={navItems} variant="top" className="ml-2 hidden lg:block" />
+        )}
 
-        <div className="flex items-center gap-3 sm:gap-4">
+        <div className="ml-auto flex items-center justify-end gap-3 sm:gap-4">
+          {!user && (
+            <>
+              <LanguageSwitcher variant="compact" />
+              <ThemeToggle variant="compact" />
+            </>
+          )}
           {/* Gated on the token, not on `user`: this layout also wraps the public
               marketplace browse route, and the bell polls GET /api/notifications/mine,
               which 401s for an anonymous visitor. */}
@@ -99,49 +103,41 @@ export function AppLayout() {
         </div>
       </header>
 
-      {/* Phones: the sidebar is hidden below `sm`, so the same links sit in a row that scrolls
-          sideways. Without it a signed-in user on a phone had no way to reach any other page. */}
+      {/* Phones and tablets have no hover and no room in the header, so the same tabs sit
+          in a bar along the bottom of the screen, like a mobile app's. */}
       {navItems.length > 0 && (
-        <nav
-          aria-label={t('nav.menu')}
-          className="flex gap-1 overflow-x-auto border-b border-brand-forest/10 px-4 py-2 sm:hidden"
-        >
-          {navItems.map((item) => (
-            <NavLink key={item.path} to={item.path} className={navLinkClass}>
-              {item.icon}
-              {t(item.labelKey)}
-            </NavLink>
-          ))}
-        </nav>
+        <NavTabs
+          items={navItems}
+          variant="bottom"
+          className="fixed inset-x-0 bottom-0 z-40 border-t border-brand-forest/10 bg-bg-surface/85 pt-1.5 pb-[max(0.375rem,env(safe-area-inset-bottom))] backdrop-blur-md lg:hidden"
+        />
       )}
 
-      <div className="flex">
-        <aside className="hidden w-56 shrink-0 flex-col gap-1 border-r border-brand-forest/10 p-4 sm:flex">
-          {navItems.map((item) => (
-            <NavLink key={item.path} to={item.path} className={navLinkClass}>
-              {item.icon}
-              {t(item.labelKey)}
-            </NavLink>
-          ))}
-        </aside>
-
-        {/* min-w-0 lets the page shrink to the screen: a flex item otherwise grows to its widest
-            child, which pushed whole pages past the edge of a phone. */}
-        <main className="min-w-0 flex-1 p-4 sm:p-6">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={displayedPathname}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.2 }}
-            >
-              {/* The pop-up's own route renders nothing; draw the page it sits over instead. */}
-              {backgroundLocation ? renderMatches(matchRoutes(pageRoutes, backgroundLocation)) : <Outlet />}
-            </motion.div>
-          </AnimatePresence>
-        </main>
-      </div>
+      {/* min-w-0 lets the page shrink to the screen, and max-w keeps lines and cards at a readable
+          width now that no sidebar takes up the side. The bottom padding clears the phone tab bar. */}
+      <main
+        className={cn(
+          'mx-auto w-full max-w-7xl min-w-0 p-4 sm:p-6',
+          navItems.length > 0 && 'pb-24 lg:pb-6',
+        )}
+      >
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={displayedPathname}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.2 }}
+          >
+            {/* The pop-up's own route renders nothing; draw the page it sits over instead. */}
+            {backgroundLocation ? (
+              renderMatches(matchRoutes(pageRoutes, backgroundLocation))
+            ) : (
+              <Outlet />
+            )}
+          </motion.div>
+        </AnimatePresence>
+      </main>
 
       <ProfileDialog
         open={isProfileOpen}

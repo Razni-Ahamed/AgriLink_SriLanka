@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { RouterProvider, createMemoryRouter } from 'react-router-dom'
@@ -18,6 +18,7 @@ vi.mock('./pageRoutes', async () => {
     pageRoutes: [
       { path: '/', element: page('Home redirect') },
       { path: '/farms', element: page('Farms page') },
+      { path: '/marketplace/browse', element: page('Marketplace page') },
       { path: '/orders/mine', element: page('Orders page') },
       { path: '/profile', element: null },
       { path: '/profile/security', element: null },
@@ -88,7 +89,10 @@ describe('AppLayout profile pop-up', () => {
     const router = renderAt('/profile/security')
 
     expect(await screen.findByRole('dialog', { name: 'My profile' })).toBeInTheDocument()
-    expect(screen.getByRole('tab', { name: 'Security settings' })).toHaveAttribute('aria-selected', 'true')
+    expect(screen.getByRole('tab', { name: 'Security settings' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    )
     expect(screen.getByText('Farms page')).toBeInTheDocument() // a Farmer's home
 
     await user.keyboard('{Escape}')
@@ -96,10 +100,53 @@ describe('AppLayout profile pop-up', () => {
     expect(router.state.location.pathname).toBe('/')
   })
 
+  it("shows the role's pages as tabs, marks the open one, and has no Notifications tab", () => {
+    renderAt('/farms')
+
+    // One set in the header (wide screens) and one in the phone tab bar; CSS shows one of them.
+    const menus = screen.getAllByRole('navigation', { name: 'Main menu' })
+    expect(menus).toHaveLength(2)
+    for (const menu of menus) {
+      const links = within(menu).getAllByRole('link')
+      expect(links.map((link) => link.getAttribute('href'))).toEqual([
+        '/farms',
+        '/issues/mine',
+        '/marketplace/browse',
+        '/marketplace/mine',
+        '/marketplace/requests',
+        '/orders/mine',
+      ])
+      expect(within(menu).getByRole('link', { name: 'Farms' })).toHaveAttribute(
+        'aria-current',
+        'page',
+      )
+      expect(within(menu).getByRole('link', { name: 'Orders' })).not.toHaveAttribute('aria-current')
+    }
+    expect(screen.queryByRole('link', { name: 'Notifications' })).not.toBeInTheDocument()
+  })
+
+  it('moves language and theme into the profile menu once signed in', () => {
+    renderAt('/farms')
+
+    expect(screen.queryByRole('group', { name: 'Language' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('group', { name: 'Theme' })).not.toBeInTheDocument()
+  })
+
+  it('keeps language and theme in the header for a visitor, who has no tabs or profile menu', () => {
+    useAuthStore.setState({ token: null, role: null, user: null })
+    renderAt('/marketplace/browse')
+
+    expect(screen.getByRole('group', { name: 'Language' })).toBeInTheDocument()
+    expect(screen.getByRole('group', { name: 'Theme' })).toBeInTheDocument()
+    expect(screen.queryByRole('navigation', { name: 'Main menu' })).not.toBeInTheDocument()
+  })
+
   it('shows the header profile button and no pop-up on ordinary pages', () => {
     renderAt('/farms')
 
-    expect(screen.getByRole('button', { name: 'Account menu for Nimal Perera' })).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Account menu for Nimal Perera' }),
+    ).toBeInTheDocument()
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 })
