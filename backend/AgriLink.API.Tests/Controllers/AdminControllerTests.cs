@@ -506,6 +506,44 @@ public class AdminControllerTests
         Assert.NotEqual(stampBefore, (await users.FindByIdAsync(officer.Id.ToString()))!.SecurityStamp);
     }
 
+    [Theory]
+    [InlineData(RegistrationStatus.Rejected)]
+    [InlineData(RegistrationStatus.Pending)]
+    public async Task UpdateUserStatus_ActivatingAnUnapprovedApplication_ApprovesIt(RegistrationStatus status)
+    {
+        var (controller, db, users, _) = await CreateAsync();
+        var farmer = await CreateFarmerAsync(users, db);
+        farmer.RegistrationStatus = status;
+        farmer.RejectionReason = status == RegistrationStatus.Rejected ? "Plot not found" : null;
+        farmer.IsActive = false;
+        await users.UpdateAsync(farmer);
+
+        var result = await controller.UpdateUserStatus(farmer.Id, new UpdateUserStatusRequest { IsActive = true });
+
+        var summary = Assert.IsType<AdminUserSummary>(Assert.IsType<OkObjectResult>(result.Result).Value);
+        Assert.True(summary.IsActive);
+        Assert.Equal("Approved", summary.RegistrationStatus);
+        var reloaded = await users.FindByIdAsync(farmer.Id.ToString());
+        Assert.Equal(RegistrationStatus.Approved, reloaded!.RegistrationStatus);
+        Assert.Null(reloaded.RejectionReason);
+        Assert.Contains(await db.AuditLogs.ToListAsync(), a => a.EntityId == farmer.Id && a.Action == "RegistrationApproved");
+        Assert.Contains(await db.Notifications.ToListAsync(), n => n.UserId == farmer.Id && n.Title == "Application approved");
+    }
+
+    [Fact]
+    public async Task GetUsers_ReportsEachAccountsRegistrationStatus()
+    {
+        var (controller, db, users, _) = await CreateAsync();
+        var farmer = await CreateFarmerAsync(users, db);
+        farmer.RegistrationStatus = RegistrationStatus.Pending;
+        await users.UpdateAsync(farmer);
+
+        var result = await controller.GetUsers();
+
+        var summaries = Assert.IsType<List<AdminUserSummary>>(Assert.IsType<OkObjectResult>(result.Result).Value);
+        Assert.Equal("Pending", summaries.Single(s => s.UserId == farmer.Id).RegistrationStatus);
+    }
+
     [Fact]
     public async Task UpdateUserStatus_TargetIsAdmin_ReturnsBadRequest()
     {

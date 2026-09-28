@@ -34,7 +34,9 @@ public class HarvestsController : ControllerBase
     {
         var query = _db.HarvestListings
             .Include(h => h.Crop).ThenInclude(c => c.Field).ThenInclude(f => f.Farm)
-            .Where(h => h.Status == HarvestStatus.Active)
+            // A deactivated farmer can't answer requests, so their listings leave the marketplace
+            // until the account is reactivated.
+            .Where(h => h.Status == HarvestStatus.Active && h.FarmerProfile.User.IsActive)
             .AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(cropType))

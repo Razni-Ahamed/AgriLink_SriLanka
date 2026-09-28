@@ -202,6 +202,7 @@ public class AdminController : ControllerBase
                 District = district,
                 Department = officerDepartments.GetValueOrDefault(user.Id),
                 IsActive = user.IsActive,
+                RegistrationStatus = user.RegistrationStatus.ToString(),
                 CreatedAt = user.CreatedAt,
             });
         }
@@ -355,6 +356,7 @@ public class AdminController : ControllerBase
             District = district,
             Department = department?.Name,
             IsActive = user.IsActive,
+            RegistrationStatus = user.RegistrationStatus.ToString(),
             CreatedAt = user.CreatedAt,
         });
     }
@@ -384,6 +386,17 @@ public class AdminController : ControllerBase
         var oldValue = user.IsActive.ToString();
         user.IsActive = request.IsActive;
 
+        // Activating an account whose application is still pending, or was rejected, approves it.
+        // Before, the list said "Active" while the person still couldn't sign in, and a rejection
+        // could never be undone.
+        var approvesApplication = request.IsActive && user.RegistrationStatus != RegistrationStatus.Approved;
+        var oldRegistrationStatus = user.RegistrationStatus;
+        if (approvesApplication)
+        {
+            user.RegistrationStatus = RegistrationStatus.Approved;
+            user.RejectionReason = null;
+        }
+
         var updateResult = await _userManager.UpdateAsync(user);
         if (!updateResult.Succeeded)
         {
@@ -397,14 +410,32 @@ public class AdminController : ControllerBase
             await _userManager.UpdateSecurityStampAsync(user);
         }
 
-        _auditLog.Record(
-            _currentUser.GetUserId(User),
-            request.IsActive ? "UserActivated" : "UserDeactivated",
-            "User",
-            userId,
-            oldValue,
-            request.IsActive.ToString());
+        if (approvesApplication)
+        {
+            _auditLog.Record(
+                _currentUser.GetUserId(User), "RegistrationApproved", "User", userId,
+                oldRegistrationStatus.ToString(), nameof(RegistrationStatus.Approved));
+        }
+        else
+        {
+            _auditLog.Record(
+                _currentUser.GetUserId(User),
+                request.IsActive ? "UserActivated" : "UserDeactivated",
+                "User",
+                userId,
+                oldValue,
+                request.IsActive.ToString());
+        }
+
         await _db.SaveChangesAsync();
+
+        if (approvesApplication)
+        {
+            await _notifications.NotifyAsync(
+                userId,
+                "Application approved",
+                "Your AgriLink application has been approved. You can now log in.");
+        }
 
         var roles = await _userManager.GetRolesAsync(user);
         return Ok(new AdminUserSummary
@@ -416,6 +447,7 @@ public class AdminController : ControllerBase
             ProfilePhotoUrl = user.ProfilePhotoUrl,
             Role = roles.FirstOrDefault() ?? string.Empty,
             IsActive = user.IsActive,
+            RegistrationStatus = user.RegistrationStatus.ToString(),
             CreatedAt = user.CreatedAt,
         });
     }
@@ -811,6 +843,7 @@ public class AdminController : ControllerBase
             District = district,
             Department = department,
             IsActive = user.IsActive,
+            RegistrationStatus = user.RegistrationStatus.ToString(),
             CreatedAt = user.CreatedAt,
         };
     }

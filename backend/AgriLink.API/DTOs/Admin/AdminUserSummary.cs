@@ -13,5 +13,11 @@ public class AdminUserSummary
     /// <summary>Populated only for Officer accounts.</summary>
     public string? Department { get; set; }
     public bool IsActive { get; set; }
+
+    /// <summary>
+    /// Pending, Approved or Rejected. An inactive account is only "deactivated" when this is
+    /// Approved; otherwise it is an application still waiting for (or refused) approval.
+    /// </summary>
+    public string RegistrationStatus { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; }
 }

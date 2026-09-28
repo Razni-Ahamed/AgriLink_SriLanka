@@ -50,8 +50,14 @@ public class PurchaseRequestsController : ControllerBase
             return NotFound(new { message = "Harvest listing not found." });
         }
 
-        if (listing.Status != HarvestStatus.Active)
+        var farmerIsActive = await _db.FarmerProfiles
+            .Where(f => f.FarmerProfileId == listing.FarmerProfileId)
+            .Select(f => f.User.IsActive)
+            .FirstOrDefaultAsync();
+        if (listing.Status != HarvestStatus.Active || !farmerIsActive)
         {
+            // An inactive farmer's listing is hidden from the marketplace; a request sent through
+            // an old link would wait for an answer that can never come.
             return BadRequest(new { message = "This harvest listing is not active." });
         }
 
