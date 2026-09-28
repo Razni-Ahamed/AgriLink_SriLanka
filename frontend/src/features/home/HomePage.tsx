@@ -317,7 +317,9 @@ function RoleCard({ photo, icon, tone, title, description, footer }: RoleCardPro
   const { t } = useTranslation('home')
   return (
     <Card className="flex flex-col gap-4 overflow-hidden">
-      {/* Bleeds to the card's edges (past its padding), with the icon sitting on its lower edge. */}
+      {/* Bleeds to the card's edges (past its padding), with the icon sitting on its lower edge.
+          The icon is `relative z-10`: the photo's frame is positioned, so it would otherwise be
+          painted over the icon. */}
       <PhotoFrame
         photo={photo}
         caption={t(`photos.${photo.key}`)}
@@ -325,9 +327,12 @@ function RoleCard({ photo, icon, tone, title, description, footer }: RoleCardPro
         captionHidden
         className="-mx-5 -mt-5 aspect-[16/9] border-0 border-b"
       />
-      <IconBadge tone={tone} className="-mt-10 h-11 w-11 ring-4 ring-bg-surface">
-        {icon}
-      </IconBadge>
+      {/* The badge's tint is see-through, so it sits on a solid card-coloured backing. */}
+      <span className="relative z-10 -mt-10 w-fit rounded-xl bg-bg-surface ring-4 ring-bg-surface">
+        <IconBadge tone={tone} className="h-11 w-11">
+          {icon}
+        </IconBadge>
+      </span>
       <div className="flex-1">
         <h3 className="mb-2 font-display text-xl text-text-primary">{title}</h3>
         <p className="text-sm text-text-secondary">{description}</p>
