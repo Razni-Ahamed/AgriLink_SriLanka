@@ -1,12 +1,11 @@
-import type { ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { motion } from 'motion/react'
+import { motion, useReducedMotion, useScroll, useTransform, type MotionValue } from 'motion/react'
 import { ArrowRight, Storefront, UserPlus } from '@phosphor-icons/react'
 import { Basket, CheckCircle, ClipboardText, Farm, Plant } from '@/components/ui/icons'
 import { buttonClasses } from '@/components/ui/buttonClasses'
 import { Card } from '@/components/ui/Card'
-import { CropIcon } from '@/components/ui/CropIcon'
 import { IconBadge } from '@/components/ui/IconBadge'
 import { BrandMark } from '@/components/ui/BrandMark'
 import { Skeleton } from '@/components/ui/Skeleton'
@@ -15,21 +14,22 @@ import { StaggerList } from '@/components/ui/motion/StaggerList'
 import { HarvestCard } from '@/features/marketplace/components/HarvestCard'
 import { useHarvests } from '@/features/marketplace/hooks/useHarvests'
 import { cn } from '@/lib/utils'
+import { PHOTOGRAPHERS, PHOTOS, type HomePhoto } from './homePhotos'
 
 const PREVIEW_COUNT = 6
 
-/** The hero's decorative crop mosaic: a spread of the island's staple and export crops. */
-const HERO_CROPS = [
-  { crop: 'Paddy', tone: 'bg-brand-forest/10 text-brand-forest' },
-  { crop: 'Tea', tone: 'bg-brand-harvest/15 text-brand-harvest' },
-  { crop: 'Coconut', tone: 'bg-brand-terracotta/15 text-brand-terracotta' },
-  { crop: 'Chilli', tone: 'bg-brand-terracotta/15 text-brand-terracotta' },
-  { crop: 'Banana', tone: 'bg-brand-forest/10 text-brand-forest' },
-  { crop: 'Cinnamon', tone: 'bg-brand-harvest/15 text-brand-harvest' },
-  { crop: 'Mango', tone: 'bg-brand-harvest/15 text-brand-harvest' },
-  { crop: 'Tomato', tone: 'bg-brand-terracotta/15 text-brand-terracotta' },
-  { crop: 'Cabbage', tone: 'bg-brand-forest/10 text-brand-forest' },
-]
+/**
+ * The hero's photo mosaic, in three columns on a six-row grid so the tiles stagger rather than line
+ * up like a spreadsheet. Each column drifts at its own pace as the page scrolls (`drift`, in px over
+ * the hero's height), which gives the mosaic a little depth.
+ */
+const HERO_TILES = [
+  { photo: PHOTOS.paddyFarmer, area: 'col-start-1 row-span-4 row-start-1', drift: -36 },
+  { photo: PHOTOS.fruitStall, area: 'col-start-1 row-span-2 row-start-5', drift: -36 },
+  { photo: PHOTOS.teaHaputale, area: 'col-start-2 row-span-3 row-start-1', drift: 28 },
+  { photo: PHOTOS.paddyAerial, area: 'col-start-2 row-span-3 row-start-4', drift: 28 },
+  { photo: PHOTOS.riceWinnowing, area: 'col-start-3 row-span-5 row-start-2', drift: -18 },
+] as const
 
 /**
  * The public landing page at `/` for visitors who aren't signed in. It stands outside AppLayout
@@ -43,6 +43,7 @@ export function HomePage() {
       <main>
         <Hero />
         <RolesSection />
+        <StorySection />
         <MarketplacePreview />
         <StepsSection />
       </main>
@@ -138,28 +139,120 @@ function Hero() {
         </div>
       </motion.div>
 
-      <motion.div
-        aria-hidden
-        className="hidden grid-cols-3 gap-3 md:grid"
-        initial={{ opacity: 0, scale: 0.96 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.4, delay: 0.1 }}
-      >
-        {HERO_CROPS.map(({ crop, tone }, index) => (
-          <div
-            key={crop}
-            className={cn(
-              'flex aspect-square items-center justify-center rounded-3xl border border-brand-forest/10',
-              tone,
-              // A staggered middle column keeps the grid from reading as a spreadsheet.
-              index % 3 === 1 && 'translate-y-6',
-            )}
-          >
-            <CropIcon cropType={crop} size={56} />
-          </div>
-        ))}
-      </motion.div>
+      <HeroMosaic />
     </Section>
+  )
+}
+
+function HeroMosaic() {
+  const { t } = useTranslation('home')
+  const ref = useRef<HTMLDivElement>(null)
+  const reduceMotion = useReducedMotion()
+  // 0 while the mosaic's top is at the top of the window, 1 once it has scrolled out of view.
+  const { scrollYProgress } = useScroll({ target: ref, offset: ['start start', 'end start'] })
+
+  return (
+    <motion.div
+      ref={ref}
+      className="grid h-80 grid-cols-3 grid-rows-6 gap-3 sm:h-[28rem] lg:h-[32rem]"
+      initial={{ opacity: 0, scale: 0.97 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 0.45, delay: 0.1 }}
+    >
+      {HERO_TILES.map(({ photo, area, drift }, index) => (
+        <DriftingTile
+          key={photo.key}
+          photo={photo}
+          caption={t(`photos.${photo.key}`)}
+          className={area}
+          progress={scrollYProgress}
+          drift={reduceMotion ? 0 : drift}
+          // The first tiles are in view at once: fetch them eagerly, the first one first.
+          priority={index === 0}
+        />
+      ))}
+    </motion.div>
+  )
+}
+
+interface DriftingTileProps {
+  photo: HomePhoto
+  caption: string
+  className: string
+  progress: MotionValue<number>
+  drift: number
+  priority: boolean
+}
+
+function DriftingTile({ photo, caption, className, progress, drift, priority }: DriftingTileProps) {
+  const y = useTransform(progress, [0, 1], [0, drift])
+  return (
+    <motion.figure style={{ y }} className={cn('m-0 min-h-0', className)}>
+      <PhotoFrame
+        photo={photo}
+        caption={caption}
+        sizes="(min-width: 768px) 16vw, 33vw"
+        loading="eager"
+        priority={priority}
+        className="h-full rounded-3xl"
+      />
+    </motion.figure>
+  )
+}
+
+interface PhotoFrameProps {
+  photo: HomePhoto
+  caption: string
+  /** Tells the browser how wide the photo shows, so it picks the 640 or the 1280px file. */
+  sizes: string
+  loading?: 'eager' | 'lazy'
+  priority?: boolean
+  /** Hide the caption (the alt text still describes the photo). */
+  captionHidden?: boolean
+  className?: string
+}
+
+/**
+ * A photo filling its frame, with its caption over a dark fade along the bottom, which keeps the
+ * white text readable on any photo in either theme. The caption is hidden from screen readers
+ * because the alt text already says the same.
+ */
+function PhotoFrame({
+  photo,
+  caption,
+  sizes,
+  loading = 'lazy',
+  priority = false,
+  captionHidden = false,
+  className,
+}: PhotoFrameProps) {
+  return (
+    <div
+      className={cn(
+        'group relative overflow-hidden border border-brand-forest/10 bg-brand-forest/10',
+        className,
+      )}
+    >
+      <img
+        src={photo.src}
+        srcSet={photo.srcSet}
+        sizes={sizes}
+        alt={caption}
+        loading={loading}
+        decoding="async"
+        fetchPriority={priority ? 'high' : undefined}
+        style={photo.focus ? { objectPosition: photo.focus } : undefined}
+        className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-105 motion-reduce:transition-none"
+      />
+      {!captionHidden && (
+        <p
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-x-0 bottom-0 hidden bg-gradient-to-t from-black/65 to-transparent px-3 pt-8 pb-2.5 text-xs font-medium text-white sm:block"
+        >
+          {caption}
+        </p>
+      )}
+    </div>
   )
 }
 
@@ -174,6 +267,7 @@ function RolesSection() {
 
       <div className="grid gap-4 md:grid-cols-3">
         <RoleCard
+          photo={PHOTOS.farmerGarden}
           icon={<Farm size={22} weight="duotone" />}
           tone="forest"
           title={t('roles.farmer.title')}
@@ -185,6 +279,7 @@ function RolesSection() {
           }
         />
         <RoleCard
+          photo={PHOTOS.walkingFields}
           icon={<ClipboardText size={22} weight="duotone" />}
           tone="terracotta"
           title={t('roles.officer.title')}
@@ -193,6 +288,7 @@ function RolesSection() {
           footer={<p className="text-sm italic text-text-secondary">{t('roles.officer.note')}</p>}
         />
         <RoleCard
+          photo={PHOTOS.vegetableStall}
           icon={<Basket size={22} weight="duotone" />}
           tone="harvest"
           title={t('roles.buyer.title')}
@@ -209,6 +305,7 @@ function RolesSection() {
 }
 
 interface RoleCardProps {
+  photo: HomePhoto
   icon: ReactNode
   tone: 'forest' | 'harvest' | 'terracotta'
   title: string
@@ -216,10 +313,19 @@ interface RoleCardProps {
   footer: ReactNode
 }
 
-function RoleCard({ icon, tone, title, description, footer }: RoleCardProps) {
+function RoleCard({ photo, icon, tone, title, description, footer }: RoleCardProps) {
+  const { t } = useTranslation('home')
   return (
-    <Card className="flex flex-col gap-4">
-      <IconBadge tone={tone} className="h-11 w-11">
+    <Card className="flex flex-col gap-4 overflow-hidden">
+      {/* Bleeds to the card's edges (past its padding), with the icon sitting on its lower edge. */}
+      <PhotoFrame
+        photo={photo}
+        caption={t(`photos.${photo.key}`)}
+        sizes="(min-width: 768px) 30vw, 100vw"
+        captionHidden
+        className="-mx-5 -mt-5 aspect-[16/9] border-0 border-b"
+      />
+      <IconBadge tone={tone} className="-mt-10 h-11 w-11 ring-4 ring-bg-surface">
         {icon}
       </IconBadge>
       <div className="flex-1">
@@ -228,6 +334,118 @@ function RoleCard({ icon, tone, title, description, footer }: RoleCardProps) {
       </div>
       {footer}
     </Card>
+  )
+}
+
+const STORY = [
+  { key: 'report', photo: PHOTOS.tendingCrop },
+  { key: 'advice', photo: PHOTOS.examiningLeaves },
+  { key: 'sell', photo: PHOTOS.marketHandover },
+] as const
+
+/**
+ * "A season with AgriLink": three steps down the left, and on wide screens one large photo held
+ * in view on the right that crossfades to match whichever step is in the middle of the window.
+ * On narrower screens each step simply shows its own photo above it.
+ */
+function StorySection() {
+  const { t } = useTranslation('home')
+  const [active, setActive] = useState(0)
+  const stepRefs = useRef<Array<HTMLLIElement | null>>([])
+
+  useEffect(() => {
+    // A step counts as current while it crosses the middle tenth of the window.
+    if (typeof IntersectionObserver === 'undefined') {
+      return
+    }
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            setActive(Number((entry.target as HTMLElement).dataset.step))
+          }
+        }
+      },
+      { rootMargin: '-45% 0px -45% 0px' },
+    )
+    for (const step of stepRefs.current) {
+      if (step) {
+        observer.observe(step)
+      }
+    }
+    return () => observer.disconnect()
+  }, [])
+
+  return (
+    <Section band="tint">
+      <div className="mx-auto mb-4 max-w-2xl text-center">
+        <p className="mb-2 text-sm font-medium tracking-wide text-brand-terracotta uppercase">
+          {t('story.eyebrow')}
+        </p>
+        <h2 className="font-display text-3xl text-text-primary sm:text-4xl">{t('story.title')}</h2>
+      </div>
+
+      <div className="lg:grid lg:grid-cols-2 lg:gap-16">
+        <ol>
+          {STORY.map(({ key, photo }, index) => (
+            <li
+              key={key}
+              ref={(element) => {
+                stepRefs.current[index] = element
+              }}
+              data-step={index}
+              className="flex flex-col justify-center gap-5 py-8 lg:min-h-[70vh]"
+            >
+              <PhotoFrame
+                photo={photo}
+                caption={t(`photos.${photo.key}`)}
+                sizes="100vw"
+                className="aspect-[4/3] rounded-3xl lg:hidden"
+              />
+              <div
+                className={cn(
+                  'transition-opacity duration-500 motion-reduce:transition-none',
+                  index === active ? 'lg:opacity-100' : 'lg:opacity-40',
+                )}
+              >
+                <span className="font-mono text-sm text-brand-terracotta tabular-nums">
+                  {String(index + 1).padStart(2, '0')}
+                </span>
+                <h3 className="mt-1 mb-2 font-display text-2xl text-text-primary sm:text-3xl">
+                  {t(`story.${key}.title`)}
+                </h3>
+                <p className="max-w-md text-base text-text-secondary">
+                  {t(`story.${key}.description`)}
+                </p>
+              </div>
+            </li>
+          ))}
+        </ol>
+
+        <div className="hidden lg:block">
+          {/* Held just below the sticky site header while the steps scroll past. */}
+          <div className="sticky top-24 h-[70vh] overflow-hidden rounded-3xl">
+            {STORY.map(({ key, photo }, index) => (
+              <div
+                key={key}
+                aria-hidden={index !== active}
+                className={cn(
+                  'absolute inset-0 transition-opacity duration-700 motion-reduce:transition-none',
+                  index === active ? 'opacity-100' : 'opacity-0',
+                )}
+              >
+                <PhotoFrame
+                  photo={photo}
+                  caption={t(`photos.${photo.key}`)}
+                  sizes="45vw"
+                  className="h-full rounded-3xl"
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </Section>
   )
 }
 
@@ -348,9 +566,10 @@ function HomeFooter() {
         </div>
       </div>
 
-      <p className="border-t border-brand-forest/10 py-4 text-center text-xs text-text-secondary">
-        {t('home:footer.rights', { year: new Date().getFullYear() })}
-      </p>
+      <div className="border-t border-brand-forest/10 px-4 py-4 text-center text-xs text-text-secondary">
+        <p>{t('home:footer.rights', { year: new Date().getFullYear() })}</p>
+        <p className="mt-1">{t('home:footer.photoCredits', { names: PHOTOGRAPHERS.join(', ') })}</p>
+      </div>
     </footer>
   )
 }

@@ -28,6 +28,22 @@
       "cta": "Register as a buyer"
     }
   },
+  "story": {
+    "eyebrow": "A season with AgriLink",
+    "title": "From a worry in the field to a sale at the market",
+    "report": {
+      "title": "Spot a problem, report it",
+      "description": "Photograph a sick crop and report it in a minute, from your phone or computer."
+    },
+    "advice": {
+      "title": "Get advice from an officer",
+      "description": "An agricultural officer in your district reviews the report and tells you what to do next."
+    },
+    "sell": {
+      "title": "Sell your harvest directly",
+      "description": "List your harvest at your own price, and buyers from across the island send requests straight to you."
+    }
+  },
   "marketplace": {
     "title": "Fresh on the marketplace",
     "subtitle": "Harvests farmers have listed recently.",
@@ -54,11 +70,25 @@
       "description": "Get advice on crop problems and buy or sell directly."
     }
   },
+  "photos": {
+    "paddyFarmer": "A farmer in a rice paddy, Ambanpola",
+    "teaHaputale": "Among the tea bushes, Haputale",
+    "paddyAerial": "Rice paddies from above",
+    "fruitStall": "A fruit stall, Anuradhapura",
+    "riceWinnowing": "Winnowing rice, Eastern Province",
+    "tendingCrop": "Tending a vegetable plot",
+    "examiningLeaves": "Looking closely at the leaves",
+    "marketHandover": "A sale at a vegetable stall",
+    "farmerGarden": "Working a vegetable garden",
+    "walkingFields": "Out in the fields",
+    "vegetableStall": "A vegetable stall, Colombo"
+  },
   "footer": {
     "tagline": "Connecting Sri Lankan farmers, officers and buyers.",
     "explore": "Explore",
     "account": "Account",
     "adminLogin": "Admin sign in",
-    "rights": "© {{year}} AgriLink Sri Lanka"
+    "rights": "© {{year}} AgriLink Sri Lanka",
+    "photoCredits": "Photos by {{names}}, via Unsplash and Pexels."
   }
 }
