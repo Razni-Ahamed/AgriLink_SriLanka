@@ -214,7 +214,7 @@ public class AuthController : ControllerBase
     [HttpPost("login")]
     public async Task<ActionResult<AuthResponse>> Login(LoginRequest request)
     {
-        var user = await _userManager.FindByEmailAsync(request.Email);
+        var user = await _userManager.FindByEmailAsync(request.Email.Trim());
         if (user is null)
         {
             return Unauthorized(new { message = "Invalid email or password." });
@@ -254,7 +254,7 @@ public class AuthController : ControllerBase
     [HttpPost("admin/login")]
     public async Task<ActionResult<AuthResponse>> AdminLogin(LoginRequest request)
     {
-        var user = await _userManager.FindByEmailAsync(request.Email);
+        var user = await _userManager.FindByEmailAsync(request.Email.Trim());
         if (user is null || !user.IsActive)
         {
             return Unauthorized(new { message = "Invalid email or password." });
