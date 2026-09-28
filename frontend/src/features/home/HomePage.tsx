@@ -507,33 +507,77 @@ const STEPS = [
   { key: 'connect', icon: <Storefront size={22} weight="duotone" /> },
 ] as const
 
+/**
+ * "How it works" as a timeline: four steps joined by a line (across the page on wide screens, down
+ * it on narrow ones), each fading in as it scrolls into view, then a sign-up button. It's the last
+ * section before the footer, so the natural place to ask people to join.
+ */
 function StepsSection() {
   const { t } = useTranslation('home')
+  const reduceMotion = useReducedMotion()
 
   return (
     <Section>
-      <h2 className="mb-8 text-center font-display text-3xl text-text-primary">
+      <h2 className="mb-10 text-center font-display text-3xl text-text-primary">
         {t('steps.title')}
       </h2>
 
-      <ol className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <ol className="relative grid gap-8 lg:grid-cols-4 lg:gap-6">
+        {/* Wide screens: one line across the page through the circles' centres, from the first
+            to the last. Below `lg` each step draws its own join down to the next (the `after:`
+            line on the li), so the line stops at the last circle. */}
+        <span
+          aria-hidden="true"
+          className="absolute top-7 right-[12.5%] left-[12.5%] hidden h-0.5 -translate-y-1/2 bg-brand-forest/20 lg:block"
+        />
         {STEPS.map(({ key, icon }, index) => (
-          <li key={key}>
-            <Card className="h-full">
-              <div className="mb-3 flex items-center gap-3">
-                <IconBadge tone="forest">{icon}</IconBadge>
-                <span className="font-mono text-sm tabular-nums text-text-secondary">
-                  {String(index + 1).padStart(2, '0')}
-                </span>
-              </div>
-              <h3 className="mb-1 font-display text-lg text-text-primary">
+          <motion.li
+            key={key}
+            className="relative flex gap-5 after:absolute after:top-14 after:-bottom-8 after:left-7 after:w-0.5 after:-translate-x-1/2 after:bg-brand-forest/20 last:after:hidden lg:flex-col lg:items-center lg:gap-4 lg:text-center lg:after:hidden"
+            initial={reduceMotion ? false : { opacity: 0, y: 16 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: '0px 0px -10% 0px' }}
+            transition={{ duration: 0.45, delay: index * 0.12, ease: 'easeOut' }}
+          >
+            {/* A solid backing, so the line doesn't show through the circle. */}
+            <span className="flex size-14 shrink-0 items-center justify-center rounded-full border-2 border-brand-forest/30 bg-bg-canvas text-brand-forest shadow-sm [&_svg]:size-6">
+              {icon}
+            </span>
+            <div className="pt-1 lg:pt-0">
+              <span className="font-mono text-xs text-brand-terracotta tabular-nums">
+                {String(index + 1).padStart(2, '0')}
+              </span>
+              <h3 className="mt-0.5 mb-1 font-display text-lg text-text-primary">
                 {t(`steps.${key}.title`)}
               </h3>
-              <p className="text-sm text-text-secondary">{t(`steps.${key}.description`)}</p>
-            </Card>
-          </li>
+              <p className="max-w-xs text-sm text-text-secondary lg:mx-auto">
+                {t(`steps.${key}.description`)}
+              </p>
+            </div>
+          </motion.li>
         ))}
       </ol>
+
+      <motion.div
+        className="mx-auto mt-14 flex max-w-xl flex-col items-center rounded-3xl border border-brand-forest/10 bg-brand-forest/5 px-6 py-8 text-center"
+        initial={reduceMotion ? false : { opacity: 0, y: 16 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: '0px 0px -10% 0px' }}
+        transition={{ duration: 0.45, ease: 'easeOut' }}
+      >
+        <h3 className="font-display text-2xl text-text-primary">{t('steps.ctaTitle')}</h3>
+        <p className="mt-1 text-sm text-text-secondary">{t('steps.ctaSubtitle')}</p>
+        <Link to="/register" className={buttonClasses('primary', 'lg', 'mt-5')}>
+          <UserPlus size={20} weight="duotone" />
+          {t('hero.register')}
+        </Link>
+        <p className="mt-4 text-sm text-text-secondary">
+          {t('steps.haveAccount')}{' '}
+          <Link to="/login" className="font-medium text-brand-forest hover:underline">
+            {t('nav.login')}
+          </Link>
+        </p>
+      </motion.div>
     </Section>
   )
 }

@@ -15,3 +15,22 @@ if (typeof window !== 'undefined' && !window.matchMedia) {
     dispatchEvent: () => false,
   })) as unknown as typeof window.matchMedia
 }
+
+// Nor IntersectionObserver, which motion's `whileInView` (the home page's scroll-in fades) and the
+// home page's scroll story rely on. This one never reports anything in view; the content is in
+// the DOM regardless, which is what tests look at.
+if (typeof window !== 'undefined' && typeof window.IntersectionObserver === 'undefined') {
+  class NoopIntersectionObserver {
+    readonly root = null
+    readonly rootMargin = ''
+    readonly thresholds = []
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+    takeRecords() {
+      return []
+    }
+  }
+  window.IntersectionObserver =
+    NoopIntersectionObserver as unknown as typeof window.IntersectionObserver
+}

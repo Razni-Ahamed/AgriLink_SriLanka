@@ -68,7 +68,10 @@
     "connect": {
       "title": "Connect and trade",
       "description": "Get advice on crop problems and buy or sell directly."
-    }
+    },
+    "ctaTitle": "Ready to get started?",
+    "ctaSubtitle": "It's free, and it only takes a few minutes.",
+    "haveAccount": "Already have an account?"
   },
   "photos": {
     "paddyFarmer": "A farmer in a rice paddy, Ambanpola",

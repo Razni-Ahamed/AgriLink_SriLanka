@@ -58,6 +58,29 @@ describe('HomePage photos', () => {
     }
   })
 
+  it('lays out How it works as four numbered steps, then asks visitors to sign up', () => {
+    renderHome()
+
+    const section = screen
+      .getByRole('heading', { name: 'How it works' })
+      .closest('section') as HTMLElement
+    const steps = within(section).getAllByRole('listitem')
+    expect(steps.map((step) => within(step).getByRole('heading').textContent)).toEqual([
+      'Register',
+      'Get approved',
+      'Add your farm or browse',
+      'Connect and trade',
+    ])
+    expect(
+      within(section).getByRole('heading', { name: 'Ready to get started?' }),
+    ).toBeInTheDocument()
+    expect(within(section).getByRole('link', { name: 'Create a free account' })).toHaveAttribute(
+      'href',
+      '/register',
+    )
+    expect(within(section).getByRole('link', { name: 'Log in' })).toHaveAttribute('href', '/login')
+  })
+
   it('credits the photographers in the footer', () => {
     renderHome()
 
