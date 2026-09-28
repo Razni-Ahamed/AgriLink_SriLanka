@@ -19,6 +19,22 @@ function readStoredSession(): StoredSession | null {
   }
 }
 
+/**
+ * True when the token's own `exp` has passed, or the token can't be read at all. Sessions last 8
+ * hours; trusting an expired one sent a returning visitor from `/` to their role's page, whose first
+ * request came back 401 and bounced them to the login page instead of the landing page.
+ */
+export function isTokenExpired(token: string, now = Date.now()): boolean {
+  try {
+    const payload = token.split('.')[1]
+    const json = atob(payload.replace(/-/g, '+').replace(/_/g, '/'))
+    const { exp } = JSON.parse(json) as { exp?: unknown }
+    return typeof exp !== 'number' || exp * 1000 <= now
+  } catch {
+    return true
+  }
+}
+
 function writeStoredSession(session: StoredSession | null): void {
   if (session) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(session))
@@ -83,7 +99,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   hydrate: () => {
     const session = readStoredSession()
-    if (!session) {
+    if (!session || isTokenExpired(session.token)) {
+      if (session) {
+        writeStoredSession(null)
+      }
       set({ isHydrated: true })
       return
     }

@@ -21,7 +21,7 @@ function CurrentLocation() {
 function renderMenu(user = farmerProfile()) {
   const router = createMemoryRouter(
     [
-      { path: '/login', element: <p>Login page</p> },
+      { path: '/', element: <p>Home page</p> },
       {
         path: '*',
         element: (
@@ -129,14 +129,14 @@ describe('ProfileMenu', () => {
     expect(screen.queryByRole('menu')).not.toBeInTheDocument()
   })
 
-  it('"Log out" ends the session and goes to the login page', async () => {
+  it('"Log out" ends the session and goes to the home page', async () => {
     const user = userEvent.setup()
     renderMenu()
     await user.click(screen.getByRole('button', { name: /Account menu/ }))
 
     await user.click(screen.getByRole('menuitem', { name: 'Log out' }))
 
-    expect(await screen.findByText('Login page')).toBeInTheDocument()
+    expect(await screen.findByText('Home page')).toBeInTheDocument()
     expect(useAuthStore.getState().token).toBeNull()
   })
 })
