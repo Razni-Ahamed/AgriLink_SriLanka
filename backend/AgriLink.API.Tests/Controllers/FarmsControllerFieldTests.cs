@@ -28,6 +28,7 @@ public class FarmsControllerFieldTests
             FarmId = 1,
             Name = "Green Acres",
             District = "Kandy",
+            Area = 10,
             FarmerProfileId = 1,
             Fields = new List<Field> { new() { FieldId = 1, Name = "North Field", Area = 2 } },
         });
@@ -65,6 +66,39 @@ public class FarmsControllerFieldTests
 
         Assert.IsType<ForbidResult>(result.Result);
         Assert.Equal("North Field", (await db.Fields.SingleAsync()).Name);
+    }
+
+    [Fact]
+    public async Task AddField_LargerThanItsFarm_IsRefused()
+    {
+        var db = Seed();
+
+        var result = await CreateController(db, OwnerUserId).AddField(1, new CreateFieldRequest { Name = "Huge", Area = 5000 });
+
+        Assert.IsType<BadRequestObjectResult>(result.Result);
+        Assert.Single(db.Fields);
+    }
+
+    [Fact]
+    public async Task UpdateField_LargerThanItsFarm_IsRefused()
+    {
+        var db = Seed();
+
+        var result = await CreateController(db, OwnerUserId).UpdateField(1, 1, new CreateFieldRequest { Name = "North Field", Area = 11 });
+
+        Assert.IsType<BadRequestObjectResult>(result.Result);
+        Assert.Equal(2, (await db.Fields.SingleAsync()).Area);
+    }
+
+    [Fact]
+    public async Task UpdateFarm_SmallerThanOneOfItsFields_IsRefused()
+    {
+        var db = Seed();
+
+        var result = await CreateController(db, OwnerUserId).UpdateFarm(1, new UpdateFarmRequest { Name = "Green Acres", District = "Kandy", Area = 1 });
+
+        Assert.IsType<BadRequestObjectResult>(result.Result);
+        Assert.Equal(10, (await db.Farms.SingleAsync()).Area);
     }
 
     [Fact]

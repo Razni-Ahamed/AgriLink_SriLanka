@@ -121,6 +121,24 @@ public class OrdersControllerTests
     }
 
     [Fact]
+    public async Task Cancel_ListingTheFarmerMarkedSoldByHand_StaysSold()
+    {
+        using var db = CreateDb();
+        SeedConfirmedOrder(db);
+        // Stock was still left when the farmer closed the listing themselves.
+        var listing = await db.HarvestListings.SingleAsync();
+        listing.AvailableQuantity = 40;
+        await db.SaveChangesAsync();
+
+        var result = await CreateController(db, BuyerUserId, "Buyer").Cancel(1);
+
+        Assert.IsType<OkObjectResult>(result.Result);
+        listing = await db.HarvestListings.SingleAsync();
+        Assert.Equal(140, listing.AvailableQuantity);
+        Assert.Equal(HarvestStatus.Sold, listing.Status);
+    }
+
+    [Fact]
     public async Task GetById_KeepsTheOrdersAgreedPrice_WhenTheListingPriceChangesLater()
     {
         using var db = CreateDb();

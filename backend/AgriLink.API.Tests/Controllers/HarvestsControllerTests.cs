@@ -77,6 +77,39 @@ public class HarvestsControllerTests
     }
 
     [Fact]
+    public async Task Create_HarvestDateBeforeThePlantingDate_IsRefused()
+    {
+        using var db = CreateDb();
+        var listing = SeedListing(db, farmerProfileId: 1, farmerUserId: 10);
+        listing.Crop.PlantingDate = new DateOnly(2026, 6, 1);
+        await db.SaveChangesAsync();
+        var controller = CreateController(db, actingUserId: 10, role: "Farmer");
+
+        var result = await controller.Create(new CreateHarvestListingRequest
+        {
+            CropId = 1, Quantity = 10, HarvestDate = new DateOnly(1990, 1, 1), PricePerUnit = 50, Location = "Kandy",
+        });
+
+        Assert.IsType<BadRequestObjectResult>(result.Result);
+        Assert.Single(db.HarvestListings);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    public async Task Update_ClearingTheLocation_IsRefused(string location)
+    {
+        using var db = CreateDb();
+        var listing = SeedListing(db, farmerProfileId: 1, farmerUserId: 10);
+        var controller = CreateController(db, actingUserId: 10, role: "Farmer");
+
+        var result = await controller.Update(listing.HarvestId, new UpdateHarvestListingRequest { Location = location });
+
+        Assert.IsType<BadRequestObjectResult>(result.Result);
+        Assert.Equal("Kandy Town", (await db.HarvestListings.SingleAsync()).Location);
+    }
+
+    [Fact]
     public async Task Update_NonOwningFarmer_IsForbidden()
     {
         using var db = CreateDb();
