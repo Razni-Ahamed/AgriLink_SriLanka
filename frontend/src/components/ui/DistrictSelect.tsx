@@ -36,7 +36,10 @@ export const DistrictSelect = forwardRef<HTMLSelectElement, DistrictSelectProps>
         disabled={disabled || isLoading}
         {...props}
       >
-        <option value="" disabled={!emptyOptionLabel}>
+        {/* Hidden rather than disabled: with a disabled placeholder the browser shows the first
+            real district ("Ampara") once the list loads, while the form's value is still empty —
+            so it looked chosen yet failed with "District is required". */}
+        <option value="" hidden={!emptyOptionLabel}>
           {isLoading ? t('actions.loading') : (emptyOptionLabel ?? t('fields.selectDistrict'))}
         </option>
         {districts?.map((district) => (

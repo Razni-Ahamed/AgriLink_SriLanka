@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
-import { ArrowLeft, Plus } from '@phosphor-icons/react'
+import { Link, useNavigate, useParams } from 'react-router-dom'
+import { ArrowLeft, PencilSimple, Plus, Trash } from '@phosphor-icons/react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
@@ -10,10 +10,12 @@ import { Modal } from '@/components/ui/Modal'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { CardHover } from '@/components/ui/motion/CardHover'
 import { StaggerList } from '@/components/ui/motion/StaggerList'
+import { parseApiError } from '@/lib/apiErrors'
 import { formatQuantity } from '@/lib/utils'
 import { useStatusLabel } from '@/lib/useStatusLabel'
 import { CropForm } from '../components/CropForm'
-import { useField } from '../hooks/useFarms'
+import { FieldForm } from '../components/FieldForm'
+import { useDeleteField, useField, useUpdateField } from '../hooks/useFarms'
 import { useFieldCrops, usePlantCrop } from '../hooks/useCrops'
 
 export function FieldDetailPage() {
@@ -26,8 +28,12 @@ export function FieldDetailPage() {
   const { data: field, isLoading } = useField(farmIdNum, fieldIdNum)
   const { data: crops, isLoading: isLoadingCrops } = useFieldCrops(fieldIdNum)
   const plantCrop = usePlantCrop(fieldIdNum)
+  const updateField = useUpdateField(farmIdNum, fieldIdNum)
+  const deleteField = useDeleteField(farmIdNum)
+  const navigate = useNavigate()
 
   const [isModalOpen, setModalOpen] = useState(false)
+  const [isEditOpen, setEditOpen] = useState(false)
 
   if (isLoading) {
     return <Skeleton className="h-40" />
@@ -47,12 +53,44 @@ export function FieldDetailPage() {
         {t('farms:field.back')}
       </Link>
 
-      <div>
-        <h1 className="font-display text-2xl text-text-primary">{field.name}</h1>
-        <p className="font-mono text-sm text-brand-forest">
-          {t('common:units.acres', { value: formatQuantity(field.area) })}
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="font-display text-2xl text-text-primary">{field.name}</h1>
+          <p className="font-mono text-sm text-brand-forest">
+            {t('common:units.acres', { value: formatQuantity(field.area) })}
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="ghost" onClick={() => setEditOpen(true)}>
+            <PencilSimple size={16} />
+            {t('common:actions.edit')}
+          </Button>
+          <Button
+            variant="danger"
+            disabled={deleteField.isPending}
+            onClick={() => {
+              if (confirm(t('farms:field.deleteConfirm'))) {
+                deleteField.mutate(field.fieldId, {
+                  onSuccess: () => navigate(`/farms/${farmIdNum}`),
+                })
+              }
+            }}
+          >
+            <Trash size={16} />
+            {t('common:actions.delete')}
+          </Button>
+        </div>
       </div>
+
+      {/* The API says why a delete was refused (the field still has crops). */}
+      {deleteField.isError && (
+        <p className="text-sm text-state-danger">
+          {
+            parseApiError(deleteField.error, t, { genericErrorKey: 'farms:form.deleteError' })
+              .generalErrors[0]
+          }
+        </p>
+      )}
 
       <div className="flex items-center justify-between">
         <h2 className="font-display text-lg text-text-primary">{t('farms:field.crops')}</h2>
@@ -100,6 +138,15 @@ export function FieldDetailPage() {
           })}
         </StaggerList>
       )}
+
+      <Modal open={isEditOpen} onClose={() => setEditOpen(false)} title={t('farms:field.editField')}>
+        <FieldForm
+          defaultValues={{ name: field.name, area: field.area }}
+          submitLabel={t('farms:detail.saveChanges')}
+          isSubmitting={updateField.isPending}
+          onSubmit={(values) => updateField.mutate(values, { onSuccess: () => setEditOpen(false) })}
+        />
+      </Modal>
 
       <Modal
         open={isModalOpen}

@@ -1,15 +1,16 @@
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, Basket, Warning } from '@phosphor-icons/react'
+import { ArrowLeft, Basket, Trash, Warning } from '@phosphor-icons/react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/Button'
 import { CropIcon } from '@/components/ui/CropIcon'
 import { IconBadge } from '@/components/ui/IconBadge'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { Select } from '@/components/ui/Select'
+import { parseApiError } from '@/lib/apiErrors'
 import { formatDate, formatQuantity } from '@/lib/utils'
 import { useStatusLabel } from '@/lib/useStatusLabel'
 import type { CropStatus } from '@/types/dto/crops'
-import { useCrop, useUpdateCropStatus } from '../hooks/useCrops'
+import { useCrop, useDeleteCrop, useUpdateCropStatus } from '../hooks/useCrops'
 
 const statusOptions: CropStatus[] = ['Seeded', 'Growing', 'Harvested']
 
@@ -26,6 +27,7 @@ export function CropDetailPage() {
   const navigate = useNavigate()
   const { data: crop, isLoading } = useCrop(cropIdNum)
   const updateStatus = useUpdateCropStatus(cropIdNum)
+  const deleteCrop = useDeleteCrop(Number(fieldId))
 
   if (isLoading) {
     return <Skeleton className="h-40" />
@@ -110,7 +112,31 @@ export function CropDetailPage() {
           <Basket size={16} weight="duotone" />
           {t('farms:crop.listForSale')}
         </Button>
+        <Button
+          variant="danger"
+          disabled={deleteCrop.isPending}
+          onClick={() => {
+            if (confirm(t('farms:crop.deleteConfirm'))) {
+              deleteCrop.mutate(crop.cropId, {
+                onSuccess: () => navigate(`/farms/${farmId}/fields/${fieldId}`),
+              })
+            }
+          }}
+        >
+          <Trash size={16} />
+          {t('common:actions.delete')}
+        </Button>
       </div>
+
+      {/* The API says why a delete was refused (the crop has issues or listings). */}
+      {deleteCrop.isError && (
+        <p className="text-sm text-state-danger">
+          {
+            parseApiError(deleteCrop.error, t, { genericErrorKey: 'farms:form.deleteError' })
+              .generalErrors[0]
+          }
+        </p>
+      )}
     </div>
   )
 }

@@ -22,7 +22,9 @@
     "crops": "Crops",
     "plantCrop": "Plant a Crop",
     "plantCropSubmit": "Plant Crop",
-    "empty": "No crops planted this session yet. Newly planted crops appear here — the backend has no endpoint to list a field's crops after a page refresh (flagged to the team)."
+    "empty": "No crops planted in this field yet. Plant one to get started.",
+    "editField": "Edit Field",
+    "deleteConfirm": "Delete this field? This cannot be undone."
   },
   "crop": {
     "back": "Back to field",
@@ -32,7 +34,8 @@
     "expectedHarvest": "Expected harvest",
     "expectedQuantity": "Expected quantity",
     "reportIssue": "Report an Issue",
-    "listForSale": "List for Sale"
+    "listForSale": "List for Sale",
+    "deleteConfirm": "Delete this crop? This cannot be undone."
   },
   "form": {
     "farmName": "Farm name",
@@ -42,6 +45,7 @@
     "variety": "Variety",
     "plantingDate": "Planting date",
     "expectedHarvestDate": "Expected harvest date",
-    "expectedQuantity": "Expected quantity (kg)"
+    "expectedQuantity": "Expected quantity (kg)",
+    "deleteError": "Could not delete this. Please try again."
   }
 }

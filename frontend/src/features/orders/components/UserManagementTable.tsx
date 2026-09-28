@@ -22,6 +22,32 @@ interface UserManagementTableProps {
   onEditUser: (user: AdminUserSummary) => void
 }
 
+/**
+ * An inactive account is either deactivated, or a sign-up still waiting for (or refused) approval.
+ * Both used to show as "Inactive", which hid why the person couldn't sign in.
+ */
+type StatusLabelKey =
+  | 'orders:admin.active'
+  | 'orders:admin.inactive'
+  | 'orders:admin.statusPending'
+  | 'orders:admin.statusRejected'
+
+function statusBadge(user: AdminUserSummary): {
+  variant: 'success' | 'danger' | 'warning'
+  labelKey: StatusLabelKey
+} {
+  if (user.isActive) {
+    return { variant: 'success', labelKey: 'orders:admin.active' }
+  }
+  if (user.registrationStatus === 'Pending') {
+    return { variant: 'warning', labelKey: 'orders:admin.statusPending' }
+  }
+  if (user.registrationStatus === 'Rejected') {
+    return { variant: 'danger', labelKey: 'orders:admin.statusRejected' }
+  }
+  return { variant: 'danger', labelKey: 'orders:admin.inactive' }
+}
+
 export function UserManagementTable({
   users,
   currentUserId,
@@ -63,9 +89,7 @@ export function UserManagementTable({
               </td>
               <td className="px-4 py-3 text-text-secondary">{user.district ?? '—'}</td>
               <td className="px-4 py-3">
-                <Badge variant={user.isActive ? 'success' : 'danger'}>
-                  {user.isActive ? t('orders:admin.active') : t('orders:admin.inactive')}
-                </Badge>
+                <Badge variant={statusBadge(user).variant}>{t(statusBadge(user).labelKey)}</Badge>
               </td>
               <td className="px-4 py-3">
                 <div className="flex flex-wrap gap-2">
@@ -89,7 +113,11 @@ export function UserManagementTable({
                       disabled={isMutating}
                       onClick={() => onToggleStatus(user)}
                     >
-                      {user.isActive ? t('orders:admin.deactivate') : t('orders:admin.activate')}
+                      {user.isActive
+                        ? t('orders:admin.deactivate')
+                        : user.registrationStatus === 'Approved'
+                          ? t('orders:admin.activate')
+                          : t('orders:admin.approve')}
                     </Button>
                   )}
                   {/* Hidden on the admin's own row — they use Change password (self-service)

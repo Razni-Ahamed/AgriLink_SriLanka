@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import { isAxiosError } from 'axios'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -13,6 +14,44 @@ import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
 import { useAuthStore } from './authStore'
 import { lockoutMessage, login } from './api'
+
+/**
+ * What to tell someone whose sign-in failed. The API answers a pending or rejected application
+ * with 403 (the rejection carrying the officer's reason) and a lockout with 429; only a 401 means
+ * the email or password was wrong. Every failure used to show "Invalid email or password".
+ */
+function loginErrorLines(error: unknown, tArg: unknown): string[] {
+  // Typed loosely, like parseApiError's, so one helper serves any namespace's t.
+  const t = tArg as (key: string, options?: Record<string, unknown>) => string
+  const lockout = lockoutMessage(error)
+  if (lockout) {
+    return [lockout]
+  }
+  if (!isAxiosError(error)) {
+    return [t('auth:login.serverError')]
+  }
+  if (!error.response) {
+    return [t('auth:register.networkError')]
+  }
+
+  const { status, data } = error.response
+  const body = (data ?? {}) as { message?: unknown; reason?: unknown }
+  if (status === 403) {
+    const message = typeof body.message === 'string' ? body.message : ''
+    const reason = typeof body.reason === 'string' ? body.reason.trim() : ''
+    if (reason || message.toLowerCase().includes('not approved')) {
+      return [
+        t('auth:login.rejectedMessage'),
+        ...(reason ? [t('auth:login.rejectedReason', { reason })] : []),
+      ]
+    }
+    return [t('auth:login.pendingMessage')]
+  }
+  if (status === 400 || status === 401) {
+    return [t('auth:login.error')]
+  }
+  return [t('auth:login.serverError')]
+}
 
 export function LoginPage() {
   const { t } = useTranslation(['auth', 'common'])
@@ -84,9 +123,11 @@ export function LoginPage() {
               {...register('password')}
             />
             {mutation.isError && (
-              <p className="text-sm text-state-danger">
-                {lockoutMessage(mutation.error) ?? t('auth:login.error')}
-              </p>
+              <div role="alert" className="flex flex-col gap-1 text-sm text-state-danger">
+                {loginErrorLines(mutation.error, t).map((line) => (
+                  <p key={line}>{line}</p>
+                ))}
+              </div>
             )}
             <Button type="submit" disabled={mutation.isPending}>
               {mutation.isPending ? t('auth:login.submitting') : t('auth:login.submit')}

@@ -76,7 +76,8 @@ export function ChangeRoleForm({ user, isSubmitting, onSubmit }: ChangeRoleFormP
           defaultValue=""
           {...register('departmentId')}
         >
-          <option value="" disabled>
+          {/* Hidden, not disabled — see DistrictSelect. */}
+          <option value="" hidden>
             {isLoadingDepartments
               ? t('common:actions.loading')
               : t('orders:departments.selectDepartment')}

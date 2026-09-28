@@ -90,7 +90,11 @@
     "editUserNoChanges": "There were no changes to save.",
     "editUserUpdated": "{{name}}'s profile was updated.",
     "editUserError": "Could not update this user's profile. Check the details and try again.",
-    "editUserEmailTaken": "An account with this email already exists."
+    "editUserEmailTaken": "An account with this email already exists.",
+    "statusPending": "Waiting for approval",
+    "statusRejected": "Rejected",
+    "approve": "Approve",
+    "userApproved": "{{name}} was approved."
   },
   "auditLog": {
     "title": "Audit Log",

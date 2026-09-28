@@ -32,3 +32,8 @@ export async function updateCrop(cropId: number, request: UpdateCropRequest): Pr
   const { data } = await apiClient.put<CropDto>(`/api/crops/${cropId}`, request)
   return data
 }
+
+/** The API refuses a crop with reported issues or harvest listings: that history stays. */
+export async function deleteCrop(cropId: number): Promise<void> {
+  await apiClient.delete(`/api/crops/${cropId}`)
+}

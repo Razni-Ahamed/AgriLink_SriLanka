@@ -55,3 +55,14 @@ export function useUpdateCropStatus(cropId: number) {
     },
   })
 }
+
+export function useDeleteCrop(fieldId: number) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (cropId: number) => cropsApi.deleteCrop(cropId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: fieldCropsKey(fieldId) })
+      void queryClient.invalidateQueries({ queryKey: myCropsKey })
+    },
+  })
+}

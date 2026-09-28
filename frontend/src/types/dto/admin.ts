@@ -45,6 +45,11 @@ export interface AdminUserSummary {
   /** Populated only for Officer accounts. */
   department?: string | null
   isActive: boolean
+  /**
+   * An inactive account is only "deactivated" when this is Approved; otherwise it is a sign-up
+   * still waiting for approval, or one that was turned down. Activating either approves it.
+   */
+  registrationStatus: 'Pending' | 'Approved' | 'Rejected'
   createdAt: string
 }
 
