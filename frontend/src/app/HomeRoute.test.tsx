@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { act, render, screen } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { RouterProvider, createMemoryRouter } from 'react-router-dom'
 import i18n from '@/i18n/config'
@@ -7,6 +7,7 @@ import { useAuthStore } from '@/auth/authStore'
 import { apiClient } from '@/lib/apiClient'
 import type { HarvestListingResponse } from '@/types/dto/harvests'
 import { HomeRoute } from './HomeRoute'
+import { RequireAuth } from './RequireAuth'
 
 function harvest(harvestId: number, cropType: string): HarvestListingResponse {
   return {
@@ -24,7 +25,11 @@ function renderAt(path: string) {
   const router = createMemoryRouter(
     [
       { path: '/', element: <HomeRoute /> },
-      { path: '/farms', element: <p>Farms page</p> },
+      { path: '/login', element: <p>Login page</p> },
+      {
+        element: <RequireAuth />,
+        children: [{ path: '/farms', element: <p>Farms page</p> }],
+      },
     ],
     { initialEntries: [path] },
   )
@@ -83,5 +88,56 @@ describe('HomeRoute', () => {
     renderAt('/')
 
     expect(screen.queryByRole('heading', { level: 1 })).not.toBeInTheDocument()
+  })
+
+  it('shows the landing page when the stored session has expired, and forgets it', () => {
+    const expired = `h.${btoa(JSON.stringify({ exp: Math.floor(Date.now() / 1000) - 60 }))}.s`
+    localStorage.setItem('agrilink.auth', JSON.stringify({ token: expired, role: 'Farmer' }))
+    vi.spyOn(apiClient, 'get').mockResolvedValue({ data: [] })
+
+    useAuthStore.getState().hydrate()
+    renderAt('/')
+
+    expect(
+      screen.getByRole('heading', { name: 'From the field to the market, all in one place' }),
+    ).toBeInTheDocument()
+    expect(useAuthStore.getState().token).toBeNull()
+    expect(localStorage.getItem('agrilink.auth')).toBeNull()
+  })
+
+  it('keeps a stored session that has not expired', () => {
+    const valid = `h.${btoa(JSON.stringify({ exp: Math.floor(Date.now() / 1000) + 3600 }))}.s`
+    localStorage.setItem('agrilink.auth', JSON.stringify({ token: valid, role: 'Farmer' }))
+    vi.spyOn(apiClient, 'get').mockReturnValue(new Promise(() => undefined))
+
+    useAuthStore.getState().hydrate()
+    renderAt('/')
+
+    expect(screen.getByText('Farms page')).toBeInTheDocument()
+    localStorage.clear()
+  })
+
+  it('returns to the landing page, not the login page, when the server rejects the session', async () => {
+    useAuthStore.setState({ token: 'revoked', role: 'Farmer', isHydrated: true })
+
+    renderAt('/')
+    expect(screen.getByText('Farms page')).toBeInTheDocument()
+
+    // What the apiClient's 401 handler does once a request is rejected.
+    vi.spyOn(apiClient, 'get').mockResolvedValue({ data: [] })
+    act(() => useAuthStore.getState().logout())
+
+    expect(
+      await screen.findByRole('heading', { name: 'From the field to the market, all in one place' }),
+    ).toBeInTheDocument()
+    expect(screen.queryByText('Login page')).not.toBeInTheDocument()
+  })
+
+  it('still asks for a sign-in when a protected page is opened directly without a session', () => {
+    useAuthStore.setState({ token: null, role: null, isHydrated: true })
+
+    renderAt('/farms')
+
+    expect(screen.getByText('Login page')).toBeInTheDocument()
   })
 })

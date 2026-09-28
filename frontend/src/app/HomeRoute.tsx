@@ -17,5 +17,7 @@ export function HomeRoute() {
     return <HomePage />
   }
 
-  return <Navigate to={roleHome[role]} replace />
+  // Marked as coming from `/`, so if the server turns out to have ended this session (a password
+  // change, a deactivated account), RequireAuth returns the visitor here rather than to /login.
+  return <Navigate to={roleHome[role]} replace state={{ fromLanding: true }} />
 }
