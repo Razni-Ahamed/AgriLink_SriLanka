@@ -22,40 +22,35 @@ const actionTones = {
 /**
  * A row action as a compact icon button, named by its tooltip and for screen readers. Four text
  * buttons made the column too wide: they wrapped onto three lines, or on one line pushed the table
- * past the page. `showLabel` spells one out beside its icon: Approve, the action an applicant's row
- * is waiting on, shouldn't be a tick someone has to hover to understand.
+ * past the page.
  */
 function ActionButton({
   label,
   icon,
   tone = 'neutral',
   disabled,
-  showLabel = false,
   onClick,
 }: {
   label: string
   icon: ReactNode
   tone?: keyof typeof actionTones
-  showLabel?: boolean
   disabled?: boolean
   onClick: () => void
 }) {
   return (
     <button
       type="button"
-      aria-label={showLabel ? undefined : label}
-      title={showLabel ? undefined : label}
+      aria-label={label}
+      title={label}
       disabled={disabled}
       onClick={onClick}
       className={cn(
-        'flex h-8 items-center justify-center rounded-lg transition-colors disabled:cursor-not-allowed disabled:opacity-50',
-        showLabel ? 'gap-1.5 px-2.5 text-xs font-semibold' : 'w-8',
+        'flex size-8 items-center justify-center rounded-lg transition-colors disabled:cursor-not-allowed disabled:opacity-50',
         'focus-visible:outline-2 focus-visible:outline-brand-forest',
         actionTones[tone],
       )}
     >
       {icon}
-      {showLabel && label}
     </button>
   )
 }
@@ -173,14 +168,12 @@ export function UserManagementTable({
                       onClick={() => onResetPassword(user)}
                     />
                   )}
-                  {user.role !== 'Admin' && (
+                  {/* Only for accounts already approved. Applications (pending, or rejected) are
+                      decided on the Approvals tab, which asks for a reason when rejecting. */}
+                  {user.role !== 'Admin' && user.registrationStatus === 'Approved' && (
                     <ActionButton
                       label={
-                        user.isActive
-                          ? t('orders:admin.deactivate')
-                          : user.registrationStatus === 'Approved'
-                            ? t('orders:admin.activate')
-                            : t('orders:admin.approve')
+                        user.isActive ? t('orders:admin.deactivate') : t('orders:admin.activate')
                       }
                       icon={
                         user.isActive ? (
@@ -190,7 +183,6 @@ export function UserManagementTable({
                         )
                       }
                       tone={user.isActive ? 'danger' : 'positive'}
-                      showLabel={!user.isActive && user.registrationStatus !== 'Approved'}
                       disabled={isMutating}
                       onClick={() => onToggleStatus(user)}
                     />

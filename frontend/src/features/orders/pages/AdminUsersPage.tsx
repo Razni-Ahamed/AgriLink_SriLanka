@@ -50,9 +50,7 @@ export function AdminUsersPage() {
             tone: 'success',
             text: user.isActive
               ? t('orders:admin.userDeactivated', { name: user.fullName })
-              : user.registrationStatus === 'Approved'
-                ? t('orders:admin.userActivated', { name: user.fullName })
-                : t('orders:admin.userApproved', { name: user.fullName }),
+              : t('orders:admin.userActivated', { name: user.fullName }),
           }),
         onError: () => setFeedback({ tone: 'danger', text: t('orders:admin.statusUpdateError') }),
       },
