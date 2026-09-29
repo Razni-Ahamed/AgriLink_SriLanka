@@ -30,19 +30,21 @@ Phone / website ──► Azure API ──► ngrok tunnel (key required) ──
 
 - LM Studio 0.4 or later, with `qwen/qwen3.8-27b` downloaded (about 17 GB). It needs roughly 17 GB of
   GPU memory; a smaller model works too if you change `-Model`/`-Identifier`.
-- ngrok: a free account, the agent installed (`winget install ngrok.ngrok`), and one free static domain
-  claimed in the ngrok dashboard. Add your authtoken once, yourself:
-  `ngrok config add-authtoken <token>`.
+- ngrok: a free account, the agent installed (`winget install ngrok.ngrok`), and the free "dev domain"
+  from **Universal Gateway → Domains** (it looks like `something-something.ngrok-free.dev`). Add your
+  **Authtoken** once, yourself: `ngrok config add-authtoken <token>`. Take it from **Getting Started →
+  Your Authtoken**, not from API Keys or the AI Gateway, whose keys start with `ng-` and are rejected.
+  The team's domain is `devotion-drippy-frail.ngrok-free.dev`.
 - The Azure CLI (`az login`), only for connecting the Azure API.
 
 ## Startup order (every demo)
 
-1. `.\deploy\start-llm-planner.ps1 -Domain <your-domain>.ngrok-free.app`
+1. `.\deploy\start-llm-planner.ps1 -Domain <your-domain>.ngrok-free.dev`
    - Starts LM Studio's server on `localhost:1234` and loads the model onto the GPU (about 10 s).
    - Opens the tunnel. Leave the window open.
    - The first run creates the shared key in `%USERPROFILE%\.agrilink\llm-key.txt`. It stays out of
      the repository.
-2. First time only: `.\deploy\connect-llm-planner.ps1 -ResourceGroup agrilink-rg -AppName agrilink-api-sl -Domain <your-domain>.ngrok-free.app`
+2. First time only: `.\deploy\connect-llm-planner.ps1 -ResourceGroup agrilink-rg -AppName agrilink-api-sl -Domain <your-domain>.ngrok-free.dev`
    - Stores `Llm__Enabled`, `Llm__BaseUrl`, `Llm__Model` and `Llm__ApiKey` in the App Service
      settings. The API restarts once.
 3. Report an issue from the app. On the advisory page, the officer's trace shows
