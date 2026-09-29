@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { checkUsernameAvailable } from '@/auth/api'
+import { useDebouncedValue } from './useDebouncedValue'
 import { normalizeUsername, usernameProblem } from './validation'
 
 export const USERNAME_CHECK_DEBOUNCE_MS = 400
@@ -23,15 +23,6 @@ interface Options {
   enabled?: boolean
   /** The signed-in user's current username, which counts as theirs rather than taken. */
   currentUsername?: string
-}
-
-function useDebouncedValue<T>(value: T, delayMs: number): T {
-  const [debounced, setDebounced] = useState(value)
-  useEffect(() => {
-    const timer = setTimeout(() => setDebounced(value), delayMs)
-    return () => clearTimeout(timer)
-  }, [value, delayMs])
-  return debounced
 }
 
 /**
