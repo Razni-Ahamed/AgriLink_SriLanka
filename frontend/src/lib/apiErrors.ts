@@ -167,3 +167,20 @@ export function parseApiError(error: unknown, tArg: unknown, options: ParseApiEr
   generalErrors.push(t(genericErrorKey))
   return { fieldErrors, generalErrors }
 }
+
+/**
+ * The one message to show under a form whose save failed, or undefined while it hasn't failed.
+ * For forms that don't map server errors onto their own fields: any field error the server
+ * returned is shown as the general message instead of being dropped.
+ */
+export function mutationErrorMessage(
+  mutation: { isError: boolean; error: unknown },
+  tArg: unknown,
+  genericErrorKey: string,
+): string | undefined {
+  if (!mutation.isError) {
+    return undefined
+  }
+  const { generalErrors, fieldErrors } = parseApiError(mutation.error, tArg, { genericErrorKey })
+  return generalErrors[0] ?? Object.values(fieldErrors)[0]
+}

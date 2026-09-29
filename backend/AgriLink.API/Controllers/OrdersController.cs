@@ -126,8 +126,11 @@ public class OrdersController : ControllerBase
         else
         {
             var listing = order.Request.Harvest;
+            // Reopen only a listing that sales had sold out. One the farmer marked Sold by hand
+            // while stock was left stays Sold: a buyer cancelling must not undo that decision.
+            var wasSoldOut = listing.AvailableQuantity <= 0;
             listing.AvailableQuantity += order.TotalQuantity;
-            if (listing.Status == HarvestStatus.Sold && listing.AvailableQuantity > 0)
+            if (listing.Status == HarvestStatus.Sold && wasSoldOut && listing.AvailableQuantity > 0)
             {
                 listing.Status = HarvestStatus.Active;
             }

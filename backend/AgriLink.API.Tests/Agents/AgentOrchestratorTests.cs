@@ -106,6 +106,10 @@ public class AgentOrchestratorTests
         var agentNames = workflow.Executions.Select(e => e.AgentName).ToList();
         Assert.Equal(new[] { "PlannerAgent", "CropAnalysisAgent", "WeatherAgent", "ValidationAgent" }, agentNames);
         Assert.All(workflow.Executions, e => Assert.Equal(ExecutionStatus.Completed, e.Status));
+
+        // The officer reads this trace: enums are stored by name, not as numbers.
+        var validationOutput = workflow.Executions.Single(e => e.AgentName == "ValidationAgent").OutputData!;
+        Assert.Contains("\"RiskLevel\":\"High\"", validationOutput);
     }
 
     [Fact]

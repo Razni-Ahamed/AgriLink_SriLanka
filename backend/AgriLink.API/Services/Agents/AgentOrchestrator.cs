@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using AgriLink.API.Data;
 using AgriLink.API.Models;
 using AgriLink.API.Services.Agents.ImageClassification;
@@ -9,6 +10,9 @@ namespace AgriLink.API.Services.Agents;
 
 public class AgentOrchestrator : IAgentOrchestrator
 {
+    // Enums are stored by name ("Medium", not 1) so the trace an officer reads is self-explanatory.
+    private static readonly JsonSerializerOptions TraceJson = new() { Converters = { new JsonStringEnumConverter() } };
+
     private readonly AgriLinkDbContext _db;
     private readonly INotificationService _notifications;
     private readonly IPlannerAgent _planner;
@@ -274,7 +278,7 @@ public class AgentOrchestrator : IAgentOrchestrator
         {
             Workflow = workflow,
             AgentName = agentName,
-            InputData = JsonSerializer.Serialize(input),
+            InputData = JsonSerializer.Serialize(input, TraceJson),
             Status = ExecutionStatus.Running,
             StartedAt = DateTime.UtcNow,
         };
@@ -284,7 +288,7 @@ public class AgentOrchestrator : IAgentOrchestrator
         try
         {
             var result = await action(cancellationToken);
-            execution.OutputData = JsonSerializer.Serialize(result);
+            execution.OutputData = JsonSerializer.Serialize(result, TraceJson);
             execution.Status = ExecutionStatus.Completed;
             return result;
         }

@@ -205,6 +205,12 @@ builder.Services.AddCors(options =>
     });
 });
 
+// ----- Error handling and health -----
+// Any exception a controller doesn't handle becomes an RFC 7807 problem+json 500 (with no stack
+// trace or exception detail) instead of an empty response, so both apps get a consistent body.
+builder.Services.AddProblemDetails();
+builder.Services.AddHealthChecks().AddCheck<DatabaseHealthCheck>("database");
+
 // ----- Controllers & Swagger -----
 builder.Services.AddControllers()
     .AddJsonOptions(options => options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
@@ -253,6 +259,8 @@ using (var scope = app.Services.CreateScope())
 app.Services.GetRequiredService<IImageClassifier>();
 
 // ----- Middleware pipeline -----
+app.UseExceptionHandler();
+
 // Swagger is on in development, and on a host when Swagger__Enabled=true (handy for a demo).
 if (app.Environment.IsDevelopment() || app.Configuration.GetValue<bool>("Swagger:Enabled"))
 {
@@ -268,5 +276,8 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+// Public liveness/readiness probe for the host and evaluators: 200 "Healthy" or 503 "Unhealthy".
+app.MapHealthChecks("/health");
 
 app.Run();

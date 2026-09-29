@@ -242,6 +242,22 @@ public class AuthControllerTests
     }
 
     [Fact]
+    public async Task Login_EmailWithSurroundingSpaces_Succeeds()
+    {
+        var (controller, db, _) = await CreateAsync();
+        await controller.Register(FarmerRequest());
+        var user = await db.Users.FirstAsync(u => u.Email == "new.farmer@agrilink.lk");
+        user.RegistrationStatus = RegistrationStatus.Approved;
+        user.IsActive = true;
+        await db.SaveChangesAsync();
+
+        // Registration trims the email, so login must too (a pasted address often carries a space).
+        var result = await controller.Login(new LoginRequest { Email = "  new.farmer@agrilink.lk ", Password = "Farmer@AgriLink.2026!" });
+
+        Assert.IsType<OkObjectResult>(result.Result);
+    }
+
+    [Fact]
     public async Task Login_RejectedAccount_FailsWithRejectionMessage()
     {
         var (controller, db, _) = await CreateAsync();
@@ -283,6 +299,7 @@ public class AuthControllerTests
     [InlineData("90123456V", false)] // only 8 digits before the suffix
     [InlineData("1234567890", false)] // 10 digits, neither format
     [InlineData("20001234567A", false)] // 11 digits + a letter that isn't V/X
+    [InlineData("෦෧෨෩෪෫෬෭෮෯෦෧", false)] // 12 Sinhala digits: \d matched them, [0-9] doesn't
     public async Task Register_NicFormats_AcceptsOrRejectsAsExpected(string nic, bool shouldSucceed)
     {
         var (controller, db, _) = await CreateAsync();
@@ -321,6 +338,9 @@ public class AuthControllerTests
     [InlineData("077123456", false)] // 9 digits
     [InlineData("07712345678", false)] // 11 digits
     [InlineData("07712a4567", false)] // contains a letter
+    [InlineData("0771234567\n", true)] // surrounding whitespace is trimmed, as for the NIC
+    [InlineData("077123456\n7", false)] // a newline inside the number
+    [InlineData("෦෭෭෧෨෩෪෫෬෭", false)] // Sinhala digits
     public async Task Register_FarmerPhoneFormats_AcceptsOrRejectsAsExpected(string phone, bool shouldSucceed)
     {
         var (controller, db, _) = await CreateAsync();

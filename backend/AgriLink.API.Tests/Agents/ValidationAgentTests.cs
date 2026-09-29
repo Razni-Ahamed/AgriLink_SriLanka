@@ -38,6 +38,34 @@ public class ValidationAgentTests
     }
 
     [Fact]
+    public void WithApprovedClosing_ReplacesOnlyThePendingClosing()
+    {
+        var approved = ValidationAgent.WithApprovedClosing("Likely cause(s): Blast. " + ClosingDisclaimer);
+
+        Assert.Equal("Likely cause(s): Blast. This advice has been reviewed and approved by an agricultural officer.", approved);
+        Assert.Equal("Officer-written text.", ValidationAgent.WithApprovedClosing("Officer-written text."));
+    }
+
+    [Fact]
+    public async Task ValidateAsync_FindingsEndingInFullStops_DoNotDoubleThem()
+    {
+        var agent = CreateAgent();
+        var cropFindings = new CropFindings
+        {
+            PossibleCauses = new[] { "Nitrogen deficiency." },
+            RecommendedActions = new[] { "Re-inspect the crop after 10-14 days." },
+            Confidence = 0.75f,
+        };
+        // WeatherAgent's summaries end in a full stop too.
+        var weatherFindings = new WeatherFindings { Summary = "68.5mm rain over the last 7 days, avg temp 24.9°C.", IsFallback = false };
+
+        var result = await agent.ValidateAsync(BuildContext(), cropFindings, weatherFindings, CancellationToken.None);
+
+        Assert.DoesNotContain("..", result.Recommendation);
+        Assert.Contains("Weather context: 68.5mm rain over the last 7 days, avg temp 24.9°C. ", result.Recommendation);
+    }
+
+    [Fact]
     public async Task ValidateAsync_HighSeverityWithFindings_StillHighRisk()
     {
         var agent = CreateAgent();

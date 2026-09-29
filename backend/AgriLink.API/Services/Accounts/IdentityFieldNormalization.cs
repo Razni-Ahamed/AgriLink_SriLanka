@@ -47,7 +47,7 @@ public static partial class IdentityFieldNormalization
             return null;
         }
 
-        var digitsOnly = phone.Replace(" ", string.Empty).Replace("-", string.Empty);
+        var digitsOnly = phone.Trim().Replace(" ", string.Empty).Replace("-", string.Empty);
         return TenDigits().IsMatch(digitsOnly) ? digitsOnly : null;
     }
 
@@ -69,12 +69,14 @@ public static partial class IdentityFieldNormalization
         }
     }
 
-    [GeneratedRegex(@"^\d{12}$")]
+    // [0-9] and \z rather than \d and $: in .NET \d also matches other scripts' digits (Sinhala,
+    // Tamil…), and $ matches before a trailing newline, so a phone number ending in a newline used to pass.
+    [GeneratedRegex(@"^[0-9]{12}\z")]
     private static partial Regex NewFormatNic();
 
-    [GeneratedRegex(@"^\d{9}[VvXx]$")]
+    [GeneratedRegex(@"^[0-9]{9}[VvXx]\z")]
     private static partial Regex OldFormatNic();
 
-    [GeneratedRegex(@"^\d{10}$")]
+    [GeneratedRegex(@"^[0-9]{10}\z")]
     private static partial Regex TenDigits();
 }

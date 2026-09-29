@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/Button'
 import { Modal } from '@/components/ui/Modal'
 import { Skeleton } from '@/components/ui/Skeleton'
-import { parseApiError } from '@/lib/apiErrors'
+import { mutationErrorMessage, parseApiError } from '@/lib/apiErrors'
 import { formatQuantity } from '@/lib/utils'
 import { FieldForm } from '../components/FieldForm'
 import { FieldList } from '../components/FieldList'
@@ -93,25 +93,33 @@ export function FarmDetailPage() {
 
       <Modal
         open={isEditOpen}
-        onClose={() => setEditOpen(false)}
+        onClose={() => {
+          setEditOpen(false)
+          updateFarm.reset()
+        }}
         title={t('farms:detail.editFarm')}
       >
         <FarmForm
           defaultValues={farm}
           submitLabel={t('farms:detail.saveChanges')}
           isSubmitting={updateFarm.isPending}
+          error={mutationErrorMessage(updateFarm, t, 'farms:form.saveError')}
           onSubmit={(values) => updateFarm.mutate(values, { onSuccess: () => setEditOpen(false) })}
         />
       </Modal>
 
       <Modal
         open={isFieldModalOpen}
-        onClose={() => setFieldModalOpen(false)}
+        onClose={() => {
+          setFieldModalOpen(false)
+          createField.reset()
+        }}
         title={t('farms:detail.addField')}
       >
         <FieldForm
           submitLabel={t('farms:detail.addField')}
           isSubmitting={createField.isPending}
+          error={mutationErrorMessage(createField, t, 'farms:form.saveError')}
           onSubmit={(values) =>
             createField.mutate(values, { onSuccess: () => setFieldModalOpen(false) })
           }

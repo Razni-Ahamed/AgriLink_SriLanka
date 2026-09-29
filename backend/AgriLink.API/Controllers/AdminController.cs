@@ -76,7 +76,9 @@ public class AdminController : ControllerBase
             }
         }
 
-        var existing = await _userManager.FindByEmailAsync(request.Email);
+        // Trimmed like AuthController.Register: stored with stray spaces, the account couldn't sign in.
+        var email = request.Email.Trim();
+        var existing = await _userManager.FindByEmailAsync(email);
         if (existing is not null)
         {
             return Conflict(new { message = "An account with this email already exists." });
@@ -105,7 +107,7 @@ public class AdminController : ControllerBase
         var user = new ApplicationUser
         {
             UserName = username,
-            Email = request.Email,
+            Email = email,
             FullName = request.FullName,
         };
 

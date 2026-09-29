@@ -12,6 +12,8 @@ namespace AgriLink.API.Controllers;
 [Route("api/harvests")]
 public class HarvestsController : ControllerBase
 {
+    private const string HarvestBeforePlantingMessage = "The harvest date can't be before the crop was planted.";
+
     private readonly AgriLinkDbContext _db;
     private readonly ICurrentUserService _currentUser;
     private readonly IAuditLogService _auditLog;
@@ -118,6 +120,11 @@ public class HarvestsController : ControllerBase
             return Forbid();
         }
 
+        if (request.HarvestDate < crop.PlantingDate)
+        {
+            return BadRequest(new { message = HarvestBeforePlantingMessage });
+        }
+
         var listing = new HarvestListing
         {
             FarmerProfileId = farmerProfileId.Value,
@@ -164,6 +171,17 @@ public class HarvestsController : ControllerBase
             return BadRequest(new { message = "Price per unit must be greater than zero." });
         }
 
+        // Location is optional in an edit (null = unchanged), but it can't be cleared.
+        if (request.Location is not null && string.IsNullOrWhiteSpace(request.Location))
+        {
+            return BadRequest(new { message = "Enter where the harvest can be collected." });
+        }
+
+        if (request.HarvestDate is { } harvestDate && harvestDate < listing.Crop.PlantingDate)
+        {
+            return BadRequest(new { message = HarvestBeforePlantingMessage });
+        }
+
         if (request.Status == HarvestStatus.Active && listing.AvailableQuantity <= 0)
         {
             return BadRequest(new { message = "A listing with no quantity left cannot be reopened." });
@@ -183,7 +201,7 @@ public class HarvestsController : ControllerBase
 
         if (request.Location is not null)
         {
-            listing.Location = request.Location;
+            listing.Location = request.Location.Trim();
         }
 
         if (request.HarvestDate.HasValue)

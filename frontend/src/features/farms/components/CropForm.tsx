@@ -11,10 +11,12 @@ import type { CreateCropRequest } from '@/types/dto/crops'
 interface CropFormProps {
   submitLabel: string
   isSubmitting?: boolean
+  /** The server's reason the last save failed (e.g. a field bigger than its farm), if it did. */
+  error?: string
   onSubmit: (values: CreateCropRequest) => void
 }
 
-export function CropForm({ submitLabel, isSubmitting, onSubmit }: CropFormProps) {
+export function CropForm({ submitLabel, isSubmitting, error, onSubmit }: CropFormProps) {
   const { t } = useTranslation(['farms', 'common'])
 
   const schema = useMemo(
@@ -87,6 +89,11 @@ export function CropForm({ submitLabel, isSubmitting, onSubmit }: CropFormProps)
         error={errors.expectedQuantity?.message}
         {...register('expectedQuantity')}
       />
+      {error && (
+        <p role="alert" className="text-sm text-state-danger">
+          {error}
+        </p>
+      )}
       <Button type="submit" disabled={isSubmitting}>
         {isSubmitting ? t('common:actions.saving') : submitLabel}
       </Button>

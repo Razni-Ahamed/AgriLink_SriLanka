@@ -10,7 +10,7 @@ import { Modal } from '@/components/ui/Modal'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { CardHover } from '@/components/ui/motion/CardHover'
 import { StaggerList } from '@/components/ui/motion/StaggerList'
-import { parseApiError } from '@/lib/apiErrors'
+import { mutationErrorMessage, parseApiError } from '@/lib/apiErrors'
 import { formatQuantity } from '@/lib/utils'
 import { useStatusLabel } from '@/lib/useStatusLabel'
 import { CropForm } from '../components/CropForm'
@@ -139,23 +139,35 @@ export function FieldDetailPage() {
         </StaggerList>
       )}
 
-      <Modal open={isEditOpen} onClose={() => setEditOpen(false)} title={t('farms:field.editField')}>
+      <Modal
+        open={isEditOpen}
+        onClose={() => {
+          setEditOpen(false)
+          updateField.reset()
+        }}
+        title={t('farms:field.editField')}
+      >
         <FieldForm
           defaultValues={{ name: field.name, area: field.area }}
           submitLabel={t('farms:detail.saveChanges')}
           isSubmitting={updateField.isPending}
+          error={mutationErrorMessage(updateField, t, 'farms:form.saveError')}
           onSubmit={(values) => updateField.mutate(values, { onSuccess: () => setEditOpen(false) })}
         />
       </Modal>
 
       <Modal
         open={isModalOpen}
-        onClose={() => setModalOpen(false)}
+        onClose={() => {
+          setModalOpen(false)
+          plantCrop.reset()
+        }}
         title={t('farms:field.plantCrop')}
       >
         <CropForm
           submitLabel={t('farms:field.plantCropSubmit')}
           isSubmitting={plantCrop.isPending}
+          error={mutationErrorMessage(plantCrop, t, 'farms:form.saveError')}
           onSubmit={(values) => plantCrop.mutate(values, { onSuccess: () => setModalOpen(false) })}
         />
       </Modal>

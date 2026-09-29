@@ -65,7 +65,7 @@ When a farmer reports a problem, the backend runs it through a pipeline of small
 Farmer reports an issue (text + optional photo)
         │
         ▼
-Photo classifier ── an ONNX model per crop (Paddy, Tomato, Potato, Cassava)
+Photo classifier ── an ONNX model per crop (Tomato, Potato, Cassava)
         │            identifies the disease from the photo, when one is supplied
         ▼
 Planner agent ───── decides which analyses the issue needs
@@ -82,7 +82,8 @@ Advisory draft ──► Officer review (approve / edit / reject) ──► Farm
 
 - **Officer sign-off is always required.** The system never gives a farmer an unreviewed treatment.
 - The photo models are trained in Python (`ml/`) and exported to **ONNX**. They run *inside* the .NET API through ONNX Runtime, so no separate Python service has to be hosted.
-- If a photo can't be classified (unsupported crop, unreadable image or timeout), the issue simply continues through the text-based agents.
+- If a photo can't be classified (a crop without a model, such as Paddy, an unreadable image or a timeout), the issue simply continues through the text-based agents.
+- Every run is recorded as a workflow with one step per agent (inputs, structured output, timings, status). Officers see this trace on the advisory page, and the audit log records every approval and rejection.
 
 ---
 
@@ -121,9 +122,10 @@ AgriLink_SriLanka/
 │   └── AgriLink.API.Tests/  backend tests
 ├── ml/                Model training, evaluation and ONNX export (see ml/README.md)
 ├── deploy/            Deployment scripts
-├── docs/              Deployment runbook and design notes
-└── mobile/            Placeholder for a future mobile app
+└── docs/              Deployment runbook and design notes
 ```
+
+The Flutter app for Android is in its own repository, [AgriLink_Mobile](https://github.com/Razni-Ahamed/AgriLink_Mobile), and uses this same API.
 
 ---
 
@@ -192,16 +194,22 @@ npm run test -- --run
 npm run lint
 npm run build
 
-# Backend
+# Backend: unit, controller, agent golden-case evaluation and (optionally) PostgreSQL integration tests
 cd backend
 dotnet test
+# The PostgreSQL integration tests (migrations, constraints, transactions, row versions) run when
+# AGRILINK_TEST_POSTGRES points at a server they may create a throwaway database on, for example:
+#   AGRILINK_TEST_POSTGRES="Host=localhost;Username=postgres;Password=<password>;Database=postgres" dotnet test
 
 # ML
 cd ml
 .venv/Scripts/python -m pytest tests
 ```
 
-Every pull request that touches `frontend/` runs lint, build and tests on GitHub Actions.
+GitHub Actions runs two workflows on every push and pull request to `main`:
+
+- **Backend CI** restores, builds and runs all backend tests, including the PostgreSQL integration tests against a PostgreSQL service container.
+- **Frontend CI** (when `frontend/` changes) runs lint, build and tests.
 
 ---
 
@@ -212,6 +220,13 @@ Every pull request that touches `frontend/` runs lint, build and tests on GitHub
 | Frontend | Azure Static Web Apps (Free) |
 | API | Azure App Service, Linux (F1) |
 | Database | Neon PostgreSQL |
+
+| Live URL | |
+|---|---|
+| Website | https://green-glacier-04e1ebf00.1.azurestaticapps.net |
+| API | https://agrilink-api-sl.azurewebsites.net |
+| Health check | https://agrilink-api-sl.azurewebsites.net/health |
+| Swagger UI | https://agrilink-api-sl.azurewebsites.net/swagger (when `Swagger__Enabled=true` is set on the App Service) |
 
 For the one-time setup and the redeploy commands, see [`docs/deployment/azure.md`](docs/deployment/azure.md). The API runs on a free tier, so the first request after it has been idle can take a few seconds.
 

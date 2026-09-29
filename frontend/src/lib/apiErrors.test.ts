@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { AxiosError, AxiosHeaders } from 'axios'
 import '@/i18n/config'
 import i18n from '@/i18n/config'
-import { parseApiError } from './apiErrors'
+import { mutationErrorMessage, parseApiError } from './apiErrors'
 
 function axiosErrorWithResponse(status: number, data: unknown): AxiosError {
   const error = new AxiosError('Request failed', String(status))
@@ -117,5 +117,40 @@ describe('parseApiError', () => {
     const error = axiosErrorWithResponse(409, { message: 'conflict' })
     const result = parseApiError(error, i18n.t, { conflictKey: 'orders:admin.createUserError' })
     expect(result.generalErrors).toEqual([i18n.t('orders:admin.createUserError')])
+  })
+})
+
+describe('mutationErrorMessage', () => {
+  beforeEach(async () => {
+    await i18n.changeLanguage('en')
+  })
+
+  it('is undefined until the save fails', () => {
+    expect(
+      mutationErrorMessage({ isError: false, error: null }, i18n.t, 'farms:form.saveError'),
+    ).toBeUndefined()
+  })
+
+  it("shows the server's { message } reason", () => {
+    const error = axiosErrorWithResponse(400, { message: "A field can't be larger than its farm." })
+    expect(mutationErrorMessage({ isError: true, error }, i18n.t, 'farms:form.saveError')).toBe(
+      "A field can't be larger than its farm.",
+    )
+  })
+
+  it('shows a validation field error instead of dropping it', () => {
+    const error = axiosErrorWithResponse(400, {
+      errors: { District: ['The District field is required.'] },
+    })
+    expect(mutationErrorMessage({ isError: true, error }, i18n.t, 'farms:form.saveError')).toBe(
+      'The District field is required.',
+    )
+  })
+
+  it('falls back to the generic message for an unreadable response', () => {
+    const error = axiosErrorWithResponse(500, '')
+    expect(mutationErrorMessage({ isError: true, error }, i18n.t, 'farms:form.saveError')).toBe(
+      'Could not save this. Please try again.',
+    )
   })
 })

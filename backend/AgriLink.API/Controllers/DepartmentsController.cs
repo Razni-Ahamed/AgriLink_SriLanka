@@ -49,7 +49,16 @@ public class DepartmentsController : ControllerBase
         var department = new Department { Name = name };
         _db.Departments.Add(department);
 
-        await _db.SaveChangesAsync();
+        // The check above can't see a department another request is creating at the same moment;
+        // the unique index on Name can, so a lost race is still a 409 and not a 500.
+        try
+        {
+            await _db.SaveChangesAsync();
+        }
+        catch (DbUpdateException ex) when (UsernameErrors.IsUniqueViolation(ex))
+        {
+            return Conflict(new { message = "A department with this name already exists." });
+        }
 
         _auditLog.Record(_currentUser.GetUserId(User), "DepartmentCreated", "Department", department.DepartmentId, null, name);
         await _db.SaveChangesAsync();
@@ -77,7 +86,14 @@ public class DepartmentsController : ControllerBase
         department.Name = name;
 
         _auditLog.Record(_currentUser.GetUserId(User), "DepartmentRenamed", "Department", id, oldName, name);
-        await _db.SaveChangesAsync();
+        try
+        {
+            await _db.SaveChangesAsync();
+        }
+        catch (DbUpdateException ex) when (UsernameErrors.IsUniqueViolation(ex))
+        {
+            return Conflict(new { message = "A department with this name already exists." });
+        }
 
         return Ok(ToResponse(department));
     }

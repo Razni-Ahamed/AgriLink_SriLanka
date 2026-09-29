@@ -12,10 +12,18 @@ interface FieldFormProps {
   defaultValues?: CreateFieldRequest
   submitLabel: string
   isSubmitting?: boolean
+  /** The server's reason the last save failed (e.g. a field bigger than its farm), if it did. */
+  error?: string
   onSubmit: (values: CreateFieldRequest) => void
 }
 
-export function FieldForm({ defaultValues, submitLabel, isSubmitting, onSubmit }: FieldFormProps) {
+export function FieldForm({
+  defaultValues,
+  submitLabel,
+  isSubmitting,
+  error,
+  onSubmit,
+}: FieldFormProps) {
   const { t } = useTranslation(['farms', 'common'])
 
   const schema = useMemo(
@@ -50,6 +58,11 @@ export function FieldForm({ defaultValues, submitLabel, isSubmitting, onSubmit }
         error={errors.area?.message}
         {...register('area')}
       />
+      {error && (
+        <p role="alert" className="text-sm text-state-danger">
+          {error}
+        </p>
+      )}
       <Button type="submit" disabled={isSubmitting}>
         {isSubmitting ? t('common:actions.saving') : submitLabel}
       </Button>

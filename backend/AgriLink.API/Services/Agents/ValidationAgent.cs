@@ -16,6 +16,8 @@ public class ValidationAgent : IValidationAgent
     private const string PreliminaryClosing =
         "This advice was identified automatically from your photo and is still to be confirmed by an agricultural officer, who may update it. If the problem spreads or gets worse, contact your officer.";
 
+    private const string ApprovedClosing = "This advice has been reviewed and approved by an agricultural officer.";
+
     private static readonly string[] NutrientDeficiencyKeywords = { "nitrogen", "nutrient deficiency" };
     private static readonly string[] FertilizerKeywords = { "fertiliz", "fertilis" };
     private static readonly string[] FungalKeywords = { "fungal", "fungus", "mold", "mould", "rot", "blight", "mildew" };
@@ -175,7 +177,7 @@ public class ValidationAgent : IValidationAgent
         if (cropFindings is not null && cropFindings.PossibleCauses.Count > 0)
         {
             var causes = cropFindings.PossibleCauses.Take(2);
-            sb.Append("Likely cause(s): ").Append(string.Join("; ", causes)).Append(". ");
+            sb.Append("Likely cause(s): ").Append(Sentence(string.Join("; ", causes)));
         }
         else
         {
@@ -185,12 +187,12 @@ public class ValidationAgent : IValidationAgent
         if (cropFindings is not null && cropFindings.RecommendedActions.Count > 0)
         {
             var actions = cropFindings.RecommendedActions.Take(2);
-            sb.Append("Suggested next steps: ").Append(string.Join("; ", actions)).Append(". ");
+            sb.Append("Suggested next steps: ").Append(Sentence(string.Join("; ", actions)));
         }
 
         if (weatherFindings is not null && !weatherFindings.IsFallback && !string.IsNullOrWhiteSpace(weatherFindings.Summary))
         {
-            sb.Append("Weather context: ").Append(weatherFindings.Summary).Append(". ");
+            sb.Append("Weather context: ").Append(Sentence(weatherFindings.Summary));
         }
 
         foreach (var note in notes)
@@ -202,6 +204,28 @@ public class ValidationAgent : IValidationAgent
 
         return sb.ToString();
     }
+
+    /// <summary>
+    /// The recommendation as the farmer should read it once an officer approves it: the closing that
+    /// told them to wait for approval (or that the advice was still to be confirmed) would otherwise
+    /// contradict the Approved status. The AI's original wording stays in the agent trace.
+    /// </summary>
+    public static string WithApprovedClosing(string recommendation)
+    {
+        foreach (var pendingClosing in new[] { ClosingDisclaimer, PreliminaryClosing })
+        {
+            if (recommendation.EndsWith(pendingClosing, StringComparison.Ordinal))
+            {
+                return recommendation[..^pendingClosing.Length] + ApprovedClosing;
+            }
+        }
+
+        return recommendation;
+    }
+
+    // Knowledge-base actions and the weather summary already end in a full stop, so appending
+    // ". " blindly produced "...10-14 days.. Weather context: ... 24.9°C.." in the advice.
+    private static string Sentence(string text) => text.TrimEnd().TrimEnd('.') + ". ";
 
     private static string ComposeFallbackRecommendation() =>
         "Automated crop and weather analysis were both unavailable for this report. " +

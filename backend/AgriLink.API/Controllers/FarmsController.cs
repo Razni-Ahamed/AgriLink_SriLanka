@@ -110,6 +110,12 @@ public class FarmsController : ControllerBase
             return BadRequest(new { message = "District must be one of Sri Lanka's 25 administrative districts." });
         }
 
+        var largestField = await _db.Fields.Where(f => f.FarmId == farmId).MaxAsync(f => (decimal?)f.Area);
+        if (largestField is decimal largest && request.Area < largest)
+        {
+            return BadRequest(new { message = "A farm can't be smaller than one of its fields." });
+        }
+
         farm.Name = request.Name;
         farm.District = district;
         farm.Area = request.Area;
@@ -177,6 +183,11 @@ public class FarmsController : ControllerBase
             return Forbid();
         }
 
+        if (request.Area > farm.Area)
+        {
+            return BadRequest(new { message = "A field can't be larger than its farm." });
+        }
+
         var field = new Field
         {
             FarmId = farm.FarmId,
@@ -202,6 +213,11 @@ public class FarmsController : ControllerBase
         if (!await IsOwnerOrAdminAsync(field.Farm.FarmerProfileId))
         {
             return Forbid();
+        }
+
+        if (request.Area > field.Farm.Area)
+        {
+            return BadRequest(new { message = "A field can't be larger than its farm." });
         }
 
         field.Name = request.Name;
