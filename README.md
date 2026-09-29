@@ -68,7 +68,7 @@ Farmer reports an issue (text + optional photo)
 Photo classifier ── an ONNX model per crop (Tomato, Potato, Cassava)
         │            identifies the disease from the photo, when one is supplied
         ▼
-Planner agent ───── decides which analyses the issue needs
+Planner agent ───── decides which analyses the issue needs (Qwen LLM, checked by rules)
         │
         ├──► Crop analysis agent ── matches symptoms against a crop and disease knowledge base
         └──► Weather agent ──────── fetches the district's forecast (Open-Meteo)
@@ -81,6 +81,10 @@ Advisory draft ──► Officer review (approve / edit / reject) ──► Farm
 ```
 
 - **Officer sign-off is always required.** The system never gives a farmer an unreviewed treatment.
+- **The Planner can use a language model:** Qwen 3.8 27B in LM Studio on a team laptop, reached from Azure through an ngrok tunnel.
+  - Its JSON plan is checked against an allow-list of agents and business rules before it is used.
+  - When the laptop is off, keyword rules plan instead.
+  - See [`docs/deployment/llm-planner.md`](docs/deployment/llm-planner.md).
 - The photo models are trained in Python (`ml/`) and exported to **ONNX**. They run *inside* the .NET API through ONNX Runtime, so no separate Python service has to be hosted.
 - If a photo can't be classified (a crop without a model, such as Paddy, an unreadable image or a timeout), the issue simply continues through the text-based agents.
 - Every run is recorded as a workflow with one step per agent (inputs, structured output, timings, status). Officers see this trace on the advisory page, and the audit log records every approval and rejection.
@@ -94,7 +98,7 @@ Advisory draft ──► Officer review (approve / edit / reject) ──► Farm
 | **Frontend** | React 19, TypeScript, Vite, Tailwind CSS 4, React Router, TanStack Query, Zustand, React Hook Form + Zod, i18next, Motion, Recharts, Phosphor Icons |
 | **Backend** | ASP.NET Core 8 Web API, Entity Framework Core 8, ASP.NET Identity + JWT authentication, Swagger |
 | **Database** | PostgreSQL (hosted on Neon) |
-| **AI / ML** | PyTorch (training), ONNX + ONNX Runtime (inference in .NET), SkiaSharp (image decoding) |
+| **AI / ML** | Custom agent orchestration in C#; Qwen 3.8 27B via LM Studio (Planner, optional); PyTorch (training), ONNX + ONNX Runtime (inference in .NET), SkiaSharp (image decoding) |
 | **Services** | Cloudinary (photo storage), Open-Meteo (weather forecasts) |
 | **Hosting** | Azure Static Web Apps (frontend), Azure App Service (API) |
 | **Testing** | Vitest + Testing Library (frontend), xUnit (backend), pytest (ML) |

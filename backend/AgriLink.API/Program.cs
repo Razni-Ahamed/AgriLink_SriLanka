@@ -5,6 +5,7 @@ using AgriLink.API.Models;
 using AgriLink.API.Services;
 using AgriLink.API.Services.Agents;
 using AgriLink.API.Services.Agents.ImageClassification;
+using AgriLink.API.Services.Agents.Llm;
 using AgriLink.API.Services.Images;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
@@ -124,6 +125,17 @@ builder.Services.AddHttpClient<IWeatherAgent, WeatherAgent>((sp, client) =>
 {
     var options = sp.GetRequiredService<IOptions<WeatherOptions>>().Value;
     client.Timeout = TimeSpan.FromSeconds(options.TimeoutSeconds);
+});
+
+// ----- Language model for the Planner agent (optional) -----
+// Off unless Llm:Enabled is set. The team's Qwen runs in LM Studio on a laptop, reached through an
+// ngrok tunnel that requires Llm:ApiKey; whenever it is off or unreachable the rules plan instead.
+builder.Services.Configure<LlmOptions>(builder.Configuration.GetSection(LlmOptions.SectionName));
+builder.Services.AddHttpClient<ILlmClient, OpenAiCompatibleLlmClient>((sp, client) =>
+{
+    // The planner's own per-attempt timeout (Llm:TimeoutSeconds) is the one that normally fires.
+    var options = sp.GetRequiredService<IOptions<LlmOptions>>().Value;
+    client.Timeout = TimeSpan.FromSeconds(options.TimeoutSeconds + 5);
 });
 
 // ----- Issue photos -----
@@ -257,6 +269,12 @@ using (var scope = app.Services.CreateScope())
 // Load the photo models now rather than on the first farmer's upload, so a missing or invalid
 // model shows up in the startup log.
 app.Services.GetRequiredService<IImageClassifier>();
+
+var llmOptions = app.Services.GetRequiredService<IOptions<LlmOptions>>().Value;
+app.Logger.LogInformation(
+    llmOptions.Enabled ? "Planner: language model {Model} at {Host}, rules as fallback." : "Planner: rules only (Llm:Enabled is off).",
+    llmOptions.Model,
+    Uri.TryCreate(llmOptions.BaseUrl, UriKind.Absolute, out var llmUri) ? llmUri.Host : "(invalid Llm:BaseUrl)");
 
 // ----- Middleware pipeline -----
 app.UseExceptionHandler();

@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using AgriLink.API.Models;
 using AgriLink.API.Services.Agents.ImageClassification;
 
@@ -32,7 +33,35 @@ public record PlannerPlan
     public bool UseCropAgent { get; init; }
     public bool UseWeatherAgent { get; init; }
     public string Reasoning { get; init; } = string.Empty;
+
+    /// <summary>"Rules", or the language model that made the plan (e.g. "LLM (qwen3.8-27b)").</summary>
+    public string PlannedBy { get; init; } = PlannerAgent.RulesPlanner;
+
+    /// <summary>The analysis steps in the order they run, each with why it was chosen. The
+    /// Validation agent always runs afterwards and is not part of the plan.</summary>
+    public IReadOnlyList<PlanStep> Steps { get; init; } = Array.Empty<PlanStep>();
+
+    /// <summary>How many times the language model was asked (a failed or rejected answer is retried once).</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public int? LlmAttempts { get; init; }
+
+    /// <summary>Which version of the planner prompt produced the plan.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? PromptVersion { get; init; }
+
+    /// <summary>Corrections the business rules made to the language model's plan.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public IReadOnlyList<string>? GuardrailNotes { get; init; }
+
+    /// <summary>Why the rules planned instead of the language model: unreachable, too slow, or its
+    /// answer was rejected. Null when the rules are simply the configured planner.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? FallbackReason { get; init; }
 }
+
+/// <summary>One planned analysis step: which agent runs, and why. ("Reason" rather than "Why":
+/// jsonb orders keys by length, and the trace should read Agent first.)</summary>
+public record PlanStep(string Agent, string Reason);
 
 public record CropFindings
 {
