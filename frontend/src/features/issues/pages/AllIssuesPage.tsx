@@ -6,13 +6,18 @@ import { Card } from '@/components/ui/Card'
 import { CropIcon } from '@/components/ui/CropIcon'
 import { IconBadge } from '@/components/ui/IconBadge'
 import { Pagination } from '@/components/ui/Pagination'
+import { SearchSortBar } from '@/components/ui/SearchSortBar'
+import { Select } from '@/components/ui/Select'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { StaggerList } from '@/components/ui/motion/StaggerList'
+import { useDebouncedValue } from '@/lib/useDebouncedValue'
 import { formatDate } from '@/lib/utils'
 import { useStatusLabel } from '@/lib/useStatusLabel'
 import { SeverityBadge } from '../components/SeverityBadge'
 import { useAllIssues } from '../hooks/useIssues'
-import type { CropIssueResponse, IssueStatus } from '@/types/dto/issues'
+import type { CropIssueResponse, IssueSort, IssueStatus } from '@/types/dto/issues'
+
+const FILTERABLE_STATUSES: IssueStatus[] = ['AwaitingReview', 'Resolved', 'Rejected']
 
 const statusVariant: Record<IssueStatus, 'success' | 'warning' | 'danger' | 'info'> = {
   Pending: 'info',
@@ -58,10 +63,27 @@ function AllIssuesCard({ issue }: { issue: CropIssueResponse }) {
 
 /** Admin-only oversight view: every issue ever reported, any status, with who reported it. */
 export function AllIssuesPage() {
-  const { t } = useTranslation('issues')
-  const [page, setPage] = useState(1)
-  const { data, isLoading, isFetching, isError, error } = useAllIssues(page)
+  const { t } = useTranslation(['issues', 'common'])
+  const statusLabel = useStatusLabel()
+  const [searchInput, setSearchInput] = useState('')
+  const search = useDebouncedValue(searchInput.trim(), 300)
+  const [status, setStatus] = useState<IssueStatus | ''>('')
+  const [sort, setSort] = useState<IssueSort>('newest')
+
+  // Back to page 1 whenever the search, status or order changes, without an effect: the page
+  // belongs to the filters it was chosen under.
+  const filterKey = `${search}|${status}|${sort}`
+  const [paging, setPaging] = useState({ key: filterKey, page: 1 })
+  const page = paging.key === filterKey ? paging.page : 1
+  const setPage = (next: number) => setPaging({ key: filterKey, page: next })
+
+  const { data, isLoading, isFetching, isError, error } = useAllIssues(page, {
+    search,
+    status: status || undefined,
+    sort,
+  })
   const issues = data?.items
+  const isFiltered = Boolean(search || status)
 
   return (
     <div className="flex flex-col gap-6">
@@ -69,6 +91,32 @@ export function AllIssuesPage() {
         <h1 className="font-display text-2xl text-text-primary">{t('all.title')}</h1>
         <p className="text-sm text-text-secondary">{t('all.subtitle')}</p>
       </div>
+
+      <SearchSortBar
+        search={searchInput}
+        onSearchChange={setSearchInput}
+        searchPlaceholder={t('common:list.searchIssues')}
+        sort={sort}
+        onSortChange={(value) => setSort(value as IssueSort)}
+        sortOptions={[
+          { value: 'newest', label: t('common:list.newest') },
+          { value: 'oldest', label: t('common:list.oldest') },
+          { value: 'severity', label: t('common:list.severity') },
+        ]}
+      >
+        <Select
+          label={t('common:fields.status')}
+          value={status}
+          onChange={(event) => setStatus(event.target.value as IssueStatus | '')}
+        >
+          <option value="">{t('common:list.anyStatus')}</option>
+          {FILTERABLE_STATUSES.map((value) => (
+            <option key={value} value={value}>
+              {statusLabel('issue', value)}
+            </option>
+          ))}
+        </Select>
+      </SearchSortBar>
 
       {isLoading && (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -89,7 +137,9 @@ export function AllIssuesPage() {
       )}
 
       {!isLoading && !isError && issues && issues.length === 0 && (
-        <p className="text-sm text-text-secondary">{t('all.empty')}</p>
+        <p className="text-sm text-text-secondary">
+          {isFiltered ? t('common:list.noMatches') : t('all.empty')}
+        </p>
       )}
 
       {!isLoading && !isError && issues && issues.length > 0 && (

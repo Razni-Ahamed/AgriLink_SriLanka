@@ -1,5 +1,9 @@
 import { apiClient } from '@/lib/apiClient'
-import type { CreateCropIssueRequest, CropIssueResponse } from '@/types/dto/issues'
+import type {
+  CreateCropIssueRequest,
+  CropIssueResponse,
+  IssueListFilters,
+} from '@/types/dto/issues'
 import type { PagedResponse } from '@/types/dto/paging'
 
 export async function createIssue({
@@ -36,17 +40,28 @@ export async function getMyIssues(page: number): Promise<PagedResponse<CropIssue
   return data
 }
 
-export async function getPendingIssues(page: number): Promise<PagedResponse<CropIssueResponse>> {
+export async function getPendingIssues(
+  page: number,
+  filters: IssueListFilters = {},
+): Promise<PagedResponse<CropIssueResponse>> {
   const { data } = await apiClient.get<PagedResponse<CropIssueResponse>>('/api/issues/pending', {
-    params: { page },
+    params: { page, search: filters.search || undefined, sort: filters.sort || undefined },
   })
   return data
 }
 
 /** Every issue ever reported, any status — Admin-only. */
-export async function getAllIssues(page: number): Promise<PagedResponse<CropIssueResponse>> {
+export async function getAllIssues(
+  page: number,
+  filters: IssueListFilters = {},
+): Promise<PagedResponse<CropIssueResponse>> {
   const { data } = await apiClient.get<PagedResponse<CropIssueResponse>>('/api/issues', {
-    params: { page },
+    params: {
+      page,
+      search: filters.search || undefined,
+      status: filters.status || undefined,
+      sort: filters.sort || undefined,
+    },
   })
   return data
 }

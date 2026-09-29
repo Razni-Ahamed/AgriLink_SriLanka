@@ -1,6 +1,6 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import * as issuesApi from '../api/issuesApi'
-import type { CreateCropIssueRequest } from '@/types/dto/issues'
+import type { CreateCropIssueRequest, IssueListFilters } from '@/types/dto/issues'
 
 // Every list hook keeps showing the current page's rows while the next page loads (instead of
 // flashing to a loading state), and includes `page` in its key so each page caches separately —
@@ -14,19 +14,19 @@ export function useMyIssues(page: number) {
   })
 }
 
-export function usePendingIssues(page: number) {
+export function usePendingIssues(page: number, filters: IssueListFilters = {}) {
   return useQuery({
-    queryKey: ['issues', 'pending', page],
-    queryFn: () => issuesApi.getPendingIssues(page),
+    queryKey: ['issues', 'pending', page, filters],
+    queryFn: () => issuesApi.getPendingIssues(page, filters),
     placeholderData: keepPreviousData,
   })
 }
 
 /** Admin's full oversight view — every issue ever reported, any status. */
-export function useAllIssues(page: number) {
+export function useAllIssues(page: number, filters: IssueListFilters = {}) {
   return useQuery({
-    queryKey: ['issues', 'all', page],
-    queryFn: () => issuesApi.getAllIssues(page),
+    queryKey: ['issues', 'all', page, filters],
+    queryFn: () => issuesApi.getAllIssues(page, filters),
     placeholderData: keepPreviousData,
   })
 }

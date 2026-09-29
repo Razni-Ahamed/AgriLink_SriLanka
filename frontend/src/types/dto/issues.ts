@@ -3,6 +3,16 @@ import type { AdvisoryStatus } from './advisories'
 export type IssueSeverity = 'Low' | 'Medium' | 'High'
 export type IssueStatus = 'Pending' | 'AwaitingReview' | 'Resolved' | 'Rejected'
 
+/** The sort orders the issue lists accept: `queue` only for the review queue. */
+export type IssueSort = 'queue' | 'newest' | 'oldest' | 'severity'
+
+/** Optional narrowing for the officer and admin issue lists; empty values are left out. */
+export interface IssueListFilters {
+  search?: string
+  status?: IssueStatus
+  sort?: IssueSort
+}
+
 export interface CreateCropIssueRequest {
   cropId: number
   title: string
