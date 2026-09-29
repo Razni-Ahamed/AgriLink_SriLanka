@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using AgriLink.API.Data;
 using AgriLink.API.DTOs.Harvests;
 using AgriLink.API.Models;
@@ -31,8 +32,20 @@ public class HarvestsController : ControllerBase
         _notifications = notifications;
     }
 
+    /// <summary>
+    /// The public marketplace: Active listings, optionally narrowed by crop type, district, a
+    /// free-text search (crop, variety, collection point or district) and a price range, in the
+    /// order <paramref name="sort"/> asks for: newest (default), priceAsc, priceDesc, quantityDesc
+    /// (most available first) or freshest (most recently harvested first).
+    /// </summary>
     [HttpGet]
-    public async Task<ActionResult<List<HarvestListingResponse>>> GetAll([FromQuery] string? cropType, [FromQuery] string? district)
+    public async Task<ActionResult<List<HarvestListingResponse>>> GetAll(
+        [FromQuery] string? cropType,
+        [FromQuery] string? district,
+        [FromQuery, StringLength(100)] string? search = null,
+        [FromQuery, Range(0, HarvestLimits.MaxPricePerKg)] decimal? minPrice = null,
+        [FromQuery, Range(0, HarvestLimits.MaxPricePerKg)] decimal? maxPrice = null,
+        [FromQuery] string? sort = null)
     {
         var query = _db.HarvestListings
             .Include(h => h.Crop).ThenInclude(c => c.Field).ThenInclude(f => f.Farm)
@@ -51,7 +64,40 @@ public class HarvestsController : ControllerBase
             query = query.Where(h => h.Crop.Field.Farm.District.ToLower() == district.ToLower());
         }
 
-        var listings = await query.OrderByDescending(h => h.CreatedAt).ToListAsync();
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var term = search.Trim().ToLower();
+            query = query.Where(h => h.Crop.CropType.ToLower().Contains(term)
+                || h.Crop.Variety.ToLower().Contains(term)
+                || h.Location.ToLower().Contains(term)
+                || h.Crop.Field.Farm.District.ToLower().Contains(term));
+        }
+
+        if (minPrice is decimal min)
+        {
+            query = query.Where(h => h.PricePerUnit >= min);
+        }
+
+        if (maxPrice is decimal max)
+        {
+            query = query.Where(h => h.PricePerUnit <= max);
+        }
+
+        IQueryable<HarvestListing>? ordered = (sort ?? "newest").ToLowerInvariant() switch
+        {
+            "newest" => query.OrderByDescending(h => h.CreatedAt),
+            "priceasc" => query.OrderBy(h => h.PricePerUnit).ThenByDescending(h => h.CreatedAt),
+            "pricedesc" => query.OrderByDescending(h => h.PricePerUnit).ThenByDescending(h => h.CreatedAt),
+            "quantitydesc" => query.OrderByDescending(h => h.AvailableQuantity).ThenByDescending(h => h.CreatedAt),
+            "freshest" => query.OrderByDescending(h => h.HarvestDate).ThenByDescending(h => h.CreatedAt),
+            _ => null,
+        };
+        if (ordered is null)
+        {
+            return BadRequest(new { message = "sort must be newest, priceAsc, priceDesc, quantityDesc or freshest." });
+        }
+
+        var listings = await ordered.ToListAsync();
         return Ok(listings.Select(ToResponse));
     }
 
