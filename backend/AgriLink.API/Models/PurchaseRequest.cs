@@ -1,6 +1,6 @@
 namespace AgriLink.API.Models;
 
-public class PurchaseRequest
+public class PurchaseRequest : IHasUpdatedAt
 {
     public int RequestId { get; set; }
     public int HarvestId { get; set; }
@@ -15,6 +15,7 @@ public class PurchaseRequest
     public string Message { get; set; } = string.Empty;
     public PurchaseRequestStatus Status { get; set; } = PurchaseRequestStatus.Pending;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime? UpdatedAt { get; set; }
 
     /// <summary>
     /// Postgres's xmin, used as a concurrency token: two people changing this row at the same moment

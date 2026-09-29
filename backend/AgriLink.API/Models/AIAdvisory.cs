@@ -1,9 +1,11 @@
 namespace AgriLink.API.Models;
 
-public class AIAdvisory
+public class AIAdvisory : IHasUpdatedAt
 {
     public int AdvisoryId { get; set; }
     public int IssueId { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime? UpdatedAt { get; set; }
     public AdvisoryStatus Status { get; set; } = AdvisoryStatus.Draft;
     public RiskLevel RiskLevel { get; set; } = RiskLevel.Low;
     public string Recommendation { get; set; } = string.Empty;

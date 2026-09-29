@@ -1,6 +1,6 @@
 namespace AgriLink.API.Models;
 
-public class Crop
+public class Crop : IHasUpdatedAt
 {
     public int CropId { get; set; }
     public int FieldId { get; set; }
@@ -10,6 +10,8 @@ public class Crop
     public DateOnly ExpectedHarvestDate { get; set; }
     public decimal ExpectedQuantity { get; set; }
     public CropStatus Status { get; set; } = CropStatus.Seeded;
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime? UpdatedAt { get; set; }
 
     public Field Field { get; set; } = null!;
     public ICollection<CropActivity> Activities { get; set; } = new List<CropActivity>();
