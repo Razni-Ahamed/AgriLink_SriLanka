@@ -1,6 +1,7 @@
 # Starts the Planner agent's language model on this laptop and opens it to the Azure API through
 # ngrok. Run before a demo; leave the window open. See docs/deployment/llm-planner.md.
-# Usage: .\deploy\start-llm-planner.ps1 -Domain <your-name>.ngrok-free.app
+# Usage: .\deploy\start-llm-planner.ps1 -Domain <your-name>.ngrok-free.dev
+[CmdletBinding(PositionalBinding = $false)]
 param(
     [Parameter(Mandatory)] [string] $Domain,
     [string] $Model = 'qwen/qwen3.8-27b',
@@ -55,9 +56,22 @@ on_http_request:
             - conn.client_ip
 "@ | Set-Content -Path $policyFile -Encoding ascii
 
-Write-Host 'Starting LM Studio''s server and loading the model onto the GPU...'
-& $lms server start | Out-Host
-& $lms load $Model --identifier $Identifier --context-length 8192 --gpu max -y | Out-Host
+# lms and ngrok report progress on stderr, which Windows PowerShell 5.1 treats as a fatal error
+# under 'Stop' once output is redirected; check their exit codes instead.
+$ErrorActionPreference = 'Continue'
+
+Write-Host 'Starting LM Studio''s server...'
+& $lms server start 2>&1 | ForEach-Object { "$_" } | Out-Host
+if ($LASTEXITCODE -ne 0) { throw 'LM Studio''s server did not start.' }
+
+# Loading it a second time would put two copies on the GPU.
+if ((& $lms ps 2>&1 | Out-String) -match "(?m)^\s*$([regex]::Escape($Identifier))\s") {
+    Write-Host "$Identifier is already loaded."
+} else {
+    Write-Host 'Loading the model onto the GPU...'
+    & $lms load $Model --identifier $Identifier --context-length 8192 --gpu max -y 2>&1 | ForEach-Object { "$_" } | Out-Host
+    if ($LASTEXITCODE -ne 0) { throw "Could not load $Model." }
+}
 
 Write-Host "Opening https://$Domain -> http://localhost:1234 (Ctrl+C stops it; the API then plans with the rules)."
 ngrok http 1234 --url "https://$Domain" --traffic-policy-file $policyFile
