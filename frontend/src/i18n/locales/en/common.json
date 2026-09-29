@@ -42,6 +42,25 @@
     "next": "Next page",
     "pageOf": "Page {{page}} of {{totalPages}}"
   },
+  "list": {
+    "sortBy": "Sort by",
+    "newest": "Newest first",
+    "oldest": "Oldest first",
+    "severity": "Most severe first",
+    "queue": "Review order",
+    "priceAsc": "Price: low to high",
+    "priceDesc": "Price: high to low",
+    "quantityDesc": "Most available",
+    "freshest": "Recently harvested",
+    "nameAsc": "Name (A–Z)",
+    "anyStatus": "Any status",
+    "anyRole": "Any role",
+    "searchListings": "Crop, variety, place or district",
+    "searchIssues": "Title, crop, farmer or district",
+    "searchUsers": "Name, email or username",
+    "showing": "Showing {{shown}} of {{total}}",
+    "noMatches": "Nothing matches these filters."
+  },
   "language": {
     "label": "Language",
     "en": "English",

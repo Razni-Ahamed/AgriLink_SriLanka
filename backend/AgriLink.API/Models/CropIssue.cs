@@ -1,6 +1,6 @@
 namespace AgriLink.API.Models;
 
-public class CropIssue
+public class CropIssue : IHasUpdatedAt
 {
     public int IssueId { get; set; }
     public int CropId { get; set; }
@@ -10,6 +10,7 @@ public class CropIssue
     public IssueSeverity Severity { get; set; } = IssueSeverity.Medium;
     public IssueStatus Status { get; set; } = IssueStatus.Pending;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime? UpdatedAt { get; set; }
 
     public Crop Crop { get; set; } = null!;
     public FarmerProfile FarmerProfile { get; set; } = null!;

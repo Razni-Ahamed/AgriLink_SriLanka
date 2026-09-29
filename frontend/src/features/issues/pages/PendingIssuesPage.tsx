@@ -7,17 +7,29 @@ import { Card } from '@/components/ui/Card'
 import { CropIcon } from '@/components/ui/CropIcon'
 import { IconBadge } from '@/components/ui/IconBadge'
 import { Pagination } from '@/components/ui/Pagination'
+import { SearchSortBar } from '@/components/ui/SearchSortBar'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { StaggerList } from '@/components/ui/motion/StaggerList'
 import { useAuthStore } from '@/auth/authStore'
+import { useDebouncedValue } from '@/lib/useDebouncedValue'
 import { formatDate } from '@/lib/utils'
 import { SeverityBadge } from '../components/SeverityBadge'
 import { usePendingIssues } from '../hooks/useIssues'
+import type { IssueSort } from '@/types/dto/issues'
 
 export function PendingIssuesPage() {
-  const { t } = useTranslation('issues')
-  const [page, setPage] = useState(1)
-  const { data, isLoading, isFetching } = usePendingIssues(page)
+  const { t } = useTranslation(['issues', 'common'])
+  const [searchInput, setSearchInput] = useState('')
+  const search = useDebouncedValue(searchInput.trim(), 300)
+  const [sort, setSort] = useState<IssueSort>('queue')
+
+  // Back to page 1 whenever the search or order changes (see AllIssuesPage).
+  const filterKey = `${search}|${sort}`
+  const [paging, setPaging] = useState({ key: filterKey, page: 1 })
+  const page = paging.key === filterKey ? paging.page : 1
+  const setPage = (next: number) => setPaging({ key: filterKey, page: next })
+
+  const { data, isLoading, isFetching } = usePendingIssues(page, { search, sort })
   const issues = data?.items
   const role = useAuthStore((state) => state.role)
   const officerDistrict = useAuthStore((state) => state.user?.district)
@@ -37,6 +49,20 @@ export function PendingIssuesPage() {
         )}
       </div>
 
+      <SearchSortBar
+        search={searchInput}
+        onSearchChange={setSearchInput}
+        searchPlaceholder={t('common:list.searchIssues')}
+        sort={sort}
+        onSortChange={(value) => setSort(value as IssueSort)}
+        sortOptions={[
+          { value: 'queue', label: t('common:list.queue') },
+          { value: 'severity', label: t('common:list.severity') },
+          { value: 'newest', label: t('common:list.newest') },
+          { value: 'oldest', label: t('common:list.oldest') },
+        ]}
+      />
+
       {isLoading && (
         <div className="flex flex-col gap-3">
           {Array.from({ length: 4 }).map((_, index) => (
@@ -46,7 +72,9 @@ export function PendingIssuesPage() {
       )}
 
       {!isLoading && issues && issues.length === 0 && (
-        <p className="text-sm text-text-secondary">{t('pending.empty')}</p>
+        <p className="text-sm text-text-secondary">
+          {search ? t('common:list.noMatches') : t('pending.empty')}
+        </p>
       )}
 
       {!isLoading && issues && issues.length > 0 && (

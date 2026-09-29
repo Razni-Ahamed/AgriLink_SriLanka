@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using AgriLink.API.Common;
 using AgriLink.API.Data;
 using AgriLink.API.DTOs.Issues;
@@ -211,11 +212,18 @@ public class IssuesController : ControllerBase
         return Ok(paged.Map(i => ToResponse(i, includeReporter: false)));
     }
 
+    /// <summary>
+    /// The review queue. <paramref name="search"/> matches the title, description, crop, variety,
+    /// district or reporter; <paramref name="sort"/> is queue (default: cases with no advice yet
+    /// first, oldest first), newest, oldest or severity (High first).
+    /// </summary>
     [HttpGet("pending")]
     [Authorize(Roles = "Officer,Admin")]
     public async Task<ActionResult<PagedResponse<CropIssueResponse>>> Pending(
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = PagingExtensions.DefaultPageSize,
+        [FromQuery, StringLength(100)] string? search = null,
+        [FromQuery] string? sort = null,
         CancellationToken cancellationToken = default)
     {
         var query = _db.CropIssues
@@ -236,16 +244,24 @@ public class IssuesController : ControllerBase
             query = query.Where(i => i.Crop.Field.Farm.District == district);
         }
 
-        // Cases the farmer has had no advice on yet (Draft) come first; Preliminary advice has
-        // already reached the farmer and is waiting for confirmation. Oldest first within each.
-        // Expressed as a correlated subquery (the latest advisory by id) so the sort — and so
-        // the paging above it — happens in the database, not after loading every row.
-        var ordered = query
-            .OrderBy(i => i.Advisories
-                .OrderByDescending(a => a.AdvisoryId)
-                .Select(a => a.Status)
-                .FirstOrDefault() == AdvisoryStatus.Preliminary ? 1 : 0)
-            .ThenBy(i => i.CreatedAt);
+        query = Search(query, search);
+
+        // "queue": cases the farmer has had no advice on yet (Draft) come first; Preliminary
+        // advice has already reached the farmer and is waiting for confirmation. Oldest first
+        // within each. Expressed as a correlated subquery (the latest advisory by id) so the sort —
+        // and so the paging above it — happens in the database, not after loading every row.
+        var ordered = (sort ?? "queue").ToLowerInvariant() == "queue"
+            ? query
+                .OrderBy(i => i.Advisories
+                    .OrderByDescending(a => a.AdvisoryId)
+                    .Select(a => a.Status)
+                    .FirstOrDefault() == AdvisoryStatus.Preliminary ? 1 : 0)
+                .ThenBy(i => i.CreatedAt)
+            : Sort(query, sort);
+        if (ordered is null)
+        {
+            return BadRequest(new { message = "sort must be queue, newest, oldest or severity." });
+        }
 
         var paged = await ordered.ToPagedResponseAsync(page, pageSize, cancellationToken);
         return Ok(paged.Map(i => ToResponse(i, includeReporter: true)));
@@ -343,24 +359,69 @@ public class IssuesController : ControllerBase
     }
 
     /// <summary>Every issue ever reported, any status — Admin's full oversight view, not just
-    /// the Officer's Draft-advisory work queue.</summary>
+    /// the Officer's Draft-advisory work queue. Optionally narrowed to one <paramref name="status"/>
+    /// and a free-text <paramref name="search"/>; <paramref name="sort"/> is newest (default),
+    /// oldest or severity (High first).</summary>
     [HttpGet]
     [Authorize(Roles = "Admin")]
     public async Task<ActionResult<PagedResponse<CropIssueResponse>>> GetAll(
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = PagingExtensions.DefaultPageSize,
+        [FromQuery, StringLength(100)] string? search = null,
+        [FromQuery] IssueStatus? status = null,
+        [FromQuery] string? sort = null,
         CancellationToken cancellationToken = default)
     {
-        var query = _db.CropIssues
+        IQueryable<CropIssue> query = _db.CropIssues
             .Include(i => i.Advisories)
             .Include(i => i.Images)
             .Include(i => i.Crop).ThenInclude(c => c.Field).ThenInclude(f => f.Farm)
-            .Include(i => i.FarmerProfile).ThenInclude(fp => fp.User)
-            .OrderByDescending(i => i.CreatedAt);
+            .Include(i => i.FarmerProfile).ThenInclude(fp => fp.User);
 
-        var paged = await query.ToPagedResponseAsync(page, pageSize, cancellationToken);
+        if (status is IssueStatus wanted)
+        {
+            query = query.Where(i => i.Status == wanted);
+        }
+
+        var ordered = Sort(Search(query, search), sort);
+        if (ordered is null)
+        {
+            return BadRequest(new { message = "sort must be newest, oldest or severity." });
+        }
+
+        var paged = await ordered.ToPagedResponseAsync(page, pageSize, cancellationToken);
         return Ok(paged.Map(i => ToResponse(i, includeReporter: true)));
     }
+
+    /// <summary>Issues whose title, description, crop, variety, district or reporter contain the term.</summary>
+    private static IQueryable<CropIssue> Search(IQueryable<CropIssue> query, string? search)
+    {
+        if (string.IsNullOrWhiteSpace(search))
+        {
+            return query;
+        }
+
+        var term = search.Trim().ToLower();
+        return query.Where(i => i.Title.ToLower().Contains(term)
+            || i.Description.ToLower().Contains(term)
+            || i.Crop.CropType.ToLower().Contains(term)
+            || i.Crop.Variety.ToLower().Contains(term)
+            || i.Crop.Field.Farm.District.ToLower().Contains(term)
+            || i.FarmerProfile.User.FullName.ToLower().Contains(term));
+    }
+
+    /// <summary>newest (the default), oldest or severity; null for anything else.</summary>
+    private static IOrderedQueryable<CropIssue>? Sort(IQueryable<CropIssue> query, string? sort) =>
+        (sort ?? "newest").ToLowerInvariant() switch
+        {
+            "newest" => query.OrderByDescending(i => i.CreatedAt),
+            "oldest" => query.OrderBy(i => i.CreatedAt),
+            // Severity is stored as text, so rank it explicitly rather than alphabetically.
+            "severity" => query
+                .OrderByDescending(i => i.Severity == IssueSeverity.High ? 3 : i.Severity == IssueSeverity.Medium ? 2 : 1)
+                .ThenBy(i => i.CreatedAt),
+            _ => null,
+        };
 
     private static AIAdvisory? LatestAdvisory(CropIssue issue) =>
         issue.Advisories.OrderByDescending(a => a.AdvisoryId).FirstOrDefault();

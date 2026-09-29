@@ -5,11 +5,12 @@ namespace AgriLink.API.Models;
 /// OfficerProfile.Department string so officer department names come from a controlled
 /// vocabulary instead of whatever an admin happened to type.
 /// </summary>
-public class Department
+public class Department : IHasUpdatedAt
 {
     public int DepartmentId { get; set; }
     public string Name { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime? UpdatedAt { get; set; }
 
     public ICollection<OfficerProfile> OfficerProfiles { get; set; } = new List<OfficerProfile>();
 }

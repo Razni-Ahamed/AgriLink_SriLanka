@@ -11,6 +11,10 @@ export async function getHarvests(filters: HarvestFilters = {}): Promise<Harvest
     params: {
       cropType: filters.cropType || undefined,
       district: filters.district || undefined,
+      search: filters.search || undefined,
+      minPrice: filters.minPrice,
+      maxPrice: filters.maxPrice,
+      sort: filters.sort || undefined,
     },
   })
   return data

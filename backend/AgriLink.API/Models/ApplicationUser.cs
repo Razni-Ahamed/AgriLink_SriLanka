@@ -2,11 +2,12 @@ using Microsoft.AspNetCore.Identity;
 
 namespace AgriLink.API.Models;
 
-public class ApplicationUser : IdentityUser<int>
+public class ApplicationUser : IdentityUser<int>, IHasUpdatedAt
 {
     public string FullName { get; set; } = string.Empty;
     public bool IsActive { get; set; } = true;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime? UpdatedAt { get; set; }
 
     /// <summary>
     /// Self-registered Farmer/Buyer accounts start Pending and stay inactive until an

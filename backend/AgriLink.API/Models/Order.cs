@@ -1,6 +1,6 @@
 namespace AgriLink.API.Models;
 
-public class Order
+public class Order : IHasUpdatedAt
 {
     public int OrderId { get; set; }
     public int RequestId { get; set; }
@@ -13,6 +13,7 @@ public class Order
     public decimal TotalAmount { get; set; }
     public OrderStatus Status { get; set; } = OrderStatus.Confirmed;
     public DateTime OrderDate { get; set; } = DateTime.UtcNow;
+    public DateTime? UpdatedAt { get; set; }
     public DateTime? CompletedAt { get; set; }
 
     /// <summary>

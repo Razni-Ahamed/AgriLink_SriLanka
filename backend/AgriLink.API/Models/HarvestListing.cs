@@ -1,6 +1,6 @@
 namespace AgriLink.API.Models;
 
-public class HarvestListing
+public class HarvestListing : IHasUpdatedAt
 {
     public int HarvestId { get; set; }
     public int FarmerProfileId { get; set; }
@@ -12,6 +12,7 @@ public class HarvestListing
     public string Location { get; set; } = string.Empty;
     public HarvestStatus Status { get; set; } = HarvestStatus.Active;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime? UpdatedAt { get; set; }
 
     /// <summary>
     /// Postgres's xmin, used as a concurrency token: two people changing this row at the same moment

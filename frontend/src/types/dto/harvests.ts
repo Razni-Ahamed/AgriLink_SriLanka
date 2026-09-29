@@ -31,7 +31,15 @@ export interface UpdateHarvestListingRequest {
   harvestDate?: string
 }
 
+/** The marketplace orders GET /api/harvests accepts. */
+export type HarvestSort = 'newest' | 'priceAsc' | 'priceDesc' | 'quantityDesc' | 'freshest'
+
 export interface HarvestFilters {
   cropType?: string
   district?: string
+  /** Matches the crop, variety, collection point or district. */
+  search?: string
+  minPrice?: number
+  maxPrice?: number
+  sort?: HarvestSort
 }

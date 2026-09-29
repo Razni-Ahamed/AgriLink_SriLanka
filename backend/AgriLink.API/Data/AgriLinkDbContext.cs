@@ -12,6 +12,32 @@ public class AgriLinkDbContext : IdentityDbContext<ApplicationUser, IdentityRole
     {
     }
 
+    // SaveChanges() and SaveChangesAsync(CancellationToken) both end up in these two overloads,
+    // so every save — including UserManager's — stamps the UpdatedAt audit field.
+    public override int SaveChanges(bool acceptAllChangesOnSuccess)
+    {
+        StampUpdatedAt();
+        return base.SaveChanges(acceptAllChangesOnSuccess);
+    }
+
+    public override Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
+    {
+        StampUpdatedAt();
+        return base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+    }
+
+    private void StampUpdatedAt()
+    {
+        var now = DateTime.UtcNow;
+        foreach (var entry in ChangeTracker.Entries<IHasUpdatedAt>())
+        {
+            if (entry.State == EntityState.Modified)
+            {
+                entry.Entity.UpdatedAt = now;
+            }
+        }
+    }
+
     public DbSet<FarmerProfile> FarmerProfiles => Set<FarmerProfile>();
     public DbSet<BuyerProfile> BuyerProfiles => Set<BuyerProfile>();
     public DbSet<OfficerProfile> OfficerProfiles => Set<OfficerProfile>();

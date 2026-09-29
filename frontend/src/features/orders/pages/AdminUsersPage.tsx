@@ -2,6 +2,9 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card } from '@/components/ui/Card'
 import { Modal } from '@/components/ui/Modal'
+import { Pagination } from '@/components/ui/Pagination'
+import { SearchSortBar } from '@/components/ui/SearchSortBar'
+import { Select } from '@/components/ui/Select'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { useAuthStore } from '@/auth/authStore'
 import { parseApiError } from '@/lib/apiErrors'
@@ -18,7 +21,21 @@ import { ChangeRoleForm } from '../components/ChangeRoleForm'
 import { AdminResetPasswordForm } from '../components/AdminResetPasswordForm'
 import { EditUserForm } from '../components/EditUserForm'
 import { UserManagementTable } from '../components/UserManagementTable'
-import type { AdminUserSummary } from '@/types/dto/admin'
+import {
+  USERS_PAGE_SIZE,
+  filterAndSortUsers,
+  type UserSort,
+  type UserStatusFilter,
+} from '../lib/userListFilters'
+import type { AdminUserSummary, ManagedRole } from '@/types/dto/admin'
+
+const ROLES: ManagedRole[] = ['Farmer', 'Buyer', 'Officer', 'Admin']
+const STATUS_LABEL_KEYS = {
+  active: 'orders:admin.active',
+  pending: 'orders:admin.statusPending',
+  rejected: 'orders:admin.statusRejected',
+  inactive: 'orders:admin.inactive',
+} as const satisfies Record<UserStatusFilter, string>
 
 export function AdminUsersPage() {
   const { t } = useTranslation(['orders', 'common'])
@@ -28,6 +45,23 @@ export function AdminUsersPage() {
   const [createUserError, setCreateUserError] = useState<string | null>(null)
 
   const { data: users, isLoading: isLoadingUsers, isError: isUsersError } = useAdminUsers()
+
+  const [search, setSearch] = useState('')
+  const [role, setRole] = useState<ManagedRole | ''>('')
+  const [status, setStatus] = useState<UserStatusFilter | ''>('')
+  const [sort, setSort] = useState<UserSort>('newest')
+  // Back to page 1 whenever the search, filters or order change (see AllIssuesPage).
+  const filterKey = `${search}|${role}|${status}|${sort}`
+  const [paging, setPaging] = useState({ key: filterKey, page: 1 })
+  const visibleUsers = filterAndSortUsers(users ?? [], {
+    search,
+    role: role || undefined,
+    status: status || undefined,
+    sort,
+  })
+  const totalPages = Math.max(1, Math.ceil(visibleUsers.length / USERS_PAGE_SIZE))
+  const page = Math.min(paging.key === filterKey ? paging.page : 1, totalPages)
+  const pageUsers = visibleUsers.slice((page - 1) * USERS_PAGE_SIZE, page * USERS_PAGE_SIZE)
   const updateRole = useUpdateUserRole()
   const updateStatus = useUpdateUserStatus()
   const resetPassword = useAdminResetPassword()
@@ -115,8 +149,64 @@ export function AdminUsersPage() {
         )}
 
         {!isLoadingUsers && !isUsersError && users && users.length > 0 && (
+          <SearchSortBar
+            search={search}
+            onSearchChange={setSearch}
+            searchPlaceholder={t('common:list.searchUsers')}
+            sort={sort}
+            onSortChange={(value) => setSort(value as UserSort)}
+            sortOptions={[
+              { value: 'newest', label: t('common:list.newest') },
+              { value: 'oldest', label: t('common:list.oldest') },
+              { value: 'nameAsc', label: t('common:list.nameAsc') },
+            ]}
+          >
+            <div className="grid grid-cols-2 gap-3">
+              <Select
+                label={t('common:fields.role')}
+                value={role}
+                onChange={(event) => setRole(event.target.value as ManagedRole | '')}
+              >
+                <option value="">{t('common:list.anyRole')}</option>
+                {ROLES.map((value) => (
+                  <option key={value} value={value}>
+                    {t(`common:roles.${value}`)}
+                  </option>
+                ))}
+              </Select>
+              <Select
+                label={t('common:fields.status')}
+                value={status}
+                onChange={(event) => setStatus(event.target.value as UserStatusFilter | '')}
+              >
+                <option value="">{t('common:list.anyStatus')}</option>
+                {(Object.keys(STATUS_LABEL_KEYS) as UserStatusFilter[]).map((value) => (
+                  <option key={value} value={value}>
+                    {t(STATUS_LABEL_KEYS[value])}
+                  </option>
+                ))}
+              </Select>
+            </div>
+          </SearchSortBar>
+        )}
+
+        {!isLoadingUsers && !isUsersError && users && users.length > 0 && (
+          <p className="text-sm text-text-secondary" aria-live="polite">
+            {t('common:list.showing', { shown: visibleUsers.length, total: users.length })}
+          </p>
+        )}
+
+        {!isLoadingUsers &&
+          !isUsersError &&
+          users &&
+          users.length > 0 &&
+          visibleUsers.length === 0 && (
+            <p className="text-sm text-text-secondary">{t('common:list.noMatches')}</p>
+          )}
+
+        {!isLoadingUsers && !isUsersError && pageUsers.length > 0 && (
           <UserManagementTable
-            users={users}
+            users={pageUsers}
             currentUserId={currentUserId}
             isMutating={updateRole.isPending || updateStatus.isPending}
             onChangeRole={setRoleTarget}
@@ -126,6 +216,14 @@ export function AdminUsersPage() {
               setEditError(null)
               setEditTarget(user)
             }}
+          />
+        )}
+
+        {totalPages > 1 && (
+          <Pagination
+            page={page}
+            totalPages={totalPages}
+            onPageChange={(next) => setPaging({ key: filterKey, page: next })}
           />
         )}
 
