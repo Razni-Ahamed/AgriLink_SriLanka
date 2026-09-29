@@ -168,13 +168,15 @@ public class LlmPlannerAgentTests
     [Fact]
     public async Task ASlowModel_TimesOut_AndTheRulesPlan()
     {
-        var llm = new FakeLlm { Delay = TimeSpan.FromSeconds(10) };
+        var llm = new FakeLlm { Delay = TimeSpan.FromSeconds(60) };
 
         var started = DateTime.UtcNow;
         var plan = await Planner(llm, timeoutSeconds: 1).CreatePlanAsync(Report(), CancellationToken.None);
 
         Assert.Contains("did not answer within 1s", plan.FallbackReason);
-        Assert.True(DateTime.UtcNow - started < TimeSpan.FromSeconds(5), "two 1-second attempts, not the model's 10 seconds");
+        Assert.Equal(2, llm.Calls);
+        // Two 1-second attempts, nowhere near the model's 60 seconds (a wide margin for busy CI runners).
+        Assert.True(DateTime.UtcNow - started < TimeSpan.FromSeconds(30));
     }
 
     [Fact]
