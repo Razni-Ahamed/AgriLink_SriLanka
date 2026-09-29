@@ -231,7 +231,11 @@ public class PostgresIntegrationTests : IClassFixture<PostgresDatabase>
         second.BuyerProfiles.Remove(await second.BuyerProfiles.SingleAsync(b => b.BuyerProfileId == buyerProfileId));
         var error = await Assert.ThrowsAsync<DbUpdateException>(() => second.SaveChangesAsync());
 
-        Assert.Equal(PostgresErrorCodes.RestrictViolation, Assert.IsType<PostgresException>(error.InnerException).SqlState);
+        // PostgreSQL 18 reports ON DELETE RESTRICT as restrict_violation (23001); older versions,
+        // such as the 16 in CI, as foreign_key_violation (23503). Either way the delete is refused.
+        Assert.Contains(
+            Assert.IsType<PostgresException>(error.InnerException).SqlState,
+            new[] { PostgresErrorCodes.RestrictViolation, PostgresErrorCodes.ForeignKeyViolation });
     }
 
     [SkippableFact]
