@@ -33,8 +33,8 @@ report.
 | `kaggle-cassava-2020` | Cassava Leaf Disease Classification | Cassava | https://www.kaggle.com/competitions/cassava-leaf-disease-classification | Competition rules |
 | `plantvillage-2016` | PlantVillage (lab photos) | Tomato, Potato | https://github.com/spMohanty/PlantVillage-Dataset (pass the repo folder; images under `raw/color/`) | CC BY-SA 3.0 |
 | `plantdoc-2020` | PlantDoc (field photos) | Tomato, Potato | https://github.com/pratikkayal/PlantDoc-Dataset | CC BY 4.0 |
+| `kaggle-paddy-2022` | Paddy Doctor: Paddy Disease Classification | Paddy | https://www.kaggle.com/competitions/paddy-disease-classification | Competition rules |
 | `rice-mendeley-2020` | Rice Leaf Disease Image Samples | Paddy | https://data.mendeley.com/datasets/fwcj7stb8r/1 (extract the `.7z`) | CC BY 4.0 |
-| — | Paddy Doctor | Paddy | https://www.kaggle.com/competitions/paddy-disease-classification | Competition rules |
 
 For Cassava, only `train_images/` and `train.csv` are needed — `train_tfrecords/` holds the same
 images in another format.
@@ -43,7 +43,10 @@ PlantVillage and PlantDoc hold both tomato and potato; each crop's preparation s
 folders and lists them in the summary. On Windows, PlantDoc cannot be checked out with git: some file
 names contain characters such as `?`. Download its files individually and replace those characters.
 
-The rice set has no healthy class, so a Paddy model also needs Paddy Doctor (not yet supported).
+For Paddy, only `train_images/` and `train.csv` are needed (the competition's `test_images/` have no
+labels). Paddy Doctor has a healthy class; the Mendeley rice set does not, so the Paddy model is
+trained on Paddy Doctor alone. Its project site (https://paddydoc.github.io) links no download — the
+data is on Kaggle and IEEE DataPort. A larger 13-class release exists on IEEE DataPort.
 
 A dataset can stay zipped — the preparation script reads a `.zip` or an extracted folder.
 
@@ -98,6 +101,14 @@ This writes `manifests/<crop>.csv` and `manifests/<crop>_summary.md`. The script
    different splits,
 4. assigns an 80/10/10 train/val/test split that keeps class proportions (fixed seed, so it is
    reproducible).
+
+A dataset whose photos come from a few fields can also name each photo's *plot* (for Paddy Doctor:
+disease, variety and age — photos sharing them were taken in one field on one day). Plots only decide
+the split, and are merged in after duplicates are filtered, so a handful of mislabelled photos can
+never get a whole plot thrown out. A plot can be a third of a class, which stratified k-fold cannot
+balance, so such datasets are split class by class instead (`assign_class_balanced_splits`): whole
+plots go to validation and test until each holds about 10% of that class. Test scores then measure
+fields the model has never seen. Cassava, Tomato and Potato have no plots and keep the original split.
 
 Commit both files: every training run, local or on Kaggle/Colab, reads the split from the manifest.
 Manifest paths are relative to the dataset root, so they work wherever the dataset is mounted.

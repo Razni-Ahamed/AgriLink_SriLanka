@@ -24,7 +24,7 @@ from . import MANIFESTS_DIR
 from .dedupe import difference_hash, group_near_duplicates, merge_groups
 from .labels import CropLabels, load_crop_labels
 from .sources import HASH_GROUPING_UNRELIABLE_SOURCES, SOURCE_ADAPTERS, DatasetReader
-from .split import TEST, TRAIN, VALIDATION, assign_splits
+from .split import TEST, TRAIN, VALIDATION, assign_class_balanced_splits, assign_splits
 
 MANIFEST_COLUMNS = ["source", "path", "label_id", "label_key", "split", "group_id", "sha1", "dhash"]
 
@@ -40,6 +40,8 @@ class ManifestRow:
     group_id: int = -1
     split: str = ""
     group_key: str | None = None
+    plot_key: str | None = None
+    duplicate_group: int = -1  # group_id before plots were merged in; what the duplicate statistics count
 
 
 def collect_rows(labels: CropLabels, sources: dict[str, Path],
@@ -81,6 +83,7 @@ def collect_rows(labels: CropLabels, sources: dict[str, Path],
                     sha1=hashlib.sha1(content).hexdigest(),
                     dhash=dhash,
                     group_key=f"{source}:{image.group_key}" if image.group_key else None,
+                    plot_key=f"{source}:{image.plot_key}" if image.plot_key else None,
                 ))
                 if index % 2000 == 0:
                     log(f"  {index}/{len(images)}")
@@ -124,7 +127,7 @@ def build_summary(labels: CropLabels, rows: list[ManifestRow], unreadable: list[
                   dropped: list[ManifestRow] | None = None) -> str:
     splits = [TRAIN, VALIDATION, TEST]
     counts = Counter((row.label_key, row.split) for row in rows)
-    group_sizes = Counter(row.group_id for row in rows)
+    group_sizes = Counter(row.duplicate_group if row.duplicate_group >= 0 else row.group_id for row in rows)
     duplicate_groups = [size for size in group_sizes.values() if size > 1]
     exact_duplicates = len(rows) - len({row.sha1 for row in rows})
 
@@ -154,6 +157,13 @@ def build_summary(labels: CropLabels, rows: list[ManifestRow], unreadable: list[
         f"(largest group: {max(group_sizes.values(), default=0)} images). Each group is kept in a single split.",
         f"- Photos left out because a duplicate of them carries a different label: {len(dropped or [])}",
     ]
+    if any(row.plot_key for row in rows):
+        plot_sizes = Counter(row.group_id for row in rows)
+        lines.append(
+            f"- Field-plot groups (same disease, variety and age): {len(plot_sizes)} groups, largest "
+            f"{max(plot_sizes.values())} images. Each is kept in a single split, so the test score "
+            "measures fields the model has not seen."
+        )
     for row in sorted(dropped or [], key=lambda r: (r.group_id, r.path))[:40]:
         lines.append(f"  - group {row.group_id}: {row.label_key} - {row.source}:{row.path}")
     if dropped and len(dropped) > 40:
@@ -210,7 +220,17 @@ def main(argv: list[str] | None = None) -> int:
     dropped = [row for row in rows if row.group_id in conflicts]
     rows = [row for row in rows if row.group_id not in conflicts]
 
-    splits = assign_splits([row.label_id for row in rows], [row.group_id for row in rows], seed=args.seed)
+    # Plots only decide the split, so they are merged in after the filter above: a few mislabelled
+    # photos would otherwise bridge plots of different diseases and get thousands of good ones dropped.
+    for row in rows:
+        row.duplicate_group = row.group_id
+    if any(row.plot_key for row in rows):
+        for row, group_id in zip(rows, merge_groups([r.group_id for r in rows], [r.plot_key for r in rows])):
+            row.group_id = group_id
+
+    # Plots can be a third of a class, which stratified k-fold cannot balance; split each class on its own.
+    split_rows = assign_class_balanced_splits if any(row.plot_key for row in rows) else assign_splits
+    splits = split_rows([row.label_id for row in rows], [row.group_id for row in rows], seed=args.seed)
     for row, split in zip(rows, splits):
         row.split = split
 
