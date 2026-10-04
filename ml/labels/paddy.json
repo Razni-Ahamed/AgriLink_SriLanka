@@ -1,0 +1,33 @@
+{
+  "crop": "Paddy",
+  "version": 1,
+  "classes": [
+    { "id": 0, "key": "paddy_bacterial_leaf_blight", "name": "Paddy bacterial leaf blight" },
+    { "id": 1, "key": "paddy_bacterial_leaf_streak", "name": "Paddy bacterial leaf streak" },
+    { "id": 2, "key": "paddy_bacterial_panicle_blight", "name": "Paddy bacterial panicle blight" },
+    { "id": 3, "key": "paddy_blast", "name": "Paddy blast" },
+    { "id": 4, "key": "paddy_brown_spot", "name": "Paddy brown spot" },
+    { "id": 5, "key": "paddy_dead_heart", "name": "Paddy dead heart (stem borer damage)" },
+    { "id": 6, "key": "paddy_downy_mildew", "name": "Paddy downy mildew" },
+    { "id": 7, "key": "paddy_hispa", "name": "Paddy hispa" },
+    { "id": 8, "key": "paddy_tungro", "name": "Paddy tungro" },
+    { "id": 9, "key": "healthy", "name": "Healthy" }
+  ],
+  "sources": {
+    "kaggle-paddy-2022": {
+      "description": "Kaggle competition 'Paddy Doctor: Paddy Disease Classification' — train.csv label names, which are also the train_images/ folder names.",
+      "labelMap": {
+        "bacterial_leaf_blight": "paddy_bacterial_leaf_blight",
+        "bacterial_leaf_streak": "paddy_bacterial_leaf_streak",
+        "bacterial_panicle_blight": "paddy_bacterial_panicle_blight",
+        "blast": "paddy_blast",
+        "brown_spot": "paddy_brown_spot",
+        "dead_heart": "paddy_dead_heart",
+        "downy_mildew": "paddy_downy_mildew",
+        "hispa": "paddy_hispa",
+        "tungro": "paddy_tungro",
+        "normal": "healthy"
+      }
+    }
+  }
+}

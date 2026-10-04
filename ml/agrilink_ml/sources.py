@@ -33,6 +33,10 @@ class SourceImage:
     # Photos sharing a key show the same physical leaf (known from the dataset's own naming), so
     # they must stay in one split even when they do not look alike enough to be caught as duplicates.
     group_key: str | None = None
+    # Photos sharing a key were taken together (for example in one field on one day) and resemble each
+    # other without being copies. Unlike group_key this only decides the split: it is applied after
+    # near-duplicates are filtered, so it can never get a photo thrown out.
+    plot_key: str | None = None
 
 
 class DatasetReader:
@@ -136,6 +140,36 @@ def read_kaggle_cassava_2020(reader: DatasetReader) -> list[SourceImage]:
     return images
 
 
+def read_kaggle_paddy_2022(reader: DatasetReader) -> list[SourceImage]:
+    """Kaggle 'Paddy Doctor: Paddy Disease Classification': train.csv (image_id, label, variety, age)
+    + train_images/<label>/<image_id>. The unlabelled test_images/ are not used.
+
+    The photos were taken in a few fields, so photos of one disease from one variety at one age come
+    from the same plot on the same day and look alike without being duplicates. They share a
+    plot_key, which keeps each such plot in a single split: otherwise a test photo would have a
+    near-twin in training and the test score would measure memorised plots, not new fields."""
+    rows = list(csv.DictReader(io.StringIO(reader.read_text("train.csv"))))
+    if not rows or {"image_id", "label"} - set(rows[0]):
+        raise ValueError("train.csv is missing or does not have image_id and label columns.")
+
+    has_plot = {"variety", "age"} <= set(rows[0])
+    images = [
+        SourceImage(
+            "kaggle-paddy-2022",
+            f"train_images/{row['label']}/{row['image_id']}",
+            row["label"],
+            plot_key=f"{row['label']}/{row['variety']}/{row['age']}" if has_plot else None,
+        )
+        for row in rows
+    ]
+
+    missing = [image.path for image in images if not reader.exists(image.path)]
+    if missing:
+        raise ValueError(f"{len(missing)} images listed in train.csv are missing, e.g. {missing[:3]}.")
+
+    return images
+
+
 def read_rice_mendeley_2020(reader: DatasetReader) -> list[SourceImage]:
     """Mendeley 'Rice Leaf Disease Image Samples' (fwcj7stb8r), extracted from its .7z:
     Rice Leaf Disease Images/<class>/<image>. It has no healthy class."""
@@ -151,6 +185,7 @@ def read_rice_mendeley_2020(reader: DatasetReader) -> list[SourceImage]:
 SOURCE_ADAPTERS: dict[str, Callable[[DatasetReader], list[SourceImage]]] = {
     "rice-mendeley-2020": read_rice_mendeley_2020,
     "kaggle-cassava-2020": read_kaggle_cassava_2020,
+    "kaggle-paddy-2022": read_kaggle_paddy_2022,
     "plantvillage-2016": read_plantvillage_2016,
     "plantdoc-2020": read_plantdoc_2020,
 }
