@@ -276,5 +276,9 @@
     "button": "{{name}} සඳහා ගිණුම් මෙනුව",
     "menuLabel": "ගිණුම",
     "myProfile": "මගේ පැතිකඩ"
+  },
+  "duration": {
+    "daysHours": "දින {{days}} පැය {{hours}}",
+    "hours": "පැය {{hours}}"
   }
 }

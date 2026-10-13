@@ -276,5 +276,9 @@
     "button": "Account menu for {{name}}",
     "menuLabel": "Account",
     "myProfile": "My profile"
+  },
+  "duration": {
+    "daysHours": "{{days}} d {{hours}} h",
+    "hours": "{{hours}} h"
   }
 }

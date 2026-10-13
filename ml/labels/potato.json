@@ -21,6 +21,14 @@
         "Potato leaf early blight": "potato_early_blight",
         "Potato leaf late blight": "potato_late_blight"
       }
+    },
+    "agrilink-confirmed": {
+      "description": "AgriLink's own export of photos whose diagnosis an agricultural officer confirmed (<crop>/<class key>). 'other' is left unmapped, so it is skipped.",
+      "labelMap": {
+        "potato/potato_early_blight": "potato_early_blight",
+        "potato/potato_late_blight": "potato_late_blight",
+        "potato/healthy": "healthy"
+      }
     }
   }
 }

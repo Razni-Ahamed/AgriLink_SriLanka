@@ -182,10 +182,32 @@ def read_rice_mendeley_2020(reader: DatasetReader) -> list[SourceImage]:
     return images
 
 
+def read_agrilink_confirmed(reader: DatasetReader) -> list[SourceImage]:
+    """AgriLink's own export of photos whose diagnosis an agricultural officer confirmed (admin
+    dashboard, GET /api/admin/photo-diagnoses/export): <Crop>/<confirmed key>/<issue>-<image>.jpg.
+    These are real Sri Lankan field photos, which the public datasets lack.
+
+    The label is "<crop>/<key>", lower-cased, because Tomato and Potato both have "healthy"; each
+    crop's label file maps its own. "other" (a disease the model has no class for) is left unmapped,
+    so prepare skips and counts it. Photos of one issue share a group and stay in one split."""
+    images = []
+    for path in reader.list_files():
+        parts = PurePosixPath(path).parts
+        if len(parts) != 3 or PurePosixPath(path).suffix.lower() not in IMAGE_EXTENSIONS:
+            continue
+        crop, key, name = parts
+        issue_id = name.split("-", 1)[0]
+        images.append(SourceImage("agrilink-confirmed", path, f"{crop.lower()}/{key}", group_key=f"issue-{issue_id}"))
+    if not images:
+        raise ValueError("No photos found. Pass the zip from the AgriLink admin export, or the folder holding its labels.csv.")
+    return images
+
+
 SOURCE_ADAPTERS: dict[str, Callable[[DatasetReader], list[SourceImage]]] = {
     "rice-mendeley-2020": read_rice_mendeley_2020,
     "kaggle-cassava-2020": read_kaggle_cassava_2020,
     "kaggle-paddy-2022": read_kaggle_paddy_2022,
     "plantvillage-2016": read_plantvillage_2016,
     "plantdoc-2020": read_plantdoc_2020,
+    "agrilink-confirmed": read_agrilink_confirmed,
 }

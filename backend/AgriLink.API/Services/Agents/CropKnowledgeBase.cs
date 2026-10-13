@@ -183,11 +183,18 @@ public static partial class CropKnowledgeBase
             false),
     };
 
-    // The full rule set the Crop Analysis agent scans, in order.
-    public static readonly IReadOnlyList<CropKnowledgeEntry> Entries =
-        NutrientAndWaterEntries
+    // The full rule set the Crop Analysis agent scans, in order, each with its Sinhala and Tamil
+    // keywords added (CropKnowledgeBase.LocalLanguage.cs).
+    public static readonly IReadOnlyList<CropKnowledgeEntry> Entries = BuildEntries();
+
+    private static CropKnowledgeEntry[] BuildEntries()
+    {
+        var local = LocalLanguageKeywords();
+        return NutrientAndWaterEntries
             .Concat(DiseaseEntries)
             .Concat(PestEntries)
             .Concat(CropSpecificEntries)
+            .Select(entry => WithLocalLanguageKeywords(entry, local))
             .ToArray();
+    }
 }

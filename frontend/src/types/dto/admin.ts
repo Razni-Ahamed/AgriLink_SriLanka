@@ -29,6 +29,40 @@ export interface AdminMetricsResponse {
   issuesPending: number
   issuesResolved: number
   harvestVolumeSoldThisMonth: number
+  /** Issues in any district waiting longer than overdueAfterHours. */
+  issuesOverdue: number
+  oldestPendingHours: number | null
+  /** Average time from AI draft to an officer's decision over the last 30 days. */
+  averageReviewHours: number | null
+  reviewsInAverage: number
+  overdueAfterHours: number
+}
+
+/** How a photo model's guesses compare with what reviewing officers confirmed. */
+export interface PhotoDiagnosisCorrection {
+  predictedKey: string
+  predictedName: string
+  confirmedKey: string
+  confirmedName: string
+  count: number
+}
+
+export interface PhotoDiagnosisModelSummary {
+  crop: string
+  modelVersion: string
+  reviewed: number
+  agreed: number
+  /** 0 to 1. */
+  agreementRate: number
+  /** The officer chose "Other": a disease the model has no class for. */
+  confirmedOther: number
+  topCorrections: PhotoDiagnosisCorrection[]
+}
+
+export interface PhotoDiagnosisSummaryResponse {
+  totalReviewed: number
+  photosAvailable: number
+  models: PhotoDiagnosisModelSummary[]
 }
 
 export type ManagedRole = 'Farmer' | 'Officer' | 'Buyer' | 'Admin'

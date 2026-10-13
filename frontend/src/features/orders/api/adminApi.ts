@@ -9,6 +9,7 @@ import type {
   CreateUserResponse,
   Department,
   DepartmentRequest,
+  PhotoDiagnosisSummaryResponse,
   UpdateUserRoleRequest,
   UpdateUserStatusRequest,
 } from '@/types/dto/admin'
@@ -17,6 +18,25 @@ import type { PagedResponse } from '@/types/dto/paging'
 export async function getAdminMetrics(): Promise<AdminMetricsResponse> {
   const { data } = await apiClient.get<AdminMetricsResponse>('/api/admin/metrics')
   return data
+}
+
+export async function getPhotoDiagnosisSummary(): Promise<PhotoDiagnosisSummaryResponse> {
+  const { data } = await apiClient.get<PhotoDiagnosisSummaryResponse>('/api/admin/photo-diagnoses/summary')
+  return data
+}
+
+/** The confirmed photos as a .zip, saved through the browser. The request carries the admin's
+ *  token, so this can't be a plain link. */
+export async function downloadConfirmedPhotos(): Promise<void> {
+  const response = await apiClient.get<Blob>('/api/admin/photo-diagnoses/export', { responseType: 'blob' })
+  const disposition = String(response.headers['content-disposition'] ?? '')
+  const name = /filename="?([^";]+)"?/.exec(disposition)?.[1] ?? `agrilink-confirmed-photos-${new Date().toISOString().slice(0, 10).replaceAll('-', '')}.zip`
+  const url = URL.createObjectURL(response.data)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = name
+  link.click()
+  URL.revokeObjectURL(url)
 }
 
 export async function createUser(request: CreateUserRequest): Promise<CreateUserResponse> {

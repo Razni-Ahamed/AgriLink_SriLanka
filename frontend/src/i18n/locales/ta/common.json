@@ -276,5 +276,9 @@
     "button": "{{name}} க்கான கணக்கு மெனு",
     "menuLabel": "கணக்கு",
     "myProfile": "எனது சுயவிவரம்"
+  },
+  "duration": {
+    "daysHours": "{{days}} நா {{hours}} மணி",
+    "hours": "{{hours}} மணி"
   }
 }

@@ -41,7 +41,7 @@ export function SearchSortBar({
         <Input
           type="search"
           label={t('actions.search')}
-          placeholder={search}
+          placeholder={searchPlaceholder}
           value={search}
           onChange={(event) => onSearchChange(event.target.value)}
           maxLength={100}

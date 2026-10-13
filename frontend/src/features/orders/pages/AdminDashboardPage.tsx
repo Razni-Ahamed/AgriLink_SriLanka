@@ -3,7 +3,9 @@ import { useTranslation } from 'react-i18next'
 import { Basket, Farm, UserCircle, WarningCircle } from '@/components/ui/icons'
 import { CropGenericIcon, HarvestScaleIcon } from '@/components/ui/icons/custom'
 import { Skeleton } from '@/components/ui/Skeleton'
+import { ReviewTimingPanel } from '@/features/issues/components/ReviewTimingPanel'
 import { MetricsBarChart } from '../components/MetricsBarChart'
+import { PhotoDiagnosisPanel } from '../components/PhotoDiagnosisPanel'
 import { MetricsCard } from '@/components/ui/MetricsCard'
 import { useAdminMetrics } from '../hooks/useAdminMetrics'
 
@@ -91,6 +93,18 @@ export function AdminDashboardPage() {
           suffix=" kg"
         />
       </div>
+
+      <ReviewTimingPanel
+        scope="platform"
+        overdue={metrics.issuesOverdue}
+        oldestPendingHours={metrics.oldestPendingHours}
+        averageReviewHours={metrics.averageReviewHours}
+        reviewsInAverage={metrics.reviewsInAverage}
+        overdueAfterHours={metrics.overdueAfterHours}
+        queueLink="/issues/pending"
+      />
+
+      <PhotoDiagnosisPanel />
 
       <MetricsBarChart data={chartData} />
     </div>

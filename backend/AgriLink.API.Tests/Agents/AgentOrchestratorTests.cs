@@ -201,8 +201,8 @@ public class AgentOrchestratorTests
 
         await orchestrator.RunPipelineAsync(CreateIssue(), CreateCrop("Colombo"), Array.Empty<CropActivity>(), photo: null, CancellationToken.None);
 
-        notifications.Verify(n => n.NotifyAsync(100, It.IsAny<string>(), It.IsAny<string>()), Times.Once);
-        notifications.Verify(n => n.NotifyAsync(200, It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+        notifications.Verify(n => n.Add(100, It.IsAny<string>(), It.IsAny<string>()), Times.Once);
+        notifications.Verify(n => n.Add(200, It.IsAny<string>(), It.IsAny<string>()), Times.Never);
     }
 
     // ----- Photo diagnosis path -----
@@ -331,8 +331,8 @@ public class AgentOrchestratorTests
         Assert.Equal(AdvisoryStatus.Preliminary, advisory.Status);
         pipeline.ValidationAgent.Verify(v => v.ValidateAsync(
             It.Is<AgentContext>(c => c.AdviceReleasedBeforeReview), It.IsAny<CropFindings?>(), It.IsAny<WeatherFindings?>(), It.IsAny<CancellationToken>()), Times.Once);
-        pipeline.Notifications.Verify(n => n.NotifyAsync(42, It.Is<string>(t => t.Contains("ready")), It.IsAny<string>()), Times.Once);
-        pipeline.Notifications.Verify(n => n.NotifyAsync(100, It.Is<string>(t => t.Contains("confirmation")), It.IsAny<string>()), Times.Once);
+        pipeline.Notifications.Verify(n => n.Add(42, It.Is<string>(t => t.Contains("ready")), It.IsAny<string>()), Times.Once);
+        pipeline.Notifications.Verify(n => n.Add(100, It.Is<string>(t => t.Contains("confirmation")), It.IsAny<string>()), Times.Once);
     }
 
     [Fact]
@@ -348,7 +348,7 @@ public class AgentOrchestratorTests
         Assert.Equal(AdvisoryStatus.Draft, advisory.Status);
         pipeline.ValidationAgent.Verify(v => v.ValidateAsync(
             It.Is<AgentContext>(c => !c.AdviceReleasedBeforeReview), It.IsAny<CropFindings?>(), It.IsAny<WeatherFindings?>(), It.IsAny<CancellationToken>()), Times.Once);
-        pipeline.Notifications.Verify(n => n.NotifyAsync(42, It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+        pipeline.Notifications.Verify(n => n.Add(42, It.IsAny<string>(), It.IsAny<string>()), Times.Never);
     }
 
     [Fact]

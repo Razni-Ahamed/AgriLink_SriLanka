@@ -152,6 +152,8 @@ public class IssuesController : ControllerBase
                 issue, crop, recentActivities, processedPhoto?.Content, HttpContext.RequestAborted);
             issue.Advisories.Add(advisory);
 
+            // One save for the issue, its advisory and agent trace, and the notifications the
+            // pipeline queued: either all of them are written or none are.
             issue.Crop = crop;
             _db.CropIssues.Add(issue);
             await _db.SaveChangesAsync();

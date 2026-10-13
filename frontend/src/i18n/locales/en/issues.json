@@ -49,7 +49,8 @@
     "reportedBy": "Reported by {{name}}",
     "needsDecision": "Needs your decision",
     "adviceSent": "Advice sent — confirm",
-    "hasPhoto": "Photo attached"
+    "hasPhoto": "Photo attached",
+    "overdue": "Waiting {{wait}}"
   },
   "all": {
     "title": "All Issues",
@@ -148,5 +149,19 @@
       "AutoReleaseDisabled": "Automatic advice is switched off, so every photo diagnosis waits for an officer.",
       "TriageFailed": "The automatic check of this diagnosis did not complete."
     }
+  },
+  "reviewTiming": {
+    "title": "Review times",
+    "overdueWarning_one": "1 issue has waited more than {{hours}} hours for an officer. The farmer is still waiting for advice.",
+    "overdueWarning_other": "{{count}} issues have waited more than {{hours}} hours for an officer. These farmers are still waiting for advice.",
+    "overdueDistrict": "Waiting over {{hours}} h in my district",
+    "overduePlatform": "Waiting over {{hours}} h (all districts)",
+    "oldestWaiting": "Longest wait right now",
+    "noneWaiting": "None waiting",
+    "myAverage": "My average review time (30 days)",
+    "average": "Average review time (30 days)",
+    "noReviews": "No reviews yet",
+    "basedOn_one": "Based on 1 review",
+    "basedOn_other": "Based on {{count}} reviews"
   }
 }

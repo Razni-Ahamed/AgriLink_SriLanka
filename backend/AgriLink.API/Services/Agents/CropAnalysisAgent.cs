@@ -141,7 +141,7 @@ public class CropAnalysisAgent : ICropAnalysisAgent
     };
 
     private static string BuildCombinedText(AgentContext context) =>
-        $"{context.IssueTitle} {context.IssueDescription}".ToLowerInvariant();
+        CropKnowledgeBase.NormalizeForMatching($"{context.IssueTitle} {context.IssueDescription}");
 
     private static IReadOnlyList<string> Distinct(IEnumerable<string> values) =>
         values.Distinct(StringComparer.OrdinalIgnoreCase).ToList();

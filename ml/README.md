@@ -35,6 +35,7 @@ report.
 | `plantdoc-2020` | PlantDoc (field photos) | Tomato, Potato | https://github.com/pratikkayal/PlantDoc-Dataset | CC BY 4.0 |
 | `kaggle-paddy-2022` | Paddy Doctor: Paddy Disease Classification | Paddy | https://www.kaggle.com/competitions/paddy-disease-classification | Competition rules |
 | `rice-mendeley-2020` | Rice Leaf Disease Image Samples | Paddy | https://data.mendeley.com/datasets/fwcj7stb8r/1 (extract the `.7z`) | CC BY 4.0 |
+| `agrilink-confirmed` | AgriLink's own photos with an officer-confirmed diagnosis | All four | Admin dashboard → "Download confirmed photos" (`GET /api/admin/photo-diagnoses/export`) | Farmers' photos: keep private, never commit |
 
 For Cassava, only `train_images/` and `train.csv` are needed — `train_tfrecords/` holds the same
 images in another format.
@@ -49,6 +50,22 @@ trained on Paddy Doctor alone. Its project site (https://paddydoc.github.io) lin
 data is on Kaggle and IEEE DataPort. A larger 13-class release exists on IEEE DataPort.
 
 A dataset can stay zipped — the preparation script reads a `.zip` or an extracted folder.
+
+### Officer-confirmed field photos
+
+Every reviewed photo diagnosis stores the model's prediction and the disease the officer confirmed.
+The admin dashboard compares the two per model and downloads the confirmed photos as a zip:
+`<Crop>/<confirmed key>/<issue>-<image>.jpg` with `labels.csv` and a README. Pass that zip as an extra
+source to add real Sri Lankan field photos to a crop's dataset:
+
+```bash
+.venv/Scripts/python -m agrilink_ml.prepare --crop paddy --source kaggle-paddy-2022=<paddy zip> --source agrilink-confirmed=<export zip>
+```
+
+Each label file maps `<crop>/<key>` for every class; `other` (a disease the model has no class for)
+is skipped and counted in the summary, and the photos of one issue stay in one split. The labels are
+officers' judgements from a photo, not lab tests. The export holds no names or contact details, but
+the photos are farmers' own: keep the zip outside the repository.
 
 ## Environment
 

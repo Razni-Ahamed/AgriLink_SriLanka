@@ -18,6 +18,16 @@
         "3": "cassava_mosaic_disease",
         "4": "healthy"
       }
+    },
+    "agrilink-confirmed": {
+      "description": "AgriLink's own export of photos whose diagnosis an agricultural officer confirmed (<crop>/<class key>). 'other' is left unmapped, so it is skipped.",
+      "labelMap": {
+        "cassava/cassava_bacterial_blight": "cassava_bacterial_blight",
+        "cassava/cassava_brown_streak_disease": "cassava_brown_streak_disease",
+        "cassava/cassava_green_mottle": "cassava_green_mottle",
+        "cassava/cassava_mosaic_disease": "cassava_mosaic_disease",
+        "cassava/healthy": "healthy"
+      }
     }
   }
 }

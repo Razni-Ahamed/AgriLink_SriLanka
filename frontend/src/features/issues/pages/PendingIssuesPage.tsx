@@ -15,10 +15,12 @@ import { useDebouncedValue } from '@/lib/useDebouncedValue'
 import { formatDate } from '@/lib/utils'
 import { SeverityBadge } from '../components/SeverityBadge'
 import { usePendingIssues } from '../hooks/useIssues'
+import { hoursSince, isOverdue, useFormatWait } from '../lib/reviewTiming'
 import type { IssueSort } from '@/types/dto/issues'
 
 export function PendingIssuesPage() {
   const { t } = useTranslation(['issues', 'common'])
+  const formatWait = useFormatWait()
   const [searchInput, setSearchInput] = useState('')
   const search = useDebouncedValue(searchInput.trim(), 300)
   const [sort, setSort] = useState<IssueSort>('queue')
@@ -111,7 +113,15 @@ export function PendingIssuesPage() {
                       </div>
                     </div>
                     <div className="flex shrink-0 flex-col items-end gap-1.5">
-                      <SeverityBadge severity={issue.severity} />
+                      <div className="flex items-center gap-1.5">
+                        {/* Farmers waiting more than 48 hours for advice stand out in the queue. */}
+                        {isOverdue(issue.createdAt) && (
+                          <Badge variant="danger">
+                            {t('pending.overdue', { wait: formatWait(hoursSince(issue.createdAt)) })}
+                          </Badge>
+                        )}
+                        <SeverityBadge severity={issue.severity} />
+                      </div>
                       <div className="flex items-center gap-1.5">
                         {issue.hasPhoto && (
                           <span title={t('pending.hasPhoto')} className="text-text-secondary">

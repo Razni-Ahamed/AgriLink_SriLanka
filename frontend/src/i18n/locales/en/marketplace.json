@@ -85,5 +85,20 @@
     "saving": "Saving…",
     "saved": "Listing updated.",
     "saveError": "Could not update the listing."
+  },
+  "priceGuide": {
+    "title": "Recent prices for {{crop}}",
+    "subtitle": "What buyers agreed to pay in completed sales over the last {{days}} days",
+    "inDistrict": "In {{district}}",
+    "nationwide": "All of Sri Lanka",
+    "average": "{{price}} on average",
+    "range": "{{min}} to {{max}}",
+    "sales_one": "{{count}} sale",
+    "sales_other": "{{count}} sales",
+    "useAverage": "Use this price",
+    "notEnough": "Not enough recent sales of {{crop}} to suggest a price yet. A guide appears after {{min}} completed sales in {{days}} days.",
+    "districtNotEnough": "Not enough recent sales in {{district}} yet.",
+    "nationwideNotEnough": "Not enough recent sales across Sri Lanka yet.",
+    "disclaimer": "A guide only. You choose your own price."
   }
 }

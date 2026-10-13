@@ -15,6 +15,9 @@ public class HarvestsController : ControllerBase
 {
     private const string HarvestBeforePlantingMessage = "The harvest date can't be before the crop was planted.";
 
+    public const int PriceGuideWindowDays = 90;
+    public const int PriceGuideMinimumSales = 3;
+
     private readonly AgriLinkDbContext _db;
     private readonly ICurrentUserService _currentUser;
     private readonly IAuditLogService _auditLog;
@@ -124,6 +127,59 @@ public class HarvestsController : ControllerBase
             .ToListAsync();
 
         return Ok(listings.Select(ToResponse));
+    }
+
+    /// <summary>
+    /// What buyers paid for <paramref name="cropType"/> in completed orders over the last
+    /// <see cref="PriceGuideWindowDays"/> days, in <paramref name="district"/> (by the farm's
+    /// district) and nationwide — shown to a farmer while they price a new listing. The agreed price
+    /// is the one copied onto the order, so later listing edits don't distort it.
+    /// </summary>
+    [HttpGet("price-guide")]
+    [Authorize]
+    public async Task<ActionResult<PriceGuideResponse>> PriceGuide(
+        [FromQuery, Required, MaxLength(50)] string cropType,
+        [FromQuery, MaxLength(50)] string? district,
+        CancellationToken cancellationToken)
+    {
+        var crop = cropType.Trim();
+        var since = DateTime.UtcNow.AddDays(-PriceGuideWindowDays);
+        var sales = await _db.Orders
+            .AsNoTracking()
+            .Where(o => o.Status == OrderStatus.Completed && o.CompletedAt >= since)
+            .Where(o => o.Request.Harvest.Crop.CropType.ToLower() == crop.ToLower())
+            .Select(o => new { o.PricePerUnit, o.TotalQuantity, o.Request.Harvest.Crop.Field.Farm.District })
+            .ToListAsync(cancellationToken);
+
+        var area = string.IsNullOrWhiteSpace(district) ? null : district.Trim();
+        PriceStats? Summarise(IReadOnlyCollection<(decimal Price, decimal Quantity)> rows)
+        {
+            var quantity = rows.Sum(r => r.Quantity);
+            return rows.Count < PriceGuideMinimumSales || quantity <= 0
+                ? null
+                : new PriceStats
+                {
+                    Sales = rows.Count,
+                    TotalQuantity = quantity,
+                    AveragePricePerUnit = Math.Round(rows.Sum(r => r.Price * r.Quantity) / quantity, 2),
+                    MinPricePerUnit = rows.Min(r => r.Price),
+                    MaxPricePerUnit = rows.Max(r => r.Price),
+                };
+        }
+
+        return Ok(new PriceGuideResponse
+        {
+            CropType = crop,
+            District = area,
+            WindowDays = PriceGuideWindowDays,
+            MinimumSales = PriceGuideMinimumSales,
+            InDistrict = area is null
+                ? null
+                : Summarise(sales
+                    .Where(s => string.Equals(s.District, area, StringComparison.OrdinalIgnoreCase))
+                    .Select(s => (s.PricePerUnit, s.TotalQuantity)).ToList()),
+            Nationwide = Summarise(sales.Select(s => (s.PricePerUnit, s.TotalQuantity)).ToList()),
+        });
     }
 
     [HttpGet("{id:int}")]

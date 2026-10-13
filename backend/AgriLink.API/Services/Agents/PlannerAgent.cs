@@ -14,11 +14,17 @@ public class PlannerAgent : IPlannerAgent
 {
     public const string RulesPlanner = "Rules";
 
-    private static readonly string[] WeatherKeywords =
+    private static readonly string[] WeatherKeywords = new[]
     {
         "rain", "flood", "drought", "dry", "wind", "storm", "frost", "heat",
         "wilt", "mold", "mould", "fungus", "fungal", "humid", "water", "rot",
-    };
+
+        // Sinhala: rain, flood, drought, wind, storm, humidity, wilting, mould, fungus, water.
+        "වැසි", "වැස්ස", "ගංවතුර", "නියඟ", "සුළඟ", "කුණාටු", "තෙතමනය", "මැලවී", "පුස්", "දිලීර", "වතුර",
+
+        // Tamil: rain, flood, drought, storm, humidity, wilting, fungus, rot, water.
+        "மழை", "வெள்ளம்", "வறட்சி", "புயல்", "ஈரப்பதம்", "வாடி", "பூஞ்சை", "அழுகல்", "தண்ணீர்",
+    }.Select(CropKnowledgeBase.NormalizeForMatching).ToArray();
 
     private readonly ILogger<PlannerAgent> _logger;
     private readonly IDiseaseKnowledgeBase _diseases;
@@ -204,7 +210,7 @@ public class PlannerAgent : IPlannerAgent
 
     private static string? FindWeatherKeyword(AgentContext context)
     {
-        var text = $"{context.IssueTitle} {context.IssueDescription}";
+        var text = CropKnowledgeBase.NormalizeForMatching($"{context.IssueTitle} {context.IssueDescription}");
         return WeatherKeywords.FirstOrDefault(k => text.Contains(k, StringComparison.OrdinalIgnoreCase));
     }
 }

@@ -28,6 +28,21 @@
         "tungro": "paddy_tungro",
         "normal": "healthy"
       }
+    },
+    "agrilink-confirmed": {
+      "description": "AgriLink's own export of photos whose diagnosis an agricultural officer confirmed (<crop>/<class key>). 'other' is left unmapped, so it is skipped.",
+      "labelMap": {
+        "paddy/paddy_bacterial_leaf_blight": "paddy_bacterial_leaf_blight",
+        "paddy/paddy_bacterial_leaf_streak": "paddy_bacterial_leaf_streak",
+        "paddy/paddy_bacterial_panicle_blight": "paddy_bacterial_panicle_blight",
+        "paddy/paddy_blast": "paddy_blast",
+        "paddy/paddy_brown_spot": "paddy_brown_spot",
+        "paddy/paddy_dead_heart": "paddy_dead_heart",
+        "paddy/paddy_downy_mildew": "paddy_downy_mildew",
+        "paddy/paddy_hispa": "paddy_hispa",
+        "paddy/paddy_tungro": "paddy_tungro",
+        "paddy/healthy": "healthy"
+      }
     }
   }
 }
