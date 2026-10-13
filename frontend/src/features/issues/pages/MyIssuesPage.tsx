@@ -12,6 +12,7 @@ import { Skeleton } from '@/components/ui/Skeleton'
 import { StaggerList } from '@/components/ui/motion/StaggerList'
 import { formatDate } from '@/lib/utils'
 import { useStatusLabel } from '@/lib/useStatusLabel'
+import { StartChatButton } from '@/features/messages/components/StartChatButton'
 import { SeverityBadge } from '../components/SeverityBadge'
 import { useMyIssues } from '../hooks/useIssues'
 import type { CropIssueResponse, IssueStatus } from '@/types/dto/issues'
@@ -24,7 +25,7 @@ const statusVariant: Record<IssueStatus, 'success' | 'warning' | 'danger' | 'inf
 }
 
 function IssueCard({ issue }: { issue: CropIssueResponse }) {
-  const { t } = useTranslation('issues')
+  const { t } = useTranslation(['issues', 'messages'])
   const statusLabel = useStatusLabel()
 
   // The AI advisory starts out Draft until an officer reviews it, and the backend
@@ -71,7 +72,20 @@ function IssueCard({ issue }: { issue: CropIssueResponse }) {
     </Card>
   )
 
-  return canLink ? <Link to={`/advisories/${issue.advisoryId}`}>{content}</Link> : content
+  // Outside the card's link (a button can't sit inside one). Asking works while the issue is still
+  // waiting for review, which is when a farmer most needs it.
+  return (
+    <div className="flex flex-col gap-2">
+      {canLink ? <Link to={`/advisories/${issue.advisoryId}`}>{content}</Link> : content}
+      <div>
+        <StartChatButton
+          subject={{ kind: 'Advice', issueId: issue.issueId }}
+          label={t('messages:start.askOfficer')}
+          variant="ghost"
+        />
+      </div>
+    </div>
+  )
 }
 
 export function MyIssuesPage() {

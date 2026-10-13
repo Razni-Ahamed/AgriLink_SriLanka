@@ -7,6 +7,8 @@ import { Shake } from '@/components/ui/motion/Shake'
 import { FlashOnSuccess } from '@/components/ui/motion/FlashOnSuccess'
 import { formatDate, formatQuantity } from '@/lib/utils'
 import { useStatusLabel } from '@/lib/useStatusLabel'
+import { useAuthStore } from '@/auth/authStore'
+import { StartChatButton } from '@/features/messages/components/StartChatButton'
 import type { PurchaseRequestResponse } from '@/types/dto/purchaseRequests'
 
 const statusVariant = {
@@ -30,8 +32,9 @@ export function PurchaseRequestCard({
   onDecline,
   isResponding,
 }: PurchaseRequestCardProps) {
-  const { t } = useTranslation(['marketplace', 'common'])
+  const { t } = useTranslation(['marketplace', 'common', 'messages'])
   const statusLabel = useStatusLabel()
+  const role = useAuthStore((state) => state.role)
   const [justAccepted, setJustAccepted] = useState(false)
   const [justDeclined, setJustDeclined] = useState(false)
 
@@ -84,6 +87,16 @@ export function PurchaseRequestCard({
           {request.message && <p className="text-sm text-text-secondary">{request.message}</p>}
 
           <p className="text-xs text-text-secondary">{formatDate(request.createdAt)}</p>
+
+          {/* Talk it over before or after deciding; a declined or withdrawn request's chat is closed. */}
+          {(request.status === 'Pending' || request.status === 'Accepted') &&
+            (role === 'Farmer' || role === 'Buyer') && (
+              <StartChatButton
+                subject={{ kind: 'Deal', requestId: request.requestId }}
+                label={t(role === 'Farmer' ? 'messages:start.messageBuyer' : 'messages:start.messageFarmer')}
+                variant="ghost"
+              />
+            )}
 
           {request.status === 'Pending' && onAccept && onDecline && (
             <div className="flex gap-2">

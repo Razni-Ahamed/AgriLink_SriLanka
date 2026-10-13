@@ -7,6 +7,7 @@ import enFarms from './locales/en/farms.json'
 import enHome from './locales/en/home.json'
 import enIssues from './locales/en/issues.json'
 import enMarketplace from './locales/en/marketplace.json'
+import enMessages from './locales/en/messages.json'
 import enOfficer from './locales/en/officer.json'
 import enOrders from './locales/en/orders.json'
 import enRegistrations from './locales/en/registrations.json'
@@ -17,6 +18,7 @@ import siFarms from './locales/si/farms.json'
 import siHome from './locales/si/home.json'
 import siIssues from './locales/si/issues.json'
 import siMarketplace from './locales/si/marketplace.json'
+import siMessages from './locales/si/messages.json'
 import siOfficer from './locales/si/officer.json'
 import siOrders from './locales/si/orders.json'
 import siRegistrations from './locales/si/registrations.json'
@@ -27,6 +29,7 @@ import taFarms from './locales/ta/farms.json'
 import taHome from './locales/ta/home.json'
 import taIssues from './locales/ta/issues.json'
 import taMarketplace from './locales/ta/marketplace.json'
+import taMessages from './locales/ta/messages.json'
 import taOfficer from './locales/ta/officer.json'
 import taOrders from './locales/ta/orders.json'
 import taRegistrations from './locales/ta/registrations.json'
@@ -72,6 +75,7 @@ export const resources = {
     home: enHome,
     issues: enIssues,
     marketplace: enMarketplace,
+    messages: enMessages,
     officer: enOfficer,
     orders: enOrders,
     registrations: enRegistrations,
@@ -83,6 +87,7 @@ export const resources = {
     home: siHome,
     issues: siIssues,
     marketplace: siMarketplace,
+    messages: siMessages,
     officer: siOfficer,
     orders: siOrders,
     registrations: siRegistrations,
@@ -94,6 +99,7 @@ export const resources = {
     home: taHome,
     issues: taIssues,
     marketplace: taMarketplace,
+    messages: taMessages,
     officer: taOfficer,
     orders: taOrders,
     registrations: taRegistrations,
@@ -107,7 +113,7 @@ void i18n.use(initReactI18next).init({
   lng: readStoredLanguage(),
   fallbackLng: DEFAULT_LANGUAGE,
   defaultNS: 'common',
-  ns: ['common', 'auth', 'farms', 'home', 'issues', 'marketplace', 'officer', 'orders', 'registrations'],
+  ns: ['common', 'auth', 'farms', 'home', 'issues', 'marketplace', 'messages', 'officer', 'orders', 'registrations'],
   // React escapes interpolated values already.
   interpolation: { escapeValue: false },
 })

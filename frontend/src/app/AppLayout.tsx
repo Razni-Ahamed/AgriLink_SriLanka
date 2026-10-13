@@ -16,6 +16,7 @@ import { BrandMark } from '@/components/ui/BrandMark'
 import { LanguageCycleButton, ThemeCycleButton } from '@/components/ui/PreferenceCycleButtons'
 import { ToastViewport } from '@/components/ui/Toast'
 import { NotificationBell } from '@/features/orders/components/NotificationBell'
+import { MessagesButton } from '@/features/messages/components/MessagesButton'
 import { ProfileDialog, type ProfileTab } from '@/features/account/components/ProfileDialog'
 import { PROFILE_PATH, PROFILE_SECURITY_PATH } from '@/features/account/routes'
 import { pageRoutes } from './pageRoutes'
@@ -79,7 +80,9 @@ export function AppLayout() {
         {/* `/` sends a signed-in user to their role's home, and a visitor to the landing page. */}
         <div className="flex flex-1">
           <Link to="/" className="shrink-0">
-            <BrandMark />
+            {/* On a phone the leaf alone, as on the landing page: the header's controls didn't fit
+                beside the name on a 375px screen (the log-out button was cut off). */}
+            <BrandMark nameClassName="max-sm:sr-only" />
           </Link>
         </div>
 
@@ -93,6 +96,7 @@ export function AppLayout() {
           {/* Gated on the token, not on `user`: this layout also wraps the public
               marketplace browse route, and the bell polls GET /api/notifications/mine,
               which 401s for an anonymous visitor. */}
+          {token && <MessagesButton />}
           {token && <NotificationBell />}
           {user && <ProfileButton user={user} />}
           {token && <LogoutButton />}

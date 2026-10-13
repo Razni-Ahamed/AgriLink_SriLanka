@@ -1,12 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import i18n from '@/i18n/config'
 import type { CropIssueResponse } from '@/types/dto/issues'
 import { useMyIssues } from '../hooks/useIssues'
 import { MyIssuesPage } from './MyIssuesPage'
 
 vi.mock('../hooks/useIssues', () => ({ useMyIssues: vi.fn() }))
+// The real client checks VITE_API_BASE_URL at import, which CI doesn't set.
+vi.mock('@/lib/apiClient', () => ({ apiClient: {} }))
 
 function issue(overrides: Partial<CropIssueResponse>): CropIssueResponse {
   return {
@@ -35,9 +38,11 @@ function renderWith(issues: CropIssueResponse[]) {
     isFetching: false,
   } as ReturnType<typeof useMyIssues>)
   render(
-    <MemoryRouter>
-      <MyIssuesPage />
-    </MemoryRouter>,
+    <QueryClientProvider client={new QueryClient()}>
+      <MemoryRouter>
+        <MyIssuesPage />
+      </MemoryRouter>
+    </QueryClientProvider>,
   )
 }
 
@@ -68,5 +73,11 @@ describe('MyIssuesPage', () => {
 
     expect(screen.getByText('Held back')).toBeInTheDocument()
     expect(screen.queryByRole('link', { name: /Held back/ })).not.toBeInTheDocument()
+  })
+
+  it('lets the farmer ask an officer about an issue, even while it waits for review', () => {
+    renderWith([issue({ issueId: 2, advisoryId: 12, title: 'Held back', advisoryStatus: 'Draft' })])
+
+    expect(screen.getByRole('button', { name: 'Ask an officer' })).toBeInTheDocument()
   })
 })
