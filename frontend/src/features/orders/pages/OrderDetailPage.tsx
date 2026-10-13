@@ -9,6 +9,8 @@ import { UserAvatar } from '@/components/ui/UserAvatar'
 import { formatDate, formatQuantity } from '@/lib/utils'
 import { useStatusLabel } from '@/lib/useStatusLabel'
 import { useUiStore } from '@/lib/useUiStore'
+import { useAuthStore } from '@/auth/authStore'
+import { StartChatButton } from '@/features/messages/components/StartChatButton'
 import { useOrder, useOrderTransition } from '../hooks/useOrders'
 import type { OrderResponse, OrderStatus } from '@/types/dto/orders'
 
@@ -98,7 +100,8 @@ function OrderContacts({ order }: { order: OrderResponse }) {
 }
 
 export function OrderDetailPage() {
-  const { t } = useTranslation(['orders', 'common'])
+  const { t } = useTranslation(['orders', 'common', 'messages'])
+  const role = useAuthStore((state) => state.role)
   const statusLabel = useStatusLabel()
   const { orderId } = useParams<{ orderId: string }>()
   const id = Number(orderId)
@@ -179,7 +182,15 @@ export function OrderDetailPage() {
       </Card>
 
       <div>
-        <h2 className="mb-2 font-display text-lg text-text-primary">{t('orders:detail.contact')}</h2>
+        <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+          <h2 className="font-display text-lg text-text-primary">{t('orders:detail.contact')}</h2>
+          {(role === 'Farmer' || role === 'Buyer') && (
+            <StartChatButton
+              subject={{ kind: 'Deal', requestId: order.requestId }}
+              label={t(role === 'Farmer' ? 'messages:start.messageBuyer' : 'messages:start.messageFarmer')}
+            />
+          )}
+        </div>
         <OrderContacts order={order} />
       </div>
 

@@ -57,6 +57,10 @@ public class AgriLinkDbContext : IdentityDbContext<ApplicationUser, IdentityRole
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
     public DbSet<Department> Departments => Set<Department>();
     public DbSet<ProfileChangeRequest> ProfileChangeRequests => Set<ProfileChangeRequest>();
+    public DbSet<Conversation> Conversations => Set<Conversation>();
+    public DbSet<ConversationMessage> ConversationMessages => Set<ConversationMessage>();
+    public DbSet<ConversationRead> ConversationReads => Set<ConversationRead>();
+    public DbSet<ConversationReport> ConversationReports => Set<ConversationReport>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -353,6 +357,84 @@ public class AgriLinkDbContext : IdentityDbContext<ApplicationUser, IdentityRole
             entity.HasOne(r => r.DecidedByUser)
                 .WithMany()
                 .HasForeignKey(r => r.DecidedByUserId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        builder.Entity<Conversation>(entity =>
+        {
+            entity.Property(c => c.Kind).HasConversion<string>().HasMaxLength(20);
+            // One chat per request and per issue; a second "start chat" for the same subject is
+            // caught here and answered with the first one. PostgreSQL lets several rows share NULL.
+            entity.HasIndex(c => c.RequestId).IsUnique();
+            entity.HasIndex(c => c.IssueId).IsUnique();
+            entity.ToTable(t => t.HasCheckConstraint(
+                "CK_Conversations_OneSubject",
+                "(\"Kind\" = 'Deal' AND \"RequestId\" IS NOT NULL AND \"IssueId\" IS NULL) OR " +
+                "(\"Kind\" = 'Advice' AND \"IssueId\" IS NOT NULL AND \"RequestId\" IS NULL)"));
+            // The chat belongs to its subject. Requests and issues are never deleted today; if one
+            // ever is, its chat goes with it.
+            entity.HasOne(c => c.Request)
+                .WithMany()
+                .HasForeignKey(c => c.RequestId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(c => c.Issue)
+                .WithMany()
+                .HasForeignKey(c => c.IssueId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        builder.Entity<ConversationMessage>(entity =>
+        {
+            entity.HasKey(m => m.MessageId);
+            entity.Property(m => m.Body).HasMaxLength(ConversationMessage.MaxBodyLength).IsRequired();
+            entity.HasIndex(m => new { m.ConversationId, m.MessageId });
+            // Backs the per-user rate limit (messages sent in the last minute).
+            entity.HasIndex(m => new { m.SenderUserId, m.CreatedAt });
+            entity.HasOne(m => m.Conversation)
+                .WithMany(c => c.Messages)
+                .HasForeignKey(m => m.ConversationId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(m => m.Sender)
+                .WithMany()
+                .HasForeignKey(m => m.SenderUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        builder.Entity<ConversationRead>(entity =>
+        {
+            entity.HasKey(r => new { r.ConversationId, r.UserId });
+            entity.HasIndex(r => r.UserId);
+            entity.HasOne(r => r.Conversation)
+                .WithMany(c => c.Reads)
+                .HasForeignKey(r => r.ConversationId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(r => r.User)
+                .WithMany()
+                .HasForeignKey(r => r.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        builder.Entity<ConversationReport>(entity =>
+        {
+            entity.HasKey(r => r.ReportId);
+            entity.Property(r => r.Reason).HasMaxLength(ConversationReport.MaxReasonLength).IsRequired();
+            entity.Property(r => r.ResolutionNote).HasMaxLength(ConversationReport.MaxReasonLength);
+            entity.HasIndex(r => r.ConversationId);
+            // One open report per person per chat; reporting again after it was resolved is fine.
+            entity.HasIndex(r => new { r.ConversationId, r.ReporterUserId })
+                .IsUnique()
+                .HasFilter("\"ResolvedAt\" IS NULL");
+            entity.HasOne(r => r.Conversation)
+                .WithMany(c => c.Reports)
+                .HasForeignKey(r => r.ConversationId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(r => r.Reporter)
+                .WithMany()
+                .HasForeignKey(r => r.ReporterUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(r => r.ResolvedBy)
+                .WithMany()
+                .HasForeignKey(r => r.ResolvedByUserId)
                 .OnDelete(DeleteBehavior.SetNull);
         });
     }

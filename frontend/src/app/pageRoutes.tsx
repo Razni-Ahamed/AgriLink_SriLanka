@@ -3,6 +3,7 @@ import { accountRoutes } from '@/features/account/routes'
 import { farmsRoutes } from '@/features/farms/routes'
 import { issuesRoutes } from '@/features/issues/routes'
 import { marketplacePublicRoutes, marketplaceRoutes } from '@/features/marketplace/routes'
+import { messagesRoutes } from '@/features/messages/routes'
 import { officerRoutes } from '@/features/officer/routes'
 import { ordersRoutes } from '@/features/orders/routes'
 import { registrationsRoutes } from '@/features/registrations/routes'
@@ -27,6 +28,7 @@ export const pageRoutes: RouteObject[] = [
       ...farmsRoutes,
       ...issuesRoutes,
       ...marketplaceRoutes,
+      ...messagesRoutes,
       ...officerRoutes,
       ...ordersRoutes,
       ...registrationsRoutes,

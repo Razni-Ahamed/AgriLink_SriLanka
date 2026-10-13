@@ -8,6 +8,7 @@ import { IconBadge } from '@/components/ui/IconBadge'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { FlashOnSuccess } from '@/components/ui/motion/FlashOnSuccess'
 import { useAuthStore } from '@/auth/authStore'
+import { StartChatButton } from '@/features/messages/components/StartChatButton'
 import { AdvisoryPanel } from '../components/AdvisoryPanel'
 import { AgentTracePanel } from '../components/AgentTracePanel'
 import { ApproveRejectControls } from '../components/ApproveRejectControls'
@@ -16,7 +17,7 @@ import { PreviousIssuesList } from '../components/PreviousIssuesList'
 import { useAdvisory } from '../hooks/useAdvisories'
 
 export function AdvisoryDetailPage() {
-  const { t } = useTranslation('issues')
+  const { t } = useTranslation(['issues', 'messages'])
   const { advisoryId } = useParams<{ advisoryId: string }>()
   const id = Number(advisoryId)
   const role = useAuthStore((state) => state.role)
@@ -64,11 +65,20 @@ export function AdvisoryDetailPage() {
         {t('advisory.back')}
       </Link>
 
-      <div>
-        <h1 className="font-display text-2xl text-text-primary">{advisory.issueTitle}</h1>
-        <p className="text-sm text-text-secondary">
-          {t('advisory.number', { id: advisory.advisoryId })}
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="font-display text-2xl text-text-primary">{advisory.issueTitle}</h1>
+          <p className="text-sm text-text-secondary">
+            {t('advisory.number', { id: advisory.advisoryId })}
+          </p>
+        </div>
+        {/* Follow-up questions about this issue, between the farmer and the district's officers. */}
+        {(role === 'Farmer' || role === 'Officer') && (
+          <StartChatButton
+            subject={{ kind: 'Advice', issueId: advisory.issueId }}
+            label={t(role === 'Farmer' ? 'messages:start.askOfficer' : 'messages:start.messageFarmer')}
+          />
+        )}
       </div>
 
       {role === 'Farmer' && advisory.status === 'Approved' ? (

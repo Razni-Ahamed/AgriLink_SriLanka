@@ -1,0 +1,96 @@
+{
+  "title": "Messages",
+  "subtitle": "Chats about your purchase requests and crop issues",
+  "header": {
+    "open": "Messages",
+    "openReports": "Reported chats",
+    "unread_one": "{{count}} unread",
+    "unread_other": "{{count}} unread",
+    "openCount_one": "{{count}} open",
+    "openCount_other": "{{count}} open"
+  },
+  "list": {
+    "label": "Your chats",
+    "empty": "No messages yet.",
+    "emptyHint": "Start a chat from a purchase request, an order, or an issue's advice page.",
+    "you": "You: {{text}}",
+    "officersOf": "Officers · {{district}}",
+    "dealTitle": "{{crop}} · {{quantity}} kg",
+    "unread_one": "{{count}} unread message",
+    "unread_other": "{{count}} unread messages",
+    "loadError": "Your chats couldn't be loaded."
+  },
+  "kind": {
+    "Deal": "Purchase request",
+    "Advice": "Crop advice"
+  },
+  "role": {
+    "Farmer": "Farmer",
+    "Buyer": "Buyer",
+    "Officer": "Agricultural officer"
+  },
+  "thread": {
+    "back": "All chats",
+    "selectPrompt": "Choose a chat to read it.",
+    "viewRequest": "View request",
+    "viewOrder": "View order",
+    "viewAdvice": "View advice",
+    "noMessages": "No messages yet. Say hello!",
+    "olderHidden": "Earlier messages aren't shown.",
+    "seen": "Seen",
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "closed": "This request was declined or withdrawn, so this chat is closed.",
+    "notFound": "This chat couldn't be found, or you don't have access to it.",
+    "adminView": "You're reading this chat because it was reported. Admins can't post in it.",
+    "officersOfDistrict": "Officers of {{district}}",
+    "safety": "Keep payments and personal details inside AgriLink, and report anything that worries you."
+  },
+  "composer": {
+    "label": "Message",
+    "placeholder": "Write a message…",
+    "send": "Send",
+    "hint": "Enter to send · Shift+Enter for a new line",
+    "remaining": "{{count}} characters left"
+  },
+  "report": {
+    "open": "Report",
+    "title": "Report this chat",
+    "intro": "An administrator will read the chat and follow up. Tell them briefly what is wrong.",
+    "reason": "What's wrong?",
+    "submit": "Send report",
+    "cancel": "Cancel",
+    "sent": "Thank you. An administrator will look at this chat.",
+    "already": "Reported. An administrator will look at it.",
+    "error": "The report couldn't be sent. Please try again."
+  },
+  "start": {
+    "messageBuyer": "Message the buyer",
+    "messageFarmer": "Message the farmer",
+    "askOfficer": "Ask an officer",
+    "error": "The chat couldn't be opened. Please try again."
+  },
+  "errors": {
+    "tooFast": "You're sending messages too quickly. Wait a minute and try again.",
+    "closed": "This chat is closed.",
+    "sendFailed": "Your message wasn't sent. Please try again.",
+    "loadFailed": "Messages couldn't be loaded."
+  },
+  "reports": {
+    "title": "Reported chats",
+    "subtitle": "Chats a participant reported. Read the chat, then mark the report resolved.",
+    "empty": "No chats have been reported.",
+    "open": "Open",
+    "resolved": "Resolved",
+    "reportedBy": "Reported by {{name}} on {{date}}",
+    "resolvedBy": "Resolved by {{name}} on {{date}}",
+    "viewChat": "Read the chat",
+    "resolve": "Mark resolved",
+    "note": "Note (optional)",
+    "resolvedToast": "Report marked as resolved.",
+    "resolveError": "The report couldn't be updated.",
+    "back": "Reported chats",
+    "onThisChat": "Reports on this chat",
+    "between": "Between {{farmer}} (farmer) and {{other}}"
+  }
+}
