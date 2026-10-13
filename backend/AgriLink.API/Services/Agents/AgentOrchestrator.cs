@@ -176,11 +176,13 @@ public class AgentOrchestrator : IAgentOrchestrator
             workflow.CompletedAt = DateTime.UtcNow;
         }
 
+        // Queued, not saved: the caller saves the issue, the advisory and these notifications in one
+        // SaveChangesAsync, so officers are never told about an issue whose save then failed.
         var releasedToFarmer = advisory.Status == AdvisoryStatus.Preliminary;
-        await NotifyOfficersAsync(context, releasedToFarmer, cancellationToken);
+        await QueueOfficerNotificationsAsync(context, releasedToFarmer, cancellationToken);
         if (releasedToFarmer)
         {
-            await NotifyFarmerOfPreliminaryAdviceAsync(issue.FarmerProfileId, context, cancellationToken);
+            await QueueFarmerPreliminaryAdviceNotificationAsync(issue.FarmerProfileId, context, cancellationToken);
         }
 
         return advisory;
@@ -235,7 +237,7 @@ public class AgentOrchestrator : IAgentOrchestrator
         advisory.RequiresApproval = true;
     }
 
-    private async Task NotifyOfficersAsync(AgentContext context, bool releasedToFarmer, CancellationToken cancellationToken)
+    private async Task QueueOfficerNotificationsAsync(AgentContext context, bool releasedToFarmer, CancellationToken cancellationToken)
     {
         var officerUserIds = await _db.OfficerProfiles
             .Where(o => o.District == context.District)
@@ -250,11 +252,11 @@ public class AgentOrchestrator : IAgentOrchestrator
 
         foreach (var userId in officerUserIds)
         {
-            await _notifications.NotifyAsync(userId, title, message);
+            _notifications.Add(userId, title, message);
         }
     }
 
-    private async Task NotifyFarmerOfPreliminaryAdviceAsync(int farmerProfileId, AgentContext context, CancellationToken cancellationToken)
+    private async Task QueueFarmerPreliminaryAdviceNotificationAsync(int farmerProfileId, AgentContext context, CancellationToken cancellationToken)
     {
         var farmerUserId = await _db.FarmerProfiles
             .Where(f => f.FarmerProfileId == farmerProfileId)
@@ -263,7 +265,7 @@ public class AgentOrchestrator : IAgentOrchestrator
 
         if (farmerUserId is int userId)
         {
-            await _notifications.NotifyAsync(
+            _notifications.Add(
                 userId,
                 "Advice for your crop is ready",
                 $"We identified the problem in your photo for \"{context.IssueTitle}\". An agricultural officer will also confirm the advice.");

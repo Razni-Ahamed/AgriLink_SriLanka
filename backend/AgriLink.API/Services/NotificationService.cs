@@ -14,13 +14,17 @@ public class NotificationService : INotificationService
 
     public async Task NotifyAsync(int userId, string title, string message)
     {
+        Add(userId, title, message);
+        await _db.SaveChangesAsync();
+    }
+
+    public void Add(int userId, string title, string message)
+    {
         _db.Notifications.Add(new Notification
         {
             UserId = userId,
             Title = title,
             Message = message,
         });
-
-        await _db.SaveChangesAsync();
     }
 }
