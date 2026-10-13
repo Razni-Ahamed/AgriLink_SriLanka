@@ -3,6 +3,7 @@ import type {
   CreateHarvestListingRequest,
   HarvestFilters,
   HarvestListingResponse,
+  PriceGuideResponse,
   UpdateHarvestListingRequest,
 } from '@/types/dto/harvests'
 
@@ -23,6 +24,14 @@ export async function getHarvests(filters: HarvestFilters = {}): Promise<Harvest
 /** The logged-in farmer's own listings, every status included (GET /api/harvests only returns Active ones). */
 export async function getMyHarvests(): Promise<HarvestListingResponse[]> {
   const { data } = await apiClient.get<HarvestListingResponse[]>('/api/harvests/mine')
+  return data
+}
+
+/** Recent agreed prices for a crop, in a district and nationwide, to help price a new listing. */
+export async function getPriceGuide(cropType: string, district?: string): Promise<PriceGuideResponse> {
+  const { data } = await apiClient.get<PriceGuideResponse>('/api/harvests/price-guide', {
+    params: { cropType, district: district || undefined },
+  })
   return data
 }
 

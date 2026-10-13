@@ -16,6 +16,25 @@ export interface HarvestListingResponse {
   createdAt: string
 }
 
+/** Agreed prices from completed orders (GET /api/harvests/price-guide); null below minimumSales. */
+export interface PriceStats {
+  sales: number
+  totalQuantity: number
+  /** Weighted by quantity. */
+  averagePricePerUnit: number
+  minPricePerUnit: number
+  maxPricePerUnit: number
+}
+
+export interface PriceGuideResponse {
+  cropType: string
+  district: string | null
+  windowDays: number
+  minimumSales: number
+  inDistrict: PriceStats | null
+  nationwide: PriceStats | null
+}
+
 export interface CreateHarvestListingRequest {
   cropId: number
   quantity: number

@@ -15,6 +15,7 @@ import { useCropLabel } from '@/lib/useCropLabel'
 import { formatQuantity } from '@/lib/utils'
 import { useMyCrops } from '@/features/farms/hooks/useCrops'
 import type { CreateHarvestListingRequest } from '@/types/dto/harvests'
+import { PriceGuideHint } from './PriceGuideHint'
 
 interface HarvestListingFormProps {
   prefill?: { cropId?: number; cropType?: string }
@@ -123,6 +124,14 @@ export function HarvestListingForm({ prefill, isSubmitting, onSubmit }: HarvestL
             </p>
           </div>
         </div>
+      )}
+
+      {selectedCrop && (
+        <PriceGuideHint
+          cropType={selectedCrop.cropType}
+          district={selectedCrop.district}
+          onUsePrice={(price) => setValue('pricePerUnit', price, { shouldValidate: true })}
+        />
       )}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
