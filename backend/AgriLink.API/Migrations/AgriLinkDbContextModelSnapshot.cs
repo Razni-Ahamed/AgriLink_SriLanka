@@ -369,6 +369,144 @@ namespace AgriLink.API.Migrations
                     b.ToTable("BuyerProfiles");
                 });
 
+            modelBuilder.Entity("AgriLink.API.Models.Conversation", b =>
+                {
+                    b.Property<int>("ConversationId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("ConversationId"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("IssueId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<DateTime?>("LastMessageAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("RequestId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("ConversationId");
+
+                    b.HasIndex("IssueId")
+                        .IsUnique();
+
+                    b.HasIndex("RequestId")
+                        .IsUnique();
+
+                    b.ToTable("Conversations", t =>
+                        {
+                            t.HasCheckConstraint("CK_Conversations_OneSubject", "(\"Kind\" = 'Deal' AND \"RequestId\" IS NOT NULL AND \"IssueId\" IS NULL) OR (\"Kind\" = 'Advice' AND \"IssueId\" IS NOT NULL AND \"RequestId\" IS NULL)");
+                        });
+                });
+
+            modelBuilder.Entity("AgriLink.API.Models.ConversationMessage", b =>
+                {
+                    b.Property<int>("MessageId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("MessageId"));
+
+                    b.Property<string>("Body")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<int>("ConversationId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("SenderUserId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("MessageId");
+
+                    b.HasIndex("ConversationId", "MessageId");
+
+                    b.HasIndex("SenderUserId", "CreatedAt");
+
+                    b.ToTable("ConversationMessages");
+                });
+
+            modelBuilder.Entity("AgriLink.API.Models.ConversationRead", b =>
+                {
+                    b.Property<int>("ConversationId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("LastReadMessageId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("ReadAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("ConversationId", "UserId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("ConversationReads");
+                });
+
+            modelBuilder.Entity("AgriLink.API.Models.ConversationReport", b =>
+                {
+                    b.Property<int>("ReportId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("ReportId"));
+
+                    b.Property<int>("ConversationId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<int>("ReporterUserId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("ResolutionNote")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<DateTime?>("ResolvedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("ResolvedByUserId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("ReportId");
+
+                    b.HasIndex("ConversationId");
+
+                    b.HasIndex("ReporterUserId");
+
+                    b.HasIndex("ResolvedByUserId");
+
+                    b.HasIndex("ConversationId", "ReporterUserId")
+                        .IsUnique()
+                        .HasFilter("\"ResolvedAt\" IS NULL");
+
+                    b.ToTable("ConversationReports");
+                });
+
             modelBuilder.Entity("AgriLink.API.Models.Crop", b =>
                 {
                     b.Property<int>("CropId")
@@ -1160,6 +1298,87 @@ namespace AgriLink.API.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("AgriLink.API.Models.Conversation", b =>
+                {
+                    b.HasOne("AgriLink.API.Models.CropIssue", "Issue")
+                        .WithMany()
+                        .HasForeignKey("IssueId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.HasOne("AgriLink.API.Models.PurchaseRequest", "Request")
+                        .WithMany()
+                        .HasForeignKey("RequestId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.Navigation("Issue");
+
+                    b.Navigation("Request");
+                });
+
+            modelBuilder.Entity("AgriLink.API.Models.ConversationMessage", b =>
+                {
+                    b.HasOne("AgriLink.API.Models.Conversation", "Conversation")
+                        .WithMany("Messages")
+                        .HasForeignKey("ConversationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("AgriLink.API.Models.ApplicationUser", "Sender")
+                        .WithMany()
+                        .HasForeignKey("SenderUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Conversation");
+
+                    b.Navigation("Sender");
+                });
+
+            modelBuilder.Entity("AgriLink.API.Models.ConversationRead", b =>
+                {
+                    b.HasOne("AgriLink.API.Models.Conversation", "Conversation")
+                        .WithMany("Reads")
+                        .HasForeignKey("ConversationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("AgriLink.API.Models.ApplicationUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Conversation");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("AgriLink.API.Models.ConversationReport", b =>
+                {
+                    b.HasOne("AgriLink.API.Models.Conversation", "Conversation")
+                        .WithMany("Reports")
+                        .HasForeignKey("ConversationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("AgriLink.API.Models.ApplicationUser", "Reporter")
+                        .WithMany()
+                        .HasForeignKey("ReporterUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("AgriLink.API.Models.ApplicationUser", "ResolvedBy")
+                        .WithMany()
+                        .HasForeignKey("ResolvedByUserId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Conversation");
+
+                    b.Navigation("Reporter");
+
+                    b.Navigation("ResolvedBy");
+                });
+
             modelBuilder.Entity("AgriLink.API.Models.Crop", b =>
                 {
                     b.HasOne("AgriLink.API.Models.Field", "Field")
@@ -1426,6 +1645,15 @@ namespace AgriLink.API.Migrations
                     b.Navigation("FarmerProfile");
 
                     b.Navigation("OfficerProfile");
+                });
+
+            modelBuilder.Entity("AgriLink.API.Models.Conversation", b =>
+                {
+                    b.Navigation("Messages");
+
+                    b.Navigation("Reads");
+
+                    b.Navigation("Reports");
                 });
 
             modelBuilder.Entity("AgriLink.API.Models.Crop", b =>
