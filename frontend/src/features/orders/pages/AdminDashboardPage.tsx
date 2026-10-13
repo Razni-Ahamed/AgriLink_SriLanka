@@ -5,6 +5,7 @@ import { CropGenericIcon, HarvestScaleIcon } from '@/components/ui/icons/custom'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { ReviewTimingPanel } from '@/features/issues/components/ReviewTimingPanel'
 import { MetricsBarChart } from '../components/MetricsBarChart'
+import { PhotoDiagnosisPanel } from '../components/PhotoDiagnosisPanel'
 import { MetricsCard } from '@/components/ui/MetricsCard'
 import { useAdminMetrics } from '../hooks/useAdminMetrics'
 
@@ -102,6 +103,8 @@ export function AdminDashboardPage() {
         overdueAfterHours={metrics.overdueAfterHours}
         queueLink="/issues/pending"
       />
+
+      <PhotoDiagnosisPanel />
 
       <MetricsBarChart data={chartData} />
     </div>

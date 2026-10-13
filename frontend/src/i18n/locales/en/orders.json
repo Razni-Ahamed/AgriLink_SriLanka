@@ -94,7 +94,24 @@
     "statusPending": "Waiting for approval",
     "statusRejected": "Rejected",
     "approve": "Approve",
-    "userApproved": "{{name}} was approved."
+    "userApproved": "{{name}} was approved.",
+    "photoDiagnosis": {
+      "title": "Photo models vs officers",
+      "subtitle": "How often each photo model's guess matched the disease the reviewing officer confirmed. The confirmed photos are labelled training data from real Sri Lankan fields.",
+      "download_one": "Download {{count}} confirmed photo (.zip)",
+      "download_other": "Download {{count}} confirmed photos (.zip)",
+      "downloadError": "The photos could not be downloaded. Please try again.",
+      "empty": "No photo diagnoses have been reviewed yet.",
+      "crop": "Crop and model",
+      "reviewed": "Reviewed",
+      "agreed": "Officer agreed",
+      "other": "Not a model class",
+      "corrections": "Most common corrections",
+      "noCorrections": "None",
+      "correction_one": "{{predicted}} → {{confirmed}} (once)",
+      "correction_other": "{{predicted}} → {{confirmed}} ({{count}} times)",
+      "privacy": "The download contains the photos and their labels only: no farmer names or contact details. Keep it private and out of Git."
+    }
   },
   "auditLog": {
     "title": "Audit Log",

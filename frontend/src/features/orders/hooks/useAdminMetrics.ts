@@ -8,6 +8,14 @@ export function useAdminMetrics() {
   return useQuery({ queryKey: metricsKey, queryFn: adminApi.getAdminMetrics })
 }
 
+export function usePhotoDiagnosisSummary() {
+  return useQuery({ queryKey: ['admin', 'photo-diagnoses'] as const, queryFn: adminApi.getPhotoDiagnosisSummary })
+}
+
+export function useDownloadConfirmedPhotos() {
+  return useMutation({ mutationFn: adminApi.downloadConfirmedPhotos })
+}
+
 export function useCreateUser() {
   const queryClient = useQueryClient()
   return useMutation({

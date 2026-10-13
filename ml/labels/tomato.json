@@ -42,6 +42,21 @@
         "Tomato leaf mosaic virus": "tomato_mosaic_virus",
         "Tomato leaf": "healthy"
       }
+    },
+    "agrilink-confirmed": {
+      "description": "AgriLink's own export of photos whose diagnosis an agricultural officer confirmed (<crop>/<class key>). 'other' is left unmapped, so it is skipped.",
+      "labelMap": {
+        "tomato/tomato_bacterial_spot": "tomato_bacterial_spot",
+        "tomato/tomato_early_blight": "tomato_early_blight",
+        "tomato/tomato_late_blight": "tomato_late_blight",
+        "tomato/tomato_leaf_mold": "tomato_leaf_mold",
+        "tomato/tomato_septoria_leaf_spot": "tomato_septoria_leaf_spot",
+        "tomato/tomato_spider_mites": "tomato_spider_mites",
+        "tomato/tomato_target_spot": "tomato_target_spot",
+        "tomato/tomato_yellow_leaf_curl_virus": "tomato_yellow_leaf_curl_virus",
+        "tomato/tomato_mosaic_virus": "tomato_mosaic_virus",
+        "tomato/healthy": "healthy"
+      }
     }
   }
 }
