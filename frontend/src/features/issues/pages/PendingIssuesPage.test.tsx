@@ -76,4 +76,28 @@ describe('PendingIssuesPage', () => {
     expect(within(advised).queryByLabelText('Photo attached')).not.toBeInTheDocument()
     expect(advised).toHaveAttribute('href', '/advisories/12')
   })
+
+  it('marks issues that have waited more than 48 hours, and only those', () => {
+    const hoursAgo = (hours: number) => new Date(Date.now() - hours * 60 * 60 * 1000).toISOString()
+    const issues = [
+      issue({ issueId: 1, advisoryId: 11, title: 'Waiting three days', createdAt: hoursAgo(73) }),
+      issue({ issueId: 2, advisoryId: 12, title: 'Reported this morning', createdAt: hoursAgo(3) }),
+    ]
+    vi.mocked(usePendingIssues).mockReturnValue({
+      data: { items: issues, page: 1, pageSize: 20, totalCount: issues.length, totalPages: 1 },
+      isLoading: false,
+      isFetching: false,
+    } as ReturnType<typeof usePendingIssues>)
+
+    render(
+      <MemoryRouter>
+        <PendingIssuesPage />
+      </MemoryRouter>,
+    )
+
+    const old = screen.getByRole('link', { name: /Waiting three days/ })
+    expect(within(old).getByText('Waiting 3 d 1 h')).toBeInTheDocument()
+    const fresh = screen.getByRole('link', { name: /Reported this morning/ })
+    expect(within(fresh).queryByText(/^Waiting /)).not.toBeInTheDocument()
+  })
 })

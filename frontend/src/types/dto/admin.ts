@@ -29,6 +29,13 @@ export interface AdminMetricsResponse {
   issuesPending: number
   issuesResolved: number
   harvestVolumeSoldThisMonth: number
+  /** Issues in any district waiting longer than overdueAfterHours. */
+  issuesOverdue: number
+  oldestPendingHours: number | null
+  /** Average time from AI draft to an officer's decision over the last 30 days. */
+  averageReviewHours: number | null
+  reviewsInAverage: number
+  overdueAfterHours: number
 }
 
 export type ManagedRole = 'Farmer' | 'Officer' | 'Buyer' | 'Admin'

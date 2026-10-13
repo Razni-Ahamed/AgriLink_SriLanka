@@ -16,4 +16,17 @@ public class OfficerMetricsResponse
     public int ReviewedTotal { get; set; }
     public int ApprovedTotal { get; set; }
     public int RejectedTotal { get; set; }
+
+    /// <summary>Issues in this district waiting longer than <see cref="OverdueAfterHours"/>.</summary>
+    public int OverdueInDistrict { get; set; }
+
+    /// <summary>How long the district's longest-waiting issue has waited; null when the queue is empty.</summary>
+    public double? OldestPendingHours { get; set; }
+
+    /// <summary>This officer's average time from AI draft to decision over the last 30 days; null
+    /// when they reviewed nothing in that time.</summary>
+    public double? AverageReviewHours { get; set; }
+
+    public int ReviewsInAverage { get; set; }
+    public double OverdueAfterHours { get; set; }
 }

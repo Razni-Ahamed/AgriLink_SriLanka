@@ -12,6 +12,7 @@ import {
 import { Card } from '@/components/ui/Card'
 import { MetricsCard } from '@/components/ui/MetricsCard'
 import { Skeleton } from '@/components/ui/Skeleton'
+import { ReviewTimingPanel } from '@/features/issues/components/ReviewTimingPanel'
 import { useOfficerMetrics } from '../hooks/useOfficerMetrics'
 
 /**
@@ -82,6 +83,16 @@ export function OfficerDashboardPage() {
           />
         </Link>
       </div>
+
+      <ReviewTimingPanel
+        scope="district"
+        overdue={metrics.overdueInDistrict}
+        oldestPendingHours={metrics.oldestPendingHours}
+        averageReviewHours={metrics.averageReviewHours}
+        reviewsInAverage={metrics.reviewsInAverage}
+        overdueAfterHours={metrics.overdueAfterHours}
+        queueLink="/issues/pending"
+      />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <Link to="/issues/pending">

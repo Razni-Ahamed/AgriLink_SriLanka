@@ -58,6 +58,11 @@ public class OfficerController : ControllerBase
         var approvedTotal = await reviewedByMe.CountAsync(a => a.Status == AdvisoryStatus.Approved);
         var rejectedTotal = await reviewedByMe.CountAsync(a => a.Status == AdvisoryStatus.Rejected);
 
+        var timing = await ReviewTiming.SummariseAsync(
+            _db.AIAdvisories.AwaitingReview().Where(a => a.Issue.Crop.Field.Farm.District == profile.District),
+            reviewedByMe,
+            DateTime.UtcNow);
+
         return Ok(new OfficerMetricsResponse
         {
             District = profile.District,
@@ -67,6 +72,11 @@ public class OfficerController : ControllerBase
             ReviewedTotal = reviewedTotal,
             ApprovedTotal = approvedTotal,
             RejectedTotal = rejectedTotal,
+            OverdueInDistrict = timing.Overdue,
+            OldestPendingHours = timing.OldestPendingHours,
+            AverageReviewHours = timing.AverageReviewHours,
+            ReviewsInAverage = timing.ReviewsInAverage,
+            OverdueAfterHours = ReviewTiming.OverdueAfter.TotalHours,
         });
     }
 }

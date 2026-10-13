@@ -902,8 +902,18 @@ public class AdminController : ControllerBase
                 && o.CompletedAt.Value.Month == now.Month)
             .SumAsync(o => (decimal?)o.TotalQuantity) ?? 0;
 
+        var timing = await ReviewTiming.SummariseAsync(
+            _db.AIAdvisories.AwaitingReview(),
+            _db.AIAdvisories.Where(a => a.ReviewedByFK != null),
+            now);
+
         return Ok(new AdminMetricsResponse
         {
+            IssuesOverdue = timing.Overdue,
+            OldestPendingHours = timing.OldestPendingHours,
+            AverageReviewHours = timing.AverageReviewHours,
+            ReviewsInAverage = timing.ReviewsInAverage,
+            OverdueAfterHours = ReviewTiming.OverdueAfter.TotalHours,
             TotalUsers = totalUsers,
             TotalFarms = totalFarms,
             TotalCrops = totalCrops,
