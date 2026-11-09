@@ -3,13 +3,18 @@ import { Building, Gear, ClipboardText, UserCircle } from '@/components/ui/icons
 import { OrderTruckIcon } from '@/components/ui/icons/custom'
 import { RequireRole } from '@/app/RequireRole'
 import type { NavItem } from '@/types/common'
-import { AdminDashboardPage } from './pages/AdminDashboardPage'
-import { AdminUsersPage } from './pages/AdminUsersPage'
-import { AuditLogPage } from './pages/AuditLogPage'
-import { DepartmentsPage } from './pages/DepartmentsPage'
-import { MyOrdersPage } from './pages/MyOrdersPage'
-import { NotificationsPage } from './pages/NotificationsPage'
-import { OrderDetailPage } from './pages/OrderDetailPage'
+import { lazyPage } from '@/lib/lazyPage'
+
+const AdminDashboardPage = lazyPage(
+  () => import('./pages/AdminDashboardPage'),
+  'AdminDashboardPage',
+)
+const AdminUsersPage = lazyPage(() => import('./pages/AdminUsersPage'), 'AdminUsersPage')
+const AuditLogPage = lazyPage(() => import('./pages/AuditLogPage'), 'AuditLogPage')
+const DepartmentsPage = lazyPage(() => import('./pages/DepartmentsPage'), 'DepartmentsPage')
+const MyOrdersPage = lazyPage(() => import('./pages/MyOrdersPage'), 'MyOrdersPage')
+const NotificationsPage = lazyPage(() => import('./pages/NotificationsPage'), 'NotificationsPage')
+const OrderDetailPage = lazyPage(() => import('./pages/OrderDetailPage'), 'OrderDetailPage')
 
 export const ordersRoutes: RouteObject[] = [
   {

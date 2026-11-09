@@ -2,7 +2,12 @@ import type { RouteObject } from 'react-router-dom'
 import { UserPlus } from '@phosphor-icons/react'
 import { RequireRole } from '@/app/RequireRole'
 import type { NavItem } from '@/types/common'
-import { PendingRegistrationsPage } from './pages/PendingRegistrationsPage'
+import { lazyPage } from '@/lib/lazyPage'
+
+const PendingRegistrationsPage = lazyPage(
+  () => import('./pages/PendingRegistrationsPage'),
+  'PendingRegistrationsPage',
+)
 
 export const registrationsRoutes: RouteObject[] = [
   {

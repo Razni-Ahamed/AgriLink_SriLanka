@@ -2,7 +2,12 @@ import type { RouteObject } from 'react-router-dom'
 import { Gauge } from '@phosphor-icons/react'
 import { RequireRole } from '@/app/RequireRole'
 import type { NavItem } from '@/types/common'
-import { OfficerDashboardPage } from './pages/OfficerDashboardPage'
+import { lazyPage } from '@/lib/lazyPage'
+
+const OfficerDashboardPage = lazyPage(
+  () => import('./pages/OfficerDashboardPage'),
+  'OfficerDashboardPage',
+)
 
 export const officerRoutes: RouteObject[] = [
   {

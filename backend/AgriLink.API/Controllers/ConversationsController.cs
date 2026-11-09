@@ -4,8 +4,10 @@ using AgriLink.API.DTOs.Conversations;
 using AgriLink.API.Models;
 using AgriLink.API.Services;
 using AgriLink.API.Services.Chat;
+using AgriLink.API.Services.RateLimiting;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 
 namespace AgriLink.API.Controllers;
@@ -192,6 +194,7 @@ public class ConversationsController : ControllerBase
     /// <summary>Opens the chat about a purchase request, creating it on first use. Only that
     /// request's farmer and buyer can.</summary>
     [HttpPost("deal/{requestId:int}")]
+    [EnableRateLimiting(RateLimitPolicies.Chat)]
     public async Task<ActionResult<ConversationResponse>> StartDeal(int requestId, CancellationToken cancellationToken)
     {
         var subject = await ConversationSubject.ForRequestAsync(_db, requestId, cancellationToken);
@@ -202,6 +205,7 @@ public class ConversationsController : ControllerBase
     /// <summary>Opens the chat about a crop issue, creating it on first use. The reporting farmer
     /// and the officers who may review the issue can.</summary>
     [HttpPost("advice/{issueId:int}")]
+    [EnableRateLimiting(RateLimitPolicies.Chat)]
     public async Task<ActionResult<ConversationResponse>> StartAdvice(int issueId, CancellationToken cancellationToken)
     {
         var subject = await ConversationSubject.ForIssueAsync(_db, issueId, cancellationToken);
@@ -304,6 +308,7 @@ public class ConversationsController : ControllerBase
     }
 
     [HttpPost("{id:int}/messages")]
+    [EnableRateLimiting(RateLimitPolicies.Chat)]
     public async Task<ActionResult<ConversationMessageResponse>> Send(
         int id, SendConversationMessageRequest request, CancellationToken cancellationToken)
     {
@@ -427,6 +432,7 @@ public class ConversationsController : ControllerBase
 
     /// <summary>A participant reports the conversation; admins are told and can then read it.</summary>
     [HttpPost("{id:int}/report")]
+    [EnableRateLimiting(RateLimitPolicies.Chat)]
     public async Task<IActionResult> Report(int id, ReportConversationRequest request, CancellationToken cancellationToken)
     {
         var (access, error) = await OpenAsync(id, cancellationToken);

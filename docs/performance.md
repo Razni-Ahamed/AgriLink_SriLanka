@@ -91,4 +91,4 @@ A cold start was also observed. The first request after an idle period (the Swag
   1. Put the API and database in the same region (for example Neon in AWS ap-southeast-1 with Azure Southeast Asia).
   2. Use a Basic (B1) plan with always-on to remove cold starts.
   3. Add response caching for the public marketplace.
-  4. Add ASP.NET Core rate limiting to protect the shared resources.
+  4. ~~Add ASP.NET Core rate limiting to protect the shared resources.~~ Done: see `Services/RateLimiting/` (sign-in 20 a minute per address, reports and photos 10 per 10 minutes per account, chat 30 a minute, 300 requests a minute overall).

@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, render, screen } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { RouterProvider, createMemoryRouter } from 'react-router-dom'
@@ -42,6 +42,11 @@ function renderAt(path: string) {
 }
 
 describe('HomeRoute', () => {
+  // The landing page's code loads on demand; load it once up front so each test only waits a tick.
+  beforeAll(async () => {
+    await import('@/features/home/HomePage')
+  })
+
   beforeEach(async () => {
     await i18n.changeLanguage('en')
   })
@@ -53,16 +58,16 @@ describe('HomeRoute', () => {
 
   it('shows a visitor the landing page with the latest harvests', async () => {
     useAuthStore.setState({ token: null, role: null, isHydrated: true })
-    const get = vi
-      .spyOn(apiClient, 'get')
-      .mockResolvedValue({
-        data: Array.from({ length: 8 }, (_, i) => harvest(i + 1, i === 0 ? 'Tomato' : 'Paddy')),
-      })
+    const get = vi.spyOn(apiClient, 'get').mockResolvedValue({
+      data: Array.from({ length: 8 }, (_, i) => harvest(i + 1, i === 0 ? 'Tomato' : 'Paddy')),
+    })
 
     renderAt('/')
 
     expect(
-      screen.getByRole('heading', { name: 'From the field to the market, all in one place' }),
+      await screen.findByRole('heading', {
+        name: 'From the field to the market, all in one place',
+      }),
     ).toBeInTheDocument()
     expect(await screen.findByRole('heading', { name: 'Tomato' })).toBeInTheDocument()
     // Only a preview: the full list is one click away on the marketplace page.
@@ -90,7 +95,7 @@ describe('HomeRoute', () => {
     expect(screen.queryByRole('heading', { level: 1 })).not.toBeInTheDocument()
   })
 
-  it('shows the landing page when the stored session has expired, and forgets it', () => {
+  it('shows the landing page when the stored session has expired, and forgets it', async () => {
     const expired = `h.${btoa(JSON.stringify({ exp: Math.floor(Date.now() / 1000) - 60 }))}.s`
     localStorage.setItem('agrilink.auth', JSON.stringify({ token: expired, role: 'Farmer' }))
     vi.spyOn(apiClient, 'get').mockResolvedValue({ data: [] })
@@ -99,7 +104,9 @@ describe('HomeRoute', () => {
     renderAt('/')
 
     expect(
-      screen.getByRole('heading', { name: 'From the field to the market, all in one place' }),
+      await screen.findByRole('heading', {
+        name: 'From the field to the market, all in one place',
+      }),
     ).toBeInTheDocument()
     expect(useAuthStore.getState().token).toBeNull()
     expect(localStorage.getItem('agrilink.auth')).toBeNull()
@@ -128,7 +135,9 @@ describe('HomeRoute', () => {
     act(() => useAuthStore.getState().logout())
 
     expect(
-      await screen.findByRole('heading', { name: 'From the field to the market, all in one place' }),
+      await screen.findByRole('heading', {
+        name: 'From the field to the market, all in one place',
+      }),
     ).toBeInTheDocument()
     expect(screen.queryByText('Login page')).not.toBeInTheDocument()
   })

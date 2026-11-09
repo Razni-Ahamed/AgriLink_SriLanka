@@ -2,10 +2,12 @@ import type { RouteObject } from 'react-router-dom'
 import { Farm as FarmIcon } from '@phosphor-icons/react'
 import { RequireRole } from '@/app/RequireRole'
 import type { NavItem } from '@/types/common'
-import { FarmsListPage } from './pages/FarmsListPage'
-import { FarmDetailPage } from './pages/FarmDetailPage'
-import { FieldDetailPage } from './pages/FieldDetailPage'
-import { CropDetailPage } from './pages/CropDetailPage'
+import { lazyPage } from '@/lib/lazyPage'
+
+const FarmsListPage = lazyPage(() => import('./pages/FarmsListPage'), 'FarmsListPage')
+const FarmDetailPage = lazyPage(() => import('./pages/FarmDetailPage'), 'FarmDetailPage')
+const FieldDetailPage = lazyPage(() => import('./pages/FieldDetailPage'), 'FieldDetailPage')
+const CropDetailPage = lazyPage(() => import('./pages/CropDetailPage'), 'CropDetailPage')
 
 /**
  * Farmer-only: every FarmsController/CropsController write requires a FarmerProfileId, which

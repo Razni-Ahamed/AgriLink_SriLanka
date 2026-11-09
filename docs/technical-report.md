@@ -104,7 +104,7 @@ These results show that lab accuracy does not carry over to real field photos. T
 ## 6.10 Known limitations and future work
 
 - **Business logic in controllers.** Several large controllers query the DbContext directly (§3.2). Moving their rules into application services would make them easier to test without HTTP concerns.
-- **No API rate limiting.** Sign-in is protected by account lockout, and the LLM tunnel is rate limited, but the API itself has no rate limiter. ASP.NET Core's built-in rate-limiting middleware is the next step.
+- **Rate limits are per server.** ASP.NET Core's rate limiter now caps sign-in, issue reports, photos, chat and overall traffic, but it counts in memory, which only holds while the API runs as one instance.
 - **Web token in `localStorage`.** The React app keeps the JWT in `localStorage` so sessions survive a reload. React escapes output, and no HTML is rendered from user input, but an HttpOnly cookie would remove the XSS exposure entirely.
 - **Notifications by polling.** The mobile app polls every 60 seconds while it is open. Firebase Cloud Messaging would add push notifications, and the code has a documented hook for it.
 - **Open minor items** from the pre-launch review:

@@ -34,7 +34,8 @@
     "loading": "Loading",
     "dismiss": "Dismiss",
     "showPassword": "Show password",
-    "hidePassword": "Hide password"
+    "hidePassword": "Hide password",
+    "retry": "Try again"
   },
   "pagination": {
     "navigation": "Pagination",
@@ -280,5 +281,9 @@
   "duration": {
     "daysHours": "{{days}} d {{hours}} h",
     "hours": "{{hours}} h"
+  },
+  "errors": {
+    "notFound": "We couldn't find what you were looking for.",
+    "generic": "Something went wrong. Please try again."
   }
 }

@@ -3,8 +3,10 @@ using AgriLink.API.DTOs.Auth;
 using AgriLink.API.Models;
 using AgriLink.API.Services;
 using AgriLink.API.Services.Accounts;
+using AgriLink.API.Services.RateLimiting;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 
 namespace AgriLink.API.Controllers;
@@ -33,6 +35,7 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("register")]
+    [EnableRateLimiting(RateLimitPolicies.Auth)]
     public async Task<ActionResult<RegisterResponse>> Register(RegisterRequest request)
     {
         var fullName = request.FullName.Trim();
@@ -212,6 +215,7 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("login")]
+    [EnableRateLimiting(RateLimitPolicies.Auth)]
     public async Task<ActionResult<AuthResponse>> Login(LoginRequest request)
     {
         var user = await _userManager.FindByEmailAsync(request.Email.Trim());
@@ -252,6 +256,7 @@ public class AuthController : ControllerBase
     /// can never open the admin UI even if it is valid elsewhere.
     /// </summary>
     [HttpPost("admin/login")]
+    [EnableRateLimiting(RateLimitPolicies.Auth)]
     public async Task<ActionResult<AuthResponse>> AdminLogin(LoginRequest request)
     {
         var user = await _userManager.FindByEmailAsync(request.Email.Trim());

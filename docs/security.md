@@ -43,13 +43,13 @@
 | Unsafe or malformed model output | Strict JSON schema; the parser rejects unknown agents, duplicates and missing reasons; lengths are clipped; rules take over on any rejection |
 | Excessive agency | No agent writes data or triggers the high-impact action. `RequiresApproval` is forced to true, and only an authorised officer or admin can approve |
 | Tool misuse and SSRF | The weather URL is built from coordinates in a code allow-list, and unknown districts never reach the network. Each agent has access only to its own tool |
-| Denial of service and cost | Timeouts on every external call (weather 8 s, model 20 s, ONNX 10 s); one retry at most; the tunnel is rate limited to 30 requests a minute and rejects requests without the key |
+| Denial of service and cost | Timeouts on every external call (weather 8 s, model 20 s, ONNX 10 s); one retry at most; the tunnel is rate limited to 30 requests a minute and rejects requests without the key; the API's own rate limiter (`Services/RateLimiting/`) answers 429 past 20 sign-in attempts a minute per address, 10 issue reports or photos per 10 minutes per account, 30 chat messages a minute, and 300 requests a minute overall |
 | Secret leakage | The language-model key and the Cloudinary credentials are only in configuration, and the model is never given any secret |
 | Hidden reasoning or sensitive data in stored state | Thinking is switched off; the trace stores only structured inputs and outputs and short stated reasons |
 
 ## 12.5 Residual risks and next steps
 
-1. **API rate limiting.** Add ASP.NET Core's rate limiter, especially for sign-in and registration.
+1. **Rate limits per server.** The limits are counted in memory, so they hold for the single App Service instance. Scaling out to several instances would need a shared counter (for example Redis).
 2. **Web session storage.** Move the web session to an HttpOnly cookie, with CSRF protection.
 3. **Database privileges.** Use a least-privilege database role for the API. Migrations would run from a deploy step with an owner role.
 4. **Dependency scanning.** Add Dependabot and `dotnet list package --vulnerable` to CI.
