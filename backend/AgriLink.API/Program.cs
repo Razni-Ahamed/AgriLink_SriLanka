@@ -7,7 +7,9 @@ using AgriLink.API.Services.Agents;
 using AgriLink.API.Services.Agents.ImageClassification;
 using AgriLink.API.Services.Agents.Llm;
 using AgriLink.API.Services.Images;
+using AgriLink.API.Services.RateLimiting;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -223,6 +225,15 @@ builder.Services.AddCors(options =>
 builder.Services.AddProblemDetails();
 builder.Services.AddHealthChecks().AddCheck<DatabaseHealthCheck>("database");
 
+// ----- Client address and rate limits -----
+// On Azure App Service every request arrives from the platform's front end, which adds the real
+// client address as the last entry of X-Forwarded-For. Reading only that last entry
+// (ForwardLimit = 1) gives the per-address limits the real caller, and a client can't spoof it by
+// sending its own header. ForwardedHeaders__Enabled=false turns it off for a host without a proxy.
+var useForwardedHeaders = builder.Configuration.GetValue("ForwardedHeaders:Enabled", true);
+builder.Services.Configure<ForwardedHeadersOptions>(RateLimitingSetup.ConfigureForwardedHeaders);
+builder.Services.AddAgriLinkRateLimiting(builder.Configuration);
+
 // ----- Controllers & Swagger -----
 builder.Services.AddControllers()
     .AddJsonOptions(options => options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
@@ -277,6 +288,11 @@ app.Logger.LogInformation(
     Uri.TryCreate(llmOptions.BaseUrl, UriKind.Absolute, out var llmUri) ? llmUri.Host : "(invalid Llm:BaseUrl)");
 
 // ----- Middleware pipeline -----
+if (useForwardedHeaders)
+{
+    app.UseForwardedHeaders();
+}
+
 app.UseExceptionHandler();
 
 // Swagger is on in development, and on a host when Swagger__Enabled=true (handy for a demo).
@@ -291,6 +307,9 @@ app.UseHttpsRedirection();
 app.UseCors(FrontendCorsPolicy);
 
 app.UseAuthentication();
+// After CORS, so a refused request still carries the CORS headers and the website can read the
+// 429 message; after authentication, so signed-in callers are counted per account.
+app.UseRateLimiter();
 app.UseAuthorization();
 
 app.MapControllers();

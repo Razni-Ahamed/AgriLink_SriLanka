@@ -9,9 +9,11 @@ using AgriLink.API.Models;
 using AgriLink.API.Services;
 using AgriLink.API.Services.Accounts;
 using AgriLink.API.Services.Images;
+using AgriLink.API.Services.RateLimiting;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 
 namespace AgriLink.API.Controllers;
@@ -266,6 +268,7 @@ public class UsersController : ControllerBase
     /// deleted, so a failure part-way through never leaves the account pointing at a missing image.
     /// </summary>
     [HttpPost("me/photo")]
+    [EnableRateLimiting(RateLimitPolicies.Uploads)]
     [Consumes("multipart/form-data")]
     [RequestSizeLimit(PhotoRequestLimitBytes)]
     [RequestFormLimits(MultipartBodyLengthLimit = PhotoRequestLimitBytes)]
@@ -375,6 +378,7 @@ public class UsersController : ControllerBase
     /// every request would otherwise reject the caller's own current token on their very next call.
     /// </summary>
     [HttpPost("me/password")]
+    [EnableRateLimiting(RateLimitPolicies.Auth)]
     public async Task<ActionResult<AuthResponse>> ChangePassword(ChangePasswordRequest request)
     {
         var userId = _currentUser.GetUserId(User);
@@ -462,6 +466,7 @@ public class UsersController : ControllerBase
     /// endpoint below re-checks the password itself regardless of this call.
     /// </summary>
     [HttpPost("me/verify-password")]
+    [EnableRateLimiting(RateLimitPolicies.Auth)]
     public async Task<IActionResult> VerifyPassword(VerifyPasswordRequest request)
     {
         var userId = _currentUser.GetUserId(User);

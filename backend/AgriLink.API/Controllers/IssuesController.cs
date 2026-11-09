@@ -6,8 +6,10 @@ using AgriLink.API.Models;
 using AgriLink.API.Services;
 using AgriLink.API.Services.Agents;
 using AgriLink.API.Services.Images;
+using AgriLink.API.Services.RateLimiting;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 
 namespace AgriLink.API.Controllers;
@@ -44,6 +46,7 @@ public class IssuesController : ControllerBase
     }
 
     [HttpPost]
+    [EnableRateLimiting(RateLimitPolicies.Uploads)]
     [Authorize(Roles = "Farmer")]
     public Task<ActionResult<CropIssueResponse>> Create([FromBody] CreateCropIssueRequest request) =>
         CreateIssueAsync(request, photo: null);
@@ -54,6 +57,7 @@ public class IssuesController : ControllerBase
     /// path because OpenAPI (and so Swagger) cannot describe two POST actions on one path.
     /// </summary>
     [HttpPost("with-photo")]
+    [EnableRateLimiting(RateLimitPolicies.Uploads)]
     [Authorize(Roles = "Farmer")]
     [Consumes("multipart/form-data")]
     [RequestSizeLimit(MultipartRequestLimitBytes)]
