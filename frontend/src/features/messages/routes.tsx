@@ -1,7 +1,10 @@
 import type { RouteObject } from 'react-router-dom'
 import { RequireRole } from '@/app/RequireRole'
-import { MessagesPage } from './pages/MessagesPage'
-import { ReportedChatPage, ReportedChatsPage } from './pages/ReportedChatsPage'
+import { lazyPage } from '@/lib/lazyPage'
+
+const MessagesPage = lazyPage(() => import('./pages/MessagesPage'), 'MessagesPage')
+const ReportedChatPage = lazyPage(() => import('./pages/ReportedChatsPage'), 'ReportedChatPage')
+const ReportedChatsPage = lazyPage(() => import('./pages/ReportedChatsPage'), 'ReportedChatsPage')
 
 // No nav tab: the header's chat button (beside the bell) opens these, so the tab bars don't grow.
 export const messagesRoutes: RouteObject[] = [

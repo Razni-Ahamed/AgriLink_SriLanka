@@ -2,11 +2,22 @@ import type { RouteObject } from 'react-router-dom'
 import { Basket, ClipboardText, Storefront } from '@phosphor-icons/react'
 import { RequireRole } from '@/app/RequireRole'
 import type { NavItem } from '@/types/common'
-import { BrowseHarvestsPage } from './pages/BrowseHarvestsPage'
-import { HarvestDetailPage } from './pages/HarvestDetailPage'
-import { MyListingsPage } from './pages/MyListingsPage'
-import { MyPurchaseRequestsPage } from './pages/MyPurchaseRequestsPage'
-import { MySentPurchaseRequestsPage } from './pages/MySentPurchaseRequestsPage'
+import { lazyPage } from '@/lib/lazyPage'
+
+const BrowseHarvestsPage = lazyPage(
+  () => import('./pages/BrowseHarvestsPage'),
+  'BrowseHarvestsPage',
+)
+const HarvestDetailPage = lazyPage(() => import('./pages/HarvestDetailPage'), 'HarvestDetailPage')
+const MyListingsPage = lazyPage(() => import('./pages/MyListingsPage'), 'MyListingsPage')
+const MyPurchaseRequestsPage = lazyPage(
+  () => import('./pages/MyPurchaseRequestsPage'),
+  'MyPurchaseRequestsPage',
+)
+const MySentPurchaseRequestsPage = lazyPage(
+  () => import('./pages/MySentPurchaseRequestsPage'),
+  'MySentPurchaseRequestsPage',
+)
 
 /** Public — GET /api/harvests has no [Authorize], so this must render outside RequireAuth. */
 export const marketplacePublicRoutes: RouteObject[] = [

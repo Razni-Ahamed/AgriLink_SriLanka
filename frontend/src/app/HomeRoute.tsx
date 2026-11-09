@@ -1,7 +1,11 @@
+import { Suspense } from 'react'
 import { Navigate } from 'react-router-dom'
 import { useAuthStore } from '@/auth/authStore'
-import { HomePage } from '@/features/home/HomePage'
+import { lazyPage } from '@/lib/lazyPage'
 import { roleHome } from './roleHome'
+import { PageLoading } from './RouteErrorPage'
+
+const HomePage = lazyPage(() => import('@/features/home/HomePage'), 'HomePage')
 
 /** `/`: the public landing page for visitors, or straight on to their role's home once signed in. */
 export function HomeRoute() {
@@ -14,7 +18,12 @@ export function HomeRoute() {
   }
 
   if (!role) {
-    return <HomePage />
+    // Its own boundary, so the landing page's code loading never blanks a page around it.
+    return (
+      <Suspense fallback={<PageLoading />}>
+        <HomePage />
+      </Suspense>
+    )
   }
 
   // Marked as coming from `/`, so if the server turns out to have ended this session (a password

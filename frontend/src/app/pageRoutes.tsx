@@ -8,6 +8,7 @@ import { officerRoutes } from '@/features/officer/routes'
 import { ordersRoutes } from '@/features/orders/routes'
 import { registrationsRoutes } from '@/features/registrations/routes'
 import { RequireAuth } from './RequireAuth'
+import { NotFoundPage } from './RouteErrorPage'
 import { UnauthorizedPage } from './UnauthorizedPage'
 
 /**
@@ -35,4 +36,6 @@ export const pageRoutes: RouteObject[] = [
       { path: '/unauthorized', element: <UnauthorizedPage /> },
     ],
   },
+  // Outside RequireAuth, so a visitor who mistypes an address isn't sent to sign in first.
+  { path: '*', element: <NotFoundPage /> },
 ]

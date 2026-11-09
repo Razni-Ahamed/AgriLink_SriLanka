@@ -34,7 +34,8 @@
     "loading": "පූරණය වෙමින්",
     "dismiss": "ඉවත් කරන්න",
     "showPassword": "මුරපදය පෙන්වන්න",
-    "hidePassword": "මුරපදය සඟවන්න"
+    "hidePassword": "මුරපදය සඟවන්න",
+    "retry": "නැවත උත්සාහ කරන්න"
   },
   "pagination": {
     "navigation": "පිටු අංකනය",
@@ -280,5 +281,9 @@
   "duration": {
     "daysHours": "දින {{days}} පැය {{hours}}",
     "hours": "පැය {{hours}}"
+  },
+  "errors": {
+    "notFound": "ඔබ සොයන දෙය සොයාගත නොහැකි විය.",
+    "generic": "යම් දෝෂයක් සිදු විය. නැවත උත්සාහ කරන්න."
   }
 }

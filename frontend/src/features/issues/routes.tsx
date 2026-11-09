@@ -2,12 +2,20 @@ import type { RouteObject } from 'react-router-dom'
 import { ClockCounterClockwise, FirstAidKit, ListChecks, Table } from '@phosphor-icons/react'
 import { RequireRole } from '@/app/RequireRole'
 import type { NavItem } from '@/types/common'
-import { AdvisoryDetailPage } from './pages/AdvisoryDetailPage'
-import { AllIssuesPage } from './pages/AllIssuesPage'
-import { MyIssuesPage } from './pages/MyIssuesPage'
-import { MyReviewedIssuesPage } from './pages/MyReviewedIssuesPage'
-import { NewIssuePage } from './pages/NewIssuePage'
-import { PendingIssuesPage } from './pages/PendingIssuesPage'
+import { lazyPage } from '@/lib/lazyPage'
+
+const AdvisoryDetailPage = lazyPage(
+  () => import('./pages/AdvisoryDetailPage'),
+  'AdvisoryDetailPage',
+)
+const AllIssuesPage = lazyPage(() => import('./pages/AllIssuesPage'), 'AllIssuesPage')
+const MyIssuesPage = lazyPage(() => import('./pages/MyIssuesPage'), 'MyIssuesPage')
+const MyReviewedIssuesPage = lazyPage(
+  () => import('./pages/MyReviewedIssuesPage'),
+  'MyReviewedIssuesPage',
+)
+const NewIssuePage = lazyPage(() => import('./pages/NewIssuePage'), 'NewIssuePage')
+const PendingIssuesPage = lazyPage(() => import('./pages/PendingIssuesPage'), 'PendingIssuesPage')
 
 export const issuesRoutes: RouteObject[] = [
   {

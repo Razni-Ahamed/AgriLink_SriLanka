@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import {
   Link,
@@ -23,6 +24,7 @@ import { pageRoutes } from './pageRoutes'
 import { NavTabs } from './NavTabs'
 import { LogoutButton, ProfileButton } from './AccountButtons'
 import { roleHome } from './roleHome'
+import { PageLoading } from './RouteErrorPage'
 
 interface ProfileRouteState {
   /** Where the user was when they opened the pop-up; that page stays visible behind it. */
@@ -129,12 +131,15 @@ export function AppLayout() {
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.2 }}
           >
-            {/* The pop-up's own route renders nothing; draw the page it sits over instead. */}
-            {backgroundLocation ? (
-              renderMatches(matchRoutes(pageRoutes, backgroundLocation))
-            ) : (
-              <Outlet />
-            )}
+            {/* Each page's code loads on first visit; the header and tabs stay put meanwhile. */}
+            <Suspense fallback={<PageLoading />}>
+              {/* The pop-up's own route renders nothing; draw the page it sits over instead. */}
+              {backgroundLocation ? (
+                renderMatches(matchRoutes(pageRoutes, backgroundLocation))
+              ) : (
+                <Outlet />
+              )}
+            </Suspense>
           </motion.div>
         </AnimatePresence>
       </main>
