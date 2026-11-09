@@ -29,6 +29,7 @@ public sealed class ConversationSubject
     public string Title { get; init; } = string.Empty;
     public string CropType { get; init; } = string.Empty;
     public decimal? Quantity { get; init; }
+    public QuantityUnit? Unit { get; init; }
     public string District { get; init; } = string.Empty;
 
     public int FarmerUserId { get; init; }
@@ -71,6 +72,7 @@ public sealed class ConversationSubject
                 r.HarvestId,
                 r.Status,
                 r.RequestedQuantity,
+                r.Harvest.Unit,
                 OrderId = r.Order != null ? (int?)r.Order.OrderId : null,
                 r.Harvest.Crop.CropType,
                 r.Harvest.Crop.Field.Farm.District,
@@ -95,6 +97,7 @@ public sealed class ConversationSubject
                 Title = request.CropType,
                 CropType = request.CropType,
                 Quantity = request.RequestedQuantity,
+                Unit = request.Unit,
                 District = request.District,
                 FarmerUserId = request.FarmerUserId,
                 FarmerName = request.FarmerName,
@@ -104,7 +107,7 @@ public sealed class ConversationSubject
                 BuyerBusinessName = request.BusinessName,
                 BuyerPhotoUrl = request.BuyerPhotoUrl,
                 IsClosed = request.OrderId is null
-                    && request.Status is PurchaseRequestStatus.Declined or PurchaseRequestStatus.Cancelled,
+                    && request.Status is PurchaseRequestStatus.Declined or PurchaseRequestStatus.Cancelled or PurchaseRequestStatus.Withdrawn,
             };
     }
 

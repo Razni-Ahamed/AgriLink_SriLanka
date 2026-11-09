@@ -5,6 +5,9 @@ public class PriceGuideResponse
 {
     public string CropType { get; set; } = string.Empty;
     public string? District { get; set; }
+
+    /// <summary>The unit every figure is per; only sales in that unit are counted.</summary>
+    public string Unit { get; set; } = string.Empty;
     public int WindowDays { get; set; }
 
     /// <summary>Fewer completed sales than this and no figures are given: too few to be a guide, and

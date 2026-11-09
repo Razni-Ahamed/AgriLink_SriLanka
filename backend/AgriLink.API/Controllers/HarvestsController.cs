@@ -140,7 +140,8 @@ public class HarvestsController : ControllerBase
     public async Task<ActionResult<PriceGuideResponse>> PriceGuide(
         [FromQuery, Required, MaxLength(50)] string cropType,
         [FromQuery, MaxLength(50)] string? district,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        [FromQuery] QuantityUnit unit = QuantityUnit.Kg)
     {
         var crop = cropType.Trim();
         var since = DateTime.UtcNow.AddDays(-PriceGuideWindowDays);
@@ -148,6 +149,8 @@ public class HarvestsController : ControllerBase
             .AsNoTracking()
             .Where(o => o.Status == OrderStatus.Completed && o.CompletedAt >= since)
             .Where(o => o.Request.Harvest.Crop.CropType.ToLower() == crop.ToLower())
+            // Prices in different units can't be averaged together.
+            .Where(o => o.Request.Harvest.Unit == unit)
             .Select(o => new { o.PricePerUnit, o.TotalQuantity, o.Request.Harvest.Crop.Field.Farm.District })
             .ToListAsync(cancellationToken);
 
@@ -170,6 +173,7 @@ public class HarvestsController : ControllerBase
         return Ok(new PriceGuideResponse
         {
             CropType = crop,
+            Unit = unit.ToString(),
             District = area,
             WindowDays = PriceGuideWindowDays,
             MinimumSales = PriceGuideMinimumSales,
@@ -227,6 +231,22 @@ public class HarvestsController : ControllerBase
             return BadRequest(new { message = HarvestBeforePlantingMessage });
         }
 
+        // A crop's expected quantity is in kg, so only kg listings can be checked against it.
+        if (request.Unit == QuantityUnit.Kg)
+        {
+            var alreadyListed = await KgListedFromCropAsync(crop.CropId);
+            if (alreadyListed + request.Quantity > crop.ExpectedQuantity)
+            {
+                var left = Math.Max(0, crop.ExpectedQuantity - alreadyListed);
+                return BadRequest(new
+                {
+                    message = $"This crop is expected to give {crop.ExpectedQuantity:0.##} kg and {alreadyListed:0.##} kg of it is "
+                        + $"already listed, so at most {left:0.##} kg more can be listed. If the harvest was bigger, update the "
+                        + "crop's expected quantity first.",
+                });
+            }
+        }
+
         var listing = new HarvestListing
         {
             FarmerProfileId = farmerProfileId.Value,
@@ -235,6 +255,7 @@ public class HarvestsController : ControllerBase
             AvailableQuantity = request.Quantity,
             HarvestDate = request.HarvestDate,
             PricePerUnit = request.PricePerUnit,
+            Unit = request.Unit,
             Location = request.Location,
             Status = HarvestStatus.Active,
         };
@@ -289,6 +310,13 @@ public class HarvestsController : ControllerBase
             return BadRequest(new { message = "A listing with no quantity left cannot be reopened." });
         }
 
+        // A request's quantity is counted in the listing's unit, so the unit is fixed once one exists.
+        if (request.Unit is { } unit && unit != listing.Unit
+            && await _db.PurchaseRequests.AnyAsync(r => r.HarvestId == listing.HarvestId))
+        {
+            return BadRequest(new { message = "Buyers have already sent requests for this listing, so its unit can't be changed." });
+        }
+
         var oldStatus = listing.Status;
 
         if (request.Status.HasValue)
@@ -309,6 +337,11 @@ public class HarvestsController : ControllerBase
         if (request.HarvestDate.HasValue)
         {
             listing.HarvestDate = request.HarvestDate.Value;
+        }
+
+        if (request.Unit.HasValue)
+        {
+            listing.Unit = request.Unit.Value;
         }
 
         // Only the admin-override path is audited here — a farmer editing their own listing
@@ -369,6 +402,15 @@ public class HarvestsController : ControllerBase
         return Ok(ToResponse(listing));
     }
 
+    /// <summary>
+    /// How much of a crop is already spoken for in kg listings: the whole of every listing that is
+    /// still open or sold, and only the sold part of a cancelled one.
+    /// </summary>
+    private Task<decimal> KgListedFromCropAsync(int cropId) =>
+        _db.HarvestListings
+            .Where(h => h.CropId == cropId && h.Unit == QuantityUnit.Kg)
+            .SumAsync(h => h.Status == HarvestStatus.Cancelled ? h.Quantity - h.AvailableQuantity : h.Quantity);
+
     private static HarvestListingResponse ToResponse(HarvestListing listing) => new()
     {
         HarvestId = listing.HarvestId,
@@ -380,6 +422,7 @@ public class HarvestsController : ControllerBase
         AvailableQuantity = listing.AvailableQuantity,
         HarvestDate = listing.HarvestDate,
         PricePerUnit = listing.PricePerUnit,
+        Unit = listing.Unit.ToString(),
         Location = listing.Location,
         District = listing.Crop.Field.Farm.District,
         Status = listing.Status.ToString(),

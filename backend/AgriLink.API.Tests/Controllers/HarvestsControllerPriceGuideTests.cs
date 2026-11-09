@@ -23,7 +23,7 @@ public class HarvestsControllerPriceGuideTests
 
     private static void AddSale(
         AgriLinkDbContext db, string cropType, string district, decimal pricePerUnit, decimal quantity,
-        OrderStatus status = OrderStatus.Completed, int completedDaysAgo = 5)
+        OrderStatus status = OrderStatus.Completed, int completedDaysAgo = 5, QuantityUnit unit = QuantityUnit.Kg)
     {
         var id = Interlocked.Increment(ref _nextId);
         var listing = new HarvestListing
@@ -33,6 +33,7 @@ public class HarvestsControllerPriceGuideTests
             Quantity = quantity,
             PricePerUnit = pricePerUnit + 10, // the listing price moved on; the order keeps the agreed one
             Location = district,
+            Unit = unit,
             Crop = new Crop
             {
                 CropId = id,
@@ -139,5 +140,25 @@ public class HarvestsControllerPriceGuideTests
         Assert.Null(guide.District);
         Assert.Null(guide.InDistrict);
         Assert.Null(guide.Nationwide);
+    }
+
+    [Fact]
+    public async Task PriceGuide_CountsOnlySalesInTheAskedUnit()
+    {
+        using var db = CreateDb();
+        AddSale(db, "Banana", "Kandy", pricePerUnit: 100, quantity: 10);
+        AddSale(db, "Banana", "Kandy", pricePerUnit: 110, quantity: 10);
+        AddSale(db, "Banana", "Kandy", pricePerUnit: 120, quantity: 10);
+        AddSale(db, "Banana", "Kandy", pricePerUnit: 900, quantity: 10, unit: QuantityUnit.Bunch);
+        await db.SaveChangesAsync();
+
+        var perKg = await GuideAsync(db, "Banana", "Kandy");
+        var perBunch = Assert.IsType<PriceGuideResponse>(Assert.IsType<OkObjectResult>(
+            (await CreateController(db).PriceGuide("Banana", "Kandy", CancellationToken.None, QuantityUnit.Bunch)).Result).Value);
+
+        Assert.Equal("Kg", perKg.Unit);
+        Assert.Equal(3, perKg.Nationwide!.Sales);
+        Assert.Equal(120, perKg.Nationwide.MaxPricePerUnit);
+        Assert.Null(perBunch.Nationwide); // one bunch sale is below the minimum
     }
 }

@@ -19,6 +19,8 @@ public class PurchaseRequestResponse
     // The request's own agreed price (the listing's price when it was sent), not the listing's
     // current one — it is what an accepted request is charged.
     public decimal PricePerUnit { get; set; }
+    // The listing's unit: what RequestedQuantity and PricePerUnit are counted in.
+    public string Unit { get; set; } = string.Empty;
 
     // Who sent it — deliberately no phone/email here (unlike OrderResponse): a purchase
     // request isn't a deal yet, so the buyer's direct contact details stay withheld until the

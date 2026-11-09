@@ -90,7 +90,7 @@ public class PurchaseRequestsController : ControllerBase
             await _notifications.NotifyAsync(
                 recipientId,
                 "New purchase request",
-                $"A buyer has requested {purchaseRequest.RequestedQuantity:0.##} kg of your {listing.Crop.CropType} listing.");
+                $"A buyer has requested {QuantityUnits.Describe(purchaseRequest.RequestedQuantity, listing.Unit)} of your {listing.Crop.CropType} listing.");
         }
 
         return StatusCode(StatusCodes.Status201Created, ToResponse(purchaseRequest));
@@ -278,6 +278,65 @@ public class PurchaseRequestsController : ControllerBase
     }
 
     /// <summary>
+    /// The buyer takes back their own request while the farmer hasn't answered it yet. It used to
+    /// stay Pending until the farmer declined it or the listing closed.
+    /// </summary>
+    [HttpPost("{id:int}/withdraw")]
+    [Authorize(Roles = "Buyer")]
+    public async Task<ActionResult<PurchaseRequestResponse>> Withdraw(int id)
+    {
+        var buyerProfileId = await _currentUser.GetBuyerProfileIdAsync(User);
+        if (buyerProfileId is null)
+        {
+            return Forbid();
+        }
+
+        var purchaseRequest = await _db.PurchaseRequests
+            .Include(r => r.Harvest).ThenInclude(h => h.Crop).ThenInclude(c => c.Field).ThenInclude(f => f.Farm)
+            .Include(r => r.Harvest).ThenInclude(h => h.FarmerProfile)
+            .Include(r => r.BuyerProfile).ThenInclude(bp => bp.User)
+            .FirstOrDefaultAsync(r => r.RequestId == id);
+
+        if (purchaseRequest is null)
+        {
+            return NotFound();
+        }
+
+        if (purchaseRequest.BuyerProfileId != buyerProfileId)
+        {
+            return Forbid();
+        }
+
+        if (purchaseRequest.Status != PurchaseRequestStatus.Pending)
+        {
+            return BadRequest(new { message = "Only a request the farmer hasn't answered yet can be withdrawn." });
+        }
+
+        purchaseRequest.Status = PurchaseRequestStatus.Withdrawn;
+        _auditLog.Record(
+            _currentUser.GetUserId(User),
+            "PurchaseRequestWithdrawn",
+            "PurchaseRequest",
+            purchaseRequest.RequestId,
+            PurchaseRequestStatus.Pending.ToString(),
+            PurchaseRequestStatus.Withdrawn.ToString());
+
+        // The farmer accepting or declining at the same moment: whichever saves second fails.
+        if (!await TrySaveAsync())
+        {
+            return ConcurrentChangeConflict();
+        }
+
+        await _notifications.NotifyAsync(
+            purchaseRequest.Harvest.FarmerProfile.UserId,
+            "Purchase request withdrawn",
+            $"{purchaseRequest.BuyerProfile.User.FullName} withdrew their request for "
+                + $"{QuantityUnits.Describe(purchaseRequest.RequestedQuantity, purchaseRequest.Harvest.Unit)} of {purchaseRequest.Harvest.Crop.CropType}.");
+
+        return Ok(ToResponse(purchaseRequest));
+    }
+
+    /// <summary>
     /// Saves, or returns false when someone else changed the same request or listing first — for
     /// example two requests on one listing accepted at the same moment, which used to oversell it.
     /// The same request accepted twice at once (a double tap) can instead trip the one-order-per-
@@ -317,12 +376,13 @@ public class PurchaseRequestsController : ControllerBase
         }
 
         var crop = purchaseRequest.Harvest.Crop.CropType;
+        var amount = QuantityUnits.Describe(purchaseRequest.RequestedQuantity, purchaseRequest.Harvest.Unit);
         await _notifications.NotifyAsync(
             recipientId,
             accepted ? "Purchase request accepted" : "Purchase request declined",
             accepted
-                ? $"The farmer accepted your request for {purchaseRequest.RequestedQuantity:0.##} kg of {crop}. An order has been created."
-                : $"The farmer declined your request for {purchaseRequest.RequestedQuantity:0.##} kg of {crop}.");
+                ? $"The farmer accepted your request for {amount} of {crop}. An order has been created."
+                : $"The farmer declined your request for {amount} of {crop}.");
     }
 
     private static PurchaseRequestResponse ToResponse(PurchaseRequest request) => new()
@@ -337,6 +397,7 @@ public class PurchaseRequestsController : ControllerBase
         CropType = request.Harvest.Crop.CropType,
         District = request.Harvest.Crop.Field.Farm.District,
         PricePerUnit = request.PricePerUnit,
+        Unit = request.Harvest.Unit.ToString(),
         BuyerName = request.BuyerProfile.User.FullName,
         BuyerBusinessName = request.BuyerProfile.BusinessName,
     };

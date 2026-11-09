@@ -257,6 +257,7 @@ public class AgriLinkDbContext : IdentityDbContext<ApplicationUser, IdentityRole
             entity.Property(h => h.Version).IsRowVersion();
             entity.Property(h => h.Location).HasMaxLength(150).IsRequired();
             entity.Property(h => h.Status).HasConversion<string>().HasMaxLength(20);
+            entity.Property(h => h.Unit).HasConversion<string>().HasMaxLength(10);
             entity.HasIndex(h => h.Status);
             entity.HasOne(h => h.FarmerProfile)
                 .WithMany()
