@@ -49,7 +49,7 @@ export function FarmDetailPage() {
         <div>
           <h1 className="font-display text-2xl text-text-primary">{farm.name}</h1>
           <p className="text-sm text-text-secondary">{farm.district}</p>
-          <p className="font-mono text-sm text-brand-forest">
+          <p className="tabular-nums text-sm text-brand-forest">
             {t('common:units.acres', { value: formatQuantity(farm.area) })}
           </p>
         </div>

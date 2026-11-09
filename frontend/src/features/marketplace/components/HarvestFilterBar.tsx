@@ -1,11 +1,12 @@
 import { useState } from 'react'
-import { MagnifyingGlass, X } from '@phosphor-icons/react'
+import { Funnel, MagnifyingGlass, X } from '@phosphor-icons/react'
 import { useTranslation } from 'react-i18next'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
 import { CropTypeSelect } from '@/components/ui/CropTypeSelect'
 import { DistrictSelect } from '@/components/ui/DistrictSelect'
 import { Select } from '@/components/ui/Select'
+import { cn } from '@/lib/utils'
 import type { HarvestFilters, HarvestSort } from '@/types/dto/harvests'
 
 interface HarvestFilterBarProps {
@@ -26,6 +27,12 @@ export function HarvestFilterBar({ filters, onChange }: HarvestFilterBarProps) {
   const [minPrice, setMinPrice] = useState(filters.minPrice?.toString() ?? '')
   const [maxPrice, setMaxPrice] = useState(filters.maxPrice?.toString() ?? '')
   const sort = filters.sort ?? 'newest'
+  // On a phone the filters fill the whole first screen, so only the search box shows until
+  // "Filters" is tapped. From the sm breakpoint up they are always shown.
+  const [showFilters, setShowFilters] = useState(false)
+  const applied = [filters.cropType, filters.district, filters.minPrice, filters.maxPrice].filter(
+    (value) => value !== undefined && value !== '',
+  ).length
 
   // Crop type and district are both chosen from the same fixed lists the rest of the app
   // records them with. Typed filters could never match: the API stores canonical spellings,
@@ -75,44 +82,63 @@ export function HarvestFilterBar({ filters, onChange }: HarvestFilterBarProps) {
           onChange={(event) => setSearch(event.target.value)}
         />
       </div>
-      <CropTypeSelect
-        label={t('marketplace:filters.cropType')}
-        value={cropType}
-        onChange={setCropType}
-        emptyOptionLabel={t('marketplace:filters.allCropTypes')}
-      />
-      <DistrictSelect
-        label={t('marketplace:filters.district')}
-        value={district}
-        onChange={(event) => setDistrict(event.target.value)}
-        emptyOptionLabel={t('marketplace:filters.allDistricts')}
-      />
-      <Input
-        label={t('marketplace:filters.minPrice')}
-        type="number"
-        min={0}
-        value={minPrice}
-        onChange={(event) => setMinPrice(event.target.value)}
-      />
-      <Input
-        label={t('marketplace:filters.maxPrice')}
-        type="number"
-        min={0}
-        value={maxPrice}
-        onChange={(event) => setMaxPrice(event.target.value)}
-      />
-      {/* The order applies straight away; the filters wait for Search. */}
-      <Select
-        label={t('common:list.sortBy')}
-        value={sort}
-        onChange={(event) => onChange({ ...filters, sort: event.target.value as HarvestSort })}
+      <Button
+        type="button"
+        variant="ghost"
+        className="justify-self-start sm:hidden"
+        aria-expanded={showFilters}
+        aria-controls="marketplace-filters"
+        onClick={() => setShowFilters((value) => !value)}
       >
-        <option value="newest">{t('common:list.newest')}</option>
-        <option value="priceAsc">{t('common:list.priceAsc')}</option>
-        <option value="priceDesc">{t('common:list.priceDesc')}</option>
-        <option value="quantityDesc">{t('common:list.quantityDesc')}</option>
-        <option value="freshest">{t('common:list.freshest')}</option>
-      </Select>
+        <Funnel size={16} weight="duotone" />
+        {applied > 0
+          ? t('marketplace:filters.showCount', { count: applied })
+          : t('marketplace:filters.show')}
+      </Button>
+      {/* `contents` lets these sit in the form's grid as if this wrapper weren't there. */}
+      <div
+        id="marketplace-filters"
+        className={cn(showFilters ? 'contents' : 'hidden', 'sm:contents')}
+      >
+        <CropTypeSelect
+          label={t('marketplace:filters.cropType')}
+          value={cropType}
+          onChange={setCropType}
+          emptyOptionLabel={t('marketplace:filters.allCropTypes')}
+        />
+        <DistrictSelect
+          label={t('marketplace:filters.district')}
+          value={district}
+          onChange={(event) => setDistrict(event.target.value)}
+          emptyOptionLabel={t('marketplace:filters.allDistricts')}
+        />
+        <Input
+          label={t('marketplace:filters.minPrice')}
+          type="number"
+          min={0}
+          value={minPrice}
+          onChange={(event) => setMinPrice(event.target.value)}
+        />
+        <Input
+          label={t('marketplace:filters.maxPrice')}
+          type="number"
+          min={0}
+          value={maxPrice}
+          onChange={(event) => setMaxPrice(event.target.value)}
+        />
+        {/* The order applies straight away; the filters wait for Search. */}
+        <Select
+          label={t('common:list.sortBy')}
+          value={sort}
+          onChange={(event) => onChange({ ...filters, sort: event.target.value as HarvestSort })}
+        >
+          <option value="newest">{t('common:list.newest')}</option>
+          <option value="priceAsc">{t('common:list.priceAsc')}</option>
+          <option value="priceDesc">{t('common:list.priceDesc')}</option>
+          <option value="quantityDesc">{t('common:list.quantityDesc')}</option>
+          <option value="freshest">{t('common:list.freshest')}</option>
+        </Select>
+      </div>
       <div className="flex items-end gap-2">
         <Button type="submit" className="flex-1">
           <MagnifyingGlass size={16} weight="duotone" />

@@ -48,5 +48,13 @@
     "expectedQuantity": "Expected quantity (kg)",
     "deleteError": "Could not delete this. Please try again.",
     "saveError": "Could not save this. Please try again."
+  },
+  "overview": {
+    "openIssues": "Problems waiting for advice",
+    "activeListings": "Active listings",
+    "pendingRequests": "New buyer requests",
+    "ordersInProgress": "Orders in progress",
+    "latestAdvice": "Latest advice: {{title}} ({{crop}})",
+    "label": "Your work at a glance"
   }
 }

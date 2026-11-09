@@ -1,3 +1,5 @@
+import type { QuantityUnit } from '@/lib/units'
+
 export type HarvestStatus = 'Active' | 'Sold' | 'Cancelled'
 
 export interface HarvestListingResponse {
@@ -10,6 +12,7 @@ export interface HarvestListingResponse {
   availableQuantity: number
   harvestDate: string
   pricePerUnit: number
+  unit: QuantityUnit
   location: string
   district: string
   status: HarvestStatus
@@ -29,6 +32,8 @@ export interface PriceStats {
 export interface PriceGuideResponse {
   cropType: string
   district: string | null
+  /** Every price is per this unit; only sales in it are counted. */
+  unit: QuantityUnit
   windowDays: number
   minimumSales: number
   inDistrict: PriceStats | null
@@ -40,6 +45,7 @@ export interface CreateHarvestListingRequest {
   quantity: number
   harvestDate: string
   pricePerUnit: number
+  unit: QuantityUnit
   location: string
 }
 
@@ -48,6 +54,8 @@ export interface UpdateHarvestListingRequest {
   pricePerUnit?: number
   location?: string
   harvestDate?: string
+  /** Refused by the API once a buyer has sent a request. */
+  unit?: QuantityUnit
 }
 
 /** The marketplace orders GET /api/harvests accepts. */

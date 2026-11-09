@@ -37,7 +37,9 @@
 
   --font-display: 'Fraunces', serif;
   --font-body: 'Plus Jakarta Sans', sans-serif;
-  --font-mono: 'JetBrains Mono', monospace;
+  /* Only technical text (usernames, model versions, agent traces) is monospace, so the system's
+     own monospace face is used rather than downloading a web font for it. */
+  --font-mono: ui-monospace, 'Cascadia Mono', Consolas, 'SFMono-Regular', Menlo, monospace;
 }
 
 /* Stated rather than left to the UA default, so native controls are right even

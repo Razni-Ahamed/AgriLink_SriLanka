@@ -42,3 +42,11 @@ export function useRespondToPurchaseRequest() {
     },
   })
 }
+
+export function useWithdrawPurchaseRequest() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (requestId: number) => purchaseRequestsApi.withdrawRequest(requestId),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: sentRequestsKey }),
+  })
+}

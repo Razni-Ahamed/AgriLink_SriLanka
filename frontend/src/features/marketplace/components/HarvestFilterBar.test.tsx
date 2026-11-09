@@ -43,4 +43,17 @@ describe('HarvestFilterBar', () => {
 
     expect(onChange).toHaveBeenCalledWith({ district: 'Kandy', sort: 'freshest' })
   })
+
+  it('keeps the filters behind a Filters button on a phone, counting the ones in use', async () => {
+    render(<HarvestFilterBar filters={{ district: 'Kandy', minPrice: 50 }} onChange={vi.fn()} />)
+
+    const toggle = screen.getByRole('button', { name: 'Filters (2)' })
+    expect(toggle).toHaveAttribute('aria-expanded', 'false')
+    expect(document.getElementById('marketplace-filters')).toHaveClass('hidden')
+
+    await userEvent.click(toggle)
+
+    expect(toggle).toHaveAttribute('aria-expanded', 'true')
+    expect(document.getElementById('marketplace-filters')).toHaveClass('contents')
+  })
 })

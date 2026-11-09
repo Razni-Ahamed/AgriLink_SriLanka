@@ -7,6 +7,7 @@ import { Skeleton } from '@/components/ui/Skeleton'
 import { mutationErrorMessage } from '@/lib/apiErrors'
 import { StaggerList } from '@/components/ui/motion/StaggerList'
 import { FarmCard } from '../components/FarmCard'
+import { FarmerOverview } from '../components/FarmerOverview'
 import { FarmForm } from '../components/FarmForm'
 import { useCreateFarm, useFarms } from '../hooks/useFarms'
 
@@ -25,6 +26,8 @@ export function FarmsListPage() {
           {t('list.newFarm')}
         </Button>
       </div>
+
+      <FarmerOverview />
 
       {isLoading && (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">

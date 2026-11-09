@@ -6,6 +6,7 @@ import { IconBadge } from '@/components/ui/IconBadge'
 import { UserAvatar } from '@/components/ui/UserAvatar'
 import { OrderTruckIcon } from '@/components/ui/icons/custom'
 import { formatDate, formatQuantity } from '@/lib/utils'
+import { useUnits } from '@/lib/units'
 import { useStatusLabel } from '@/lib/useStatusLabel'
 import type { Role } from '@/types/common'
 import type { OrderResponse, OrderStatus } from '@/types/dto/orders'
@@ -18,6 +19,7 @@ const statusVariant: Record<OrderStatus, 'warning' | 'success' | 'danger'> = {
 
 export function OrderCard({ order, role }: { order: OrderResponse; role: Role | null }) {
   const { t } = useTranslation(['orders', 'common'])
+  const units = useUnits()
   const statusLabel = useStatusLabel()
 
   // The counterpart is whoever the caller is NOT — a buyer sees the farmer they ordered from,
@@ -50,16 +52,16 @@ export function OrderCard({ order, role }: { order: OrderResponse; role: Role | 
           <p className="text-xs text-text-secondary">{order.cropType}</p>
         </div>
 
-        <div className="flex items-baseline justify-between font-mono text-sm">
+        <div className="flex items-baseline justify-between text-sm tabular-nums">
           <span className="text-text-secondary">
-            {t('common:units.kg', { value: formatQuantity(order.totalQuantity) })}
+            {units.quantity(order.totalQuantity, order.unit)}
           </span>
           <span className="text-brand-forest">
             {t('common:units.rupees', { value: formatQuantity(order.totalAmount) })}
           </span>
         </div>
 
-        <p className="font-mono text-xs text-text-secondary">{formatDate(order.orderDate)}</p>
+        <p className="text-xs tabular-nums text-text-secondary">{formatDate(order.orderDate)}</p>
       </Card>
     </Link>
   )

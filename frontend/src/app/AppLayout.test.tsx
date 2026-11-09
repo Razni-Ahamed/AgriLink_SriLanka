@@ -105,35 +105,73 @@ describe('AppLayout profile pop-up', () => {
     renderAt('/farms')
 
     // One set in the header (wide screens) and one in the phone tab bar; CSS shows one of them.
-    const menus = screen.getAllByRole('navigation', { name: 'Main menu' })
-    expect(menus).toHaveLength(2)
-    for (const menu of menus) {
-      const links = within(menu).getAllByRole('link')
-      expect(links.map((link) => link.getAttribute('href'))).toEqual([
-        '/farms',
-        '/issues/mine',
-        '/marketplace/browse',
-        '/marketplace/mine',
-        '/marketplace/requests',
-        '/orders/mine',
-      ])
-      expect(within(menu).getByRole('link', { name: 'Farms' })).toHaveAttribute(
-        'aria-current',
-        'page',
-      )
-      expect(within(menu).getByRole('link', { name: 'Orders' })).not.toHaveAttribute('aria-current')
-    }
+    const [header, bottomBar] = screen.getAllByRole('navigation', { name: 'Main menu' })
+    expect(
+      within(header)
+        .getAllByRole('link')
+        .map((link) => link.getAttribute('href')),
+    ).toEqual([
+      '/farms',
+      '/issues/mine',
+      '/marketplace/browse',
+      '/marketplace/mine',
+      '/marketplace/requests',
+      '/orders/mine',
+    ])
+    expect(within(header).getByRole('link', { name: 'Farms' })).toHaveAttribute(
+      'aria-current',
+      'page',
+    )
+    expect(within(header).getByRole('link', { name: 'Orders' })).not.toHaveAttribute('aria-current')
+    // Every tab carries its name as visible text, not only a tooltip.
+    expect(within(header).getByText('My Listings')).toBeVisible()
     expect(screen.queryByRole('link', { name: 'Notifications' })).not.toBeInTheDocument()
+
+    // A phone fits four named tabs; the rest sit under "More".
+    expect(
+      within(bottomBar)
+        .getAllByRole('link')
+        .map((link) => link.getAttribute('href')),
+    ).toEqual(['/farms', '/issues/mine', '/marketplace/browse', '/marketplace/mine'])
+    expect(within(bottomBar).getByRole('button', { name: 'More' })).toHaveAttribute(
+      'aria-expanded',
+      'false',
+    )
   })
 
-  it('shows the language and theme buttons, the profile button and Log out once signed in', () => {
+  it("opens the phone bar's More menu with the remaining pages, and closes it after one is picked", async () => {
+    const user = userEvent.setup()
+    const router = renderAt('/farms')
+    const bottomBar = screen.getAllByRole('navigation', { name: 'Main menu' })[1]
+
+    await user.click(within(bottomBar).getByRole('button', { name: 'More' }))
+    expect(within(bottomBar).getByRole('button', { name: 'More' })).toHaveAttribute(
+      'aria-expanded',
+      'true',
+    )
+    await user.click(within(bottomBar).getByRole('link', { name: 'Orders' }))
+
+    expect(router.state.location.pathname).toBe('/orders/mine')
+    expect(within(bottomBar).queryByRole('link', { name: 'Orders' })).not.toBeInTheDocument()
+    expect(within(bottomBar).getByRole('button', { name: 'More' })).toHaveAttribute(
+      'aria-expanded',
+      'false',
+    )
+  })
+
+  it('shows the language button, the profile button and Log out once signed in; the theme moves to the profile', async () => {
+    const user = userEvent.setup()
     renderAt('/farms')
 
     expect(screen.getByRole('button', { name: 'Language: English → සිංහල' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /^Theme: / })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /^Theme: / })).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'My profile (Nimal Perera)' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Log out' })).toBeInTheDocument()
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: /^My profile/ }))
+    const dialog = await screen.findByRole('dialog', { name: 'My profile' })
+    expect(within(dialog).getByRole('group', { name: 'Theme' })).toBeInTheDocument()
   })
 
   it('cycles the language English → Sinhala → Tamil → English from the header', async () => {
@@ -148,10 +186,11 @@ describe('AppLayout profile pop-up', () => {
     expect(useLanguageStore.getState().language).toBe('en')
   })
 
-  it('cycles the theme Light → System → Dark → Light from the header', async () => {
+  it("cycles the theme Light → System → Dark → Light from a visitor's header", async () => {
     const user = userEvent.setup()
     useUiStore.getState().setThemePreference('light')
-    renderAt('/farms')
+    useAuthStore.setState({ token: null, role: null, user: null })
+    renderAt('/marketplace/browse')
 
     for (const expected of ['system', 'dark', 'light'] as const) {
       await user.click(screen.getByRole('button', { name: /^Theme: / }))

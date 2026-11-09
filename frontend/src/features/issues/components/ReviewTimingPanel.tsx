@@ -82,7 +82,7 @@ function DurationCard({ label, value, hint, icon }: { label: string; value: stri
       <IconBadge tone="harvest">{icon}</IconBadge>
       <div>
         <p className="text-sm text-text-secondary">{label}</p>
-        <p className="font-mono text-2xl text-text-primary">{value}</p>
+        <p className="tabular-nums text-2xl text-text-primary">{value}</p>
         {hint && <p className="text-xs text-text-secondary">{hint}</p>}
       </div>
     </Card>

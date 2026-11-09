@@ -26,7 +26,7 @@ export function FieldList({ farmId, fields }: { farmId: number; fields: FieldDto
                   <Barn size={20} weight="duotone" />
                 </IconBadge>
                 <h3 className="font-display text-lg text-text-primary">{field.name}</h3>
-                <p className="font-mono text-sm text-brand-forest">
+                <p className="tabular-nums text-sm text-brand-forest">
                   {t('common:units.acres', { value: formatQuantity(field.area) })}
                 </p>
               </Card>

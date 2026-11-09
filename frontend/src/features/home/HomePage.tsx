@@ -117,9 +117,7 @@ function Hero() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.35 }}
       >
-        <p className="mb-3 text-sm font-medium uppercase tracking-wide text-brand-terracotta">
-          {t('hero.eyebrow')}
-        </p>
+        <p className="mb-3 text-sm font-medium text-brand-terracotta">{t('hero.eyebrow')}</p>
         <h1 className="font-display text-4xl leading-tight text-brand-forest sm:text-5xl">
           {t('hero.title')}
         </h1>
@@ -384,9 +382,7 @@ function StorySection() {
   return (
     <Section band="tint">
       <div className="mx-auto mb-4 max-w-2xl text-center">
-        <p className="mb-2 text-sm font-medium tracking-wide text-brand-terracotta uppercase">
-          {t('story.eyebrow')}
-        </p>
+        <p className="mb-2 text-sm font-medium text-brand-terracotta">{t('story.eyebrow')}</p>
         <h2 className="font-display text-3xl text-text-primary sm:text-4xl">{t('story.title')}</h2>
       </div>
 
@@ -413,7 +409,7 @@ function StorySection() {
                   index === active ? 'lg:opacity-100' : 'lg:opacity-40',
                 )}
               >
-                <span className="font-mono text-sm text-brand-terracotta tabular-nums">
+                <span className="tabular-nums text-sm text-brand-terracotta">
                   {String(index + 1).padStart(2, '0')}
                 </span>
                 <h3 className="mt-1 mb-2 font-display text-2xl text-text-primary sm:text-3xl">
@@ -544,7 +540,7 @@ function StepsSection() {
               {icon}
             </span>
             <div className="pt-1 lg:pt-0">
-              <span className="font-mono text-xs text-brand-terracotta tabular-nums">
+              <span className="tabular-nums text-xs text-brand-terracotta">
                 {String(index + 1).padStart(2, '0')}
               </span>
               <h3 className="mt-0.5 mb-1 font-display text-lg text-text-primary">

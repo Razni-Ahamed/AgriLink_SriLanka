@@ -64,7 +64,9 @@ describe('GeneralSettingsTab', () => {
 
     expect(screen.getByText('PLOT-42')).toBeInTheDocument()
     expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
-    expect(screen.getAllByRole('button')).toHaveLength(1)
+    // One Edit profile button; the other buttons are the light/dark/system theme choice.
+    expect(screen.getAllByRole('button', { name: /edit/i })).toHaveLength(1)
+    expect(screen.getByRole('group', { name: 'Theme' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Edit profile' })).toBeInTheDocument()
   })
 

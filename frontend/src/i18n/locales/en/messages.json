@@ -15,7 +15,7 @@
     "emptyHint": "Start a chat from a purchase request, an order, or an issue's advice page.",
     "you": "You: {{text}}",
     "officersOf": "Officers · {{district}}",
-    "dealTitle": "{{crop}} · {{quantity}} kg",
+    "dealTitle": "{{crop}} · {{quantity}}",
     "unread_one": "{{count}} unread message",
     "unread_other": "{{count}} unread messages",
     "loadError": "Your chats couldn't be loaded."

@@ -75,8 +75,9 @@ export function AppLayout() {
           spare they're equal and the tabs sit centred on the page; when space runs short neither
           shrinks below its content, so the smaller logo side gives way and the tabs drift left
           rather than anything overflowing. Below `xl` the admin's eight tabs, with names open,
-          don't fit beside the controls, so the tabs move to the bottom bar. Language and theme
-          stay in the header for everyone, since both matter before anyone finds a menu.
+          don't fit beside the controls, so the tabs move to the bottom bar. Language stays in
+          the header for everyone, since it matters before anyone can read a menu; signed in,
+          the theme setting moves to the profile pop-up.
           overflow-x-clip keeps any extreme case from scrolling the page sideways. */}
       <header className="sticky top-0 z-40 flex items-center gap-3 overflow-x-clip border-b border-brand-forest/10 bg-bg-surface/80 px-4 py-2.5 backdrop-blur-md sm:px-6 xl:gap-6">
         {/* `/` sends a signed-in user to their role's home, and a visitor to the landing page. */}
@@ -94,7 +95,9 @@ export function AppLayout() {
 
         <div className="flex flex-1 items-center justify-end gap-2 sm:gap-3 xl:gap-2">
           <LanguageCycleButton />
-          <ThemeCycleButton />
+          {/* Signed in, the theme setting sits in the profile pop-up instead, which frees room
+              on a phone's header. Visitors without a profile still get it here. */}
+          {!token && <ThemeCycleButton />}
           {/* Gated on the token, not on `user`: this layout also wraps the public
               marketplace browse route, and the bell polls GET /api/notifications/mine,
               which 401s for an anonymous visitor. */}

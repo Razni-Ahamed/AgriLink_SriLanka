@@ -10,9 +10,11 @@ import { CropPicker } from '@/components/ui/CropPicker'
 import { CropIcon } from '@/components/ui/CropIcon'
 import { IconBadge } from '@/components/ui/IconBadge'
 import { Input } from '@/components/ui/Input'
+import { Select } from '@/components/ui/Select'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { useCropLabel } from '@/lib/useCropLabel'
 import { formatQuantity } from '@/lib/utils'
+import { QUANTITY_UNITS, useUnits, type QuantityUnit } from '@/lib/units'
 import { useMyCrops } from '@/features/farms/hooks/useCrops'
 import type { CreateHarvestListingRequest } from '@/types/dto/harvests'
 import { PriceGuideHint } from './PriceGuideHint'
@@ -26,6 +28,7 @@ interface HarvestListingFormProps {
 export function HarvestListingForm({ prefill, isSubmitting, onSubmit }: HarvestListingFormProps) {
   const { t } = useTranslation(['marketplace', 'common'])
   const cropLabel = useCropLabel()
+  const units = useUnits()
   const { data: crops, isLoading: isLoadingCrops } = useMyCrops()
 
   const schema = useMemo(
@@ -35,6 +38,7 @@ export function HarvestListingForm({ prefill, isSubmitting, onSubmit }: HarvestL
         quantity: z.coerce.number().min(0.01, t('common:validation.quantityMin')).max(1000000),
         harvestDate: z.string().min(1, t('common:validation.harvestDateRequired')),
         pricePerUnit: z.coerce.number().min(0.01, t('common:validation.priceMin')).max(1000000),
+        unit: z.enum(QUANTITY_UNITS as [QuantityUnit, ...QuantityUnit[]]),
         location: z.string().min(1, t('common:validation.locationRequired')).max(150),
       }),
     [t],
@@ -49,10 +53,11 @@ export function HarvestListingForm({ prefill, isSubmitting, onSubmit }: HarvestL
     formState: { errors },
   } = useForm<z.input<typeof schema>, unknown, z.output<typeof schema>>({
     resolver: zodResolver(schema),
-    defaultValues: { cropId: prefill?.cropId },
+    defaultValues: { cropId: prefill?.cropId, unit: 'Kg' },
   })
 
   const selectedCropId = watch('cropId')
+  const unit = watch('unit') ?? 'Kg'
   const selectedCrop = crops?.find((crop) => crop.cropId === Number(selectedCropId))
 
   // The listing's location defaults to the crop's own farm district — the farmer can still
@@ -117,7 +122,7 @@ export function HarvestListingForm({ prefill, isSubmitting, onSubmit }: HarvestL
                 farm: selectedCrop.farmName,
               })}
             </p>
-            <p className="font-mono text-xs text-brand-forest">
+            <p className="tabular-nums text-xs text-brand-forest">
               {t('marketplace:listingForm.expectedYield', {
                 value: formatQuantity(selectedCrop.expectedQuantity),
               })}
@@ -130,11 +135,23 @@ export function HarvestListingForm({ prefill, isSubmitting, onSubmit }: HarvestL
         <PriceGuideHint
           cropType={selectedCrop.cropType}
           district={selectedCrop.district}
+          unit={unit}
           onUsePrice={(price) => setValue('pricePerUnit', price, { shouldValidate: true })}
         />
       )}
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <Select
+          label={t('marketplace:listingForm.unit')}
+          error={errors.unit?.message}
+          {...register('unit')}
+        >
+          {QUANTITY_UNITS.map((option) => (
+            <option key={option} value={option}>
+              {units.name(option)}
+            </option>
+          ))}
+        </Select>
         <Input
           label={t('marketplace:listingForm.quantity')}
           type="number"
@@ -143,7 +160,7 @@ export function HarvestListingForm({ prefill, isSubmitting, onSubmit }: HarvestL
           {...register('quantity')}
         />
         <Input
-          label={t('marketplace:listingForm.pricePerUnit')}
+          label={t('marketplace:listingForm.pricePerUnitIn', { unit: units.per(unit) })}
           type="number"
           step="0.01"
           error={errors.pricePerUnit?.message}
@@ -164,7 +181,7 @@ export function HarvestListingForm({ prefill, isSubmitting, onSubmit }: HarvestL
       />
 
       {/* A quick read of what the buyer will see, so the numbers are checked before publishing. */}
-      <SummaryRow quantity={watch('quantity')} pricePerUnit={watch('pricePerUnit')} />
+      <SummaryRow quantity={watch('quantity')} pricePerUnit={watch('pricePerUnit')} unit={unit} />
 
       <Button type="submit" isLoading={isSubmitting}>
         {isSubmitting
@@ -175,8 +192,17 @@ export function HarvestListingForm({ prefill, isSubmitting, onSubmit }: HarvestL
   )
 }
 
-function SummaryRow({ quantity, pricePerUnit }: { quantity: unknown; pricePerUnit: unknown }) {
+function SummaryRow({
+  quantity,
+  pricePerUnit,
+  unit,
+}: {
+  quantity: unknown
+  pricePerUnit: unknown
+  unit: QuantityUnit
+}) {
   const { t } = useTranslation(['marketplace', 'common'])
+  const units = useUnits()
   const qty = Number(quantity)
   const price = Number(pricePerUnit)
 
@@ -191,23 +217,21 @@ function SummaryRow({ quantity, pricePerUnit }: { quantity: unknown; pricePerUni
           <Package size={13} />
           {t('marketplace:listingForm.quantity')}
         </dt>
-        <dd className="font-mono tabular-nums text-sm text-text-primary">{formatQuantity(qty)}</dd>
+        <dd className="tabular-nums text-sm text-text-primary">{units.quantity(qty, unit)}</dd>
       </div>
       <div>
         <dt className="flex items-center justify-center gap-1 text-xs text-text-secondary">
           <CurrencyCircleDollar size={13} />
           {t('marketplace:listingForm.pricePerUnit')}
         </dt>
-        <dd className="font-mono tabular-nums text-sm text-text-primary">
-          {formatQuantity(price)}
-        </dd>
+        <dd className="tabular-nums text-sm text-text-primary">{units.price(price, unit)}</dd>
       </div>
       <div>
         <dt className="flex items-center justify-center gap-1 text-xs text-text-secondary">
           <Receipt size={13} />
           {t('marketplace:listingForm.estimatedTotal')}
         </dt>
-        <dd className="font-mono tabular-nums text-sm font-medium text-brand-forest">
+        <dd className="tabular-nums text-sm font-medium text-brand-forest">
           {t('common:units.rupees', { value: formatQuantity(qty * price) })}
         </dd>
       </div>

@@ -45,7 +45,7 @@ describe('HomeRoute', () => {
   // The landing page's code loads on demand; load it once up front so each test only waits a tick.
   beforeAll(async () => {
     await import('@/features/home/HomePage')
-  })
+  }, 30_000) // the first import transforms the whole landing page, slow when every suite runs at once
 
   beforeEach(async () => {
     await i18n.changeLanguage('en')

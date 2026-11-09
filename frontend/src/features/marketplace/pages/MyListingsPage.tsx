@@ -12,7 +12,8 @@ import { Select } from '@/components/ui/Select'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { StaggerList } from '@/components/ui/motion/StaggerList'
 import { useUiStore } from '@/lib/useUiStore'
-import { formatDate, formatQuantity } from '@/lib/utils'
+import { formatDate } from '@/lib/utils'
+import { useUnits } from '@/lib/units'
 import { useStatusLabel } from '@/lib/useStatusLabel'
 import { EditHarvestForm } from '../components/EditHarvestForm'
 import { HarvestListingForm } from '../components/HarvestListingForm'
@@ -30,6 +31,7 @@ const statusOptions: HarvestStatus[] = ['Active', 'Sold', 'Cancelled']
 function MyListingCard({ harvest }: { harvest: HarvestListingResponse }) {
   const { t } = useTranslation(['marketplace', 'common'])
   const statusLabel = useStatusLabel()
+  const units = useUnits()
   const updateHarvest = useUpdateHarvest(harvest.harvestId)
   const addToast = useUiStore((state) => state.addToast)
   const [isEditOpen, setEditOpen] = useState(false)
@@ -51,13 +53,13 @@ function MyListingCard({ harvest }: { harvest: HarvestListingResponse }) {
         </Badge>
       </div>
 
-      <p className="font-mono tabular-nums text-brand-forest">
-        {t('common:units.rupeesPerUnit', { value: formatQuantity(harvest.pricePerUnit) })}
+      <p className="text-xl font-semibold tabular-nums text-brand-forest">
+        {units.price(harvest.pricePerUnit, harvest.unit)}
       </p>
-      <p className="font-mono tabular-nums text-sm text-text-secondary">
+      <p className="tabular-nums text-sm text-text-secondary">
         {t('marketplace:listings.availableOf', {
-          available: formatQuantity(harvest.availableQuantity),
-          total: formatQuantity(harvest.quantity),
+          available: units.quantity(harvest.availableQuantity, harvest.unit),
+          total: units.quantity(harvest.quantity, harvest.unit),
         })}
       </p>
       <p className="text-xs text-text-secondary">

@@ -1,4 +1,6 @@
-export type PurchaseRequestStatus = 'Pending' | 'Accepted' | 'Declined' | 'Cancelled'
+import type { QuantityUnit } from '@/lib/units'
+
+export type PurchaseRequestStatus = 'Pending' | 'Accepted' | 'Declined' | 'Cancelled' | 'Withdrawn'
 
 export interface PurchaseRequestResponse {
   requestId: number
@@ -11,6 +13,8 @@ export interface PurchaseRequestResponse {
   cropType: string
   district: string
   pricePerUnit: number
+  /** What requestedQuantity and pricePerUnit are counted in. */
+  unit: QuantityUnit
 
   // Who sent it — no phone/email here (unlike OrderResponse): a request isn't a deal yet, so
   // the buyer's direct contact details stay withheld until the farmer accepts it.

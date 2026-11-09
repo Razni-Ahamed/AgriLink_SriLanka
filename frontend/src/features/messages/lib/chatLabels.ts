@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next'
 import { useCropLabel } from '@/lib/useCropLabel'
-import { formatQuantity } from '@/lib/utils'
+import { useUnits } from '@/lib/units'
 import type { ConversationDetail, ConversationSummary } from '@/types/dto/conversations'
 
 /** Who the chat is with: a person, or for a farmer's advice chat the district's officers. */
@@ -14,10 +14,13 @@ export function useCounterpartLabel() {
 export function useChatSubjectLabel() {
   const { t } = useTranslation('messages')
   const cropLabel = useCropLabel()
-  return (chat: Pick<ConversationSummary | ConversationDetail, 'kind' | 'title' | 'cropType' | 'quantity'>) =>
+  const units = useUnits()
+  return (
+    chat: Pick<ConversationSummary | ConversationDetail, 'kind' | 'title' | 'cropType' | 'quantity' | 'unit'>,
+  ) =>
     chat.kind === 'Deal'
       ? chat.quantity != null
-        ? t('list.dealTitle', { crop: cropLabel(chat.cropType), quantity: formatQuantity(chat.quantity) })
+        ? t('list.dealTitle', { crop: cropLabel(chat.cropType), quantity: units.quantity(chat.quantity, chat.unit) })
         : cropLabel(chat.cropType)
       : chat.title
 }

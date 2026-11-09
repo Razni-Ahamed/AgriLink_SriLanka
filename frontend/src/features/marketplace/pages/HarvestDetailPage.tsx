@@ -10,12 +10,13 @@ import { IconBadge } from '@/components/ui/IconBadge'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { useAuthStore } from '@/auth/authStore'
 import { useUiStore } from '@/lib/useUiStore'
-import { formatDate, formatQuantity } from '@/lib/utils'
+import { formatDate } from '@/lib/utils'
 import { useStatusLabel } from '@/lib/useStatusLabel'
 import { EditHarvestForm } from '../components/EditHarvestForm'
 import { PurchaseRequestForm } from '../components/PurchaseRequestForm'
 import { useHarvest, useUpdateHarvest } from '../hooks/useHarvests'
 import { useCreatePurchaseRequest } from '../hooks/usePurchaseRequests'
+import { useUnits } from '@/lib/units'
 
 const statusVariant = {
   Active: 'success',
@@ -25,6 +26,7 @@ const statusVariant = {
 
 export function HarvestDetailPage() {
   const { t } = useTranslation(['marketplace', 'common'])
+  const units = useUnits()
   const statusLabel = useStatusLabel()
   const { harvestId } = useParams<{ harvestId: string }>()
   const id = Number(harvestId)
@@ -81,29 +83,29 @@ export function HarvestDetailPage() {
             <MapPin size={14} />
             {t('marketplace:detail.district')}
           </dt>
-          <dd className="font-mono text-text-primary">{harvest.district}</dd>
+          <dd className="text-text-primary">{harvest.district}</dd>
         </div>
         <div>
           <dt className="flex items-center gap-1 text-text-secondary">
             <Calendar size={14} />
             {t('marketplace:detail.harvestDate')}
           </dt>
-          <dd className="font-mono text-text-primary">{formatDate(harvest.harvestDate)}</dd>
+          <dd className="tabular-nums text-text-primary">{formatDate(harvest.harvestDate)}</dd>
         </div>
         <div>
           <dt className="text-text-secondary">{t('marketplace:detail.location')}</dt>
-          <dd className="font-mono text-text-primary">{harvest.location}</dd>
+          <dd className="text-text-primary">{harvest.location}</dd>
         </div>
         <div>
           <dt className="text-text-secondary">{t('marketplace:detail.availableQuantity')}</dt>
-          <dd className="font-mono tabular-nums text-text-primary">
-            {formatQuantity(harvest.availableQuantity)}
+          <dd className="tabular-nums text-text-primary">
+            {units.quantity(harvest.availableQuantity, harvest.unit)}
           </dd>
         </div>
         <div>
           <dt className="text-text-secondary">{t('marketplace:detail.pricePerUnit')}</dt>
-          <dd className="font-mono tabular-nums text-brand-forest">
-            {t('common:units.rupees', { value: formatQuantity(harvest.pricePerUnit) })}
+          <dd className="text-lg font-semibold tabular-nums text-brand-forest">
+            {units.price(harvest.pricePerUnit, harvest.unit)}
           </dd>
         </div>
       </dl>
@@ -135,6 +137,7 @@ export function HarvestDetailPage() {
         ) : (
           <PurchaseRequestForm
             availableQuantity={harvest.availableQuantity}
+            unit={harvest.unit}
             isSubmitting={createRequest.isPending}
             onSubmit={(values) =>
               createRequest.mutate(

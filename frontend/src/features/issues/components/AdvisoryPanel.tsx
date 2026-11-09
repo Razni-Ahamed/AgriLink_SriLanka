@@ -88,7 +88,7 @@ export function AdvisoryPanel({ advisory, audience = 'reviewer' }: AdvisoryPanel
         <Badge variant={riskVariant[advisory.riskLevel]}>
           {t('advisory.riskPrefix', { level: statusLabel('risk', advisory.riskLevel) })}
         </Badge>
-        <span className="font-mono text-sm text-text-secondary">
+        <span className="tabular-nums text-sm text-text-secondary">
           {t('advisory.confidence', { value: Math.round(advisory.confidenceScore * 100) })}
         </span>
       </div>
