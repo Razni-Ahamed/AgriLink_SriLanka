@@ -17,7 +17,8 @@
     "myReviews": "My Reviews",
     "officerDashboard": "Dashboard",
     "pendingRegistrations": "Approvals",
-    "menu": "Main menu"
+    "menu": "Main menu",
+    "more": "More"
   },
   "actions": {
     "saving": "Saving…",
@@ -79,7 +80,35 @@
     "kg": "{{value}} kg",
     "rupees": "Rs {{value}}",
     "rupeesPerUnit": "Rs {{value}}/unit",
-    "availableShort": "{{value}} avail."
+    "availableShort": "{{value}} avail.",
+    "per": {
+      "Kg": "kg",
+      "Piece": "piece",
+      "Bunch": "bunch",
+      "Sack": "sack",
+      "Crate": "crate"
+    },
+    "name": {
+      "Kg": "Kilograms (kg)",
+      "Piece": "Pieces",
+      "Bunch": "Bunches",
+      "Sack": "Sacks",
+      "Crate": "Crates"
+    },
+    "quantity": {
+      "Kg_one": "{{value}} kg",
+      "Kg_other": "{{value}} kg",
+      "Piece_one": "{{value}} piece",
+      "Piece_other": "{{value}} pieces",
+      "Bunch_one": "{{value}} bunch",
+      "Bunch_other": "{{value}} bunches",
+      "Sack_one": "{{value}} sack",
+      "Sack_other": "{{value}} sacks",
+      "Crate_one": "{{value}} crate",
+      "Crate_other": "{{value}} crates"
+    },
+    "pricePer": "Rs {{value}}/{{unit}}",
+    "availableQuantity": "{{quantity}} available"
   },
   "fields": {
     "email": "Email",
@@ -124,7 +153,8 @@
       "Pending": "Pending",
       "Accepted": "Accepted",
       "Declined": "Declined",
-      "Cancelled": "Closed – listing unavailable"
+      "Cancelled": "Closed – listing unavailable",
+      "Withdrawn": "Withdrawn"
     },
     "order": {
       "Confirmed": "Confirmed",

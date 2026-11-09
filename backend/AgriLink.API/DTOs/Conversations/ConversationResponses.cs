@@ -11,6 +11,9 @@ public class ConversationSummaryResponse
     public string Title { get; set; } = string.Empty;
     public string CropType { get; set; } = string.Empty;
     public decimal? Quantity { get; set; }
+
+    /// <summary>What a deal chat's <see cref="Quantity"/> is counted in; null for advice chats.</summary>
+    public string? Unit { get; set; }
     public string District { get; set; } = string.Empty;
 
     /// <summary>Who the caller is talking to. Null for a farmer's advice chat, which is with "the
@@ -35,6 +38,9 @@ public class ConversationResponse
     public string Title { get; set; } = string.Empty;
     public string CropType { get; set; } = string.Empty;
     public decimal? Quantity { get; set; }
+
+    /// <summary>What a deal chat's <see cref="Quantity"/> is counted in; null for advice chats.</summary>
+    public string? Unit { get; set; }
     public string District { get; set; } = string.Empty;
 
     public string? CounterpartName { get; set; }

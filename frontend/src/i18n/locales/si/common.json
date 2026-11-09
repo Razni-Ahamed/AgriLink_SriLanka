@@ -17,7 +17,8 @@
     "myReviews": "මගේ සමාලෝචන",
     "officerDashboard": "උපකරණ පුවරුව",
     "pendingRegistrations": "අනුමැතීන්",
-    "menu": "ප්‍රධාන මෙනුව"
+    "menu": "ප්‍රධාන මෙනුව",
+    "more": "තවත්"
   },
   "actions": {
     "saving": "සුරකිමින්…",
@@ -79,7 +80,35 @@
     "kg": "{{value}} කි.ග්‍රෑ.",
     "rupees": "රු. {{value}}",
     "rupeesPerUnit": "රු. {{value}}/ඒකකය",
-    "availableShort": "{{value}} ඇත"
+    "availableShort": "{{value}} ඇත",
+    "per": {
+      "Kg": "කි.ග්‍රෑ.",
+      "Piece": "ගෙඩිය",
+      "Bunch": "කැන",
+      "Sack": "ගෝනිය",
+      "Crate": "පෙට්ටිය"
+    },
+    "name": {
+      "Kg": "කිලෝග්‍රෑම් (කි.ග්‍රෑ.)",
+      "Piece": "ගෙඩි",
+      "Bunch": "කැන",
+      "Sack": "ගෝනි",
+      "Crate": "පෙට්ටි"
+    },
+    "quantity": {
+      "Kg_one": "{{value}} කි.ග්‍රෑ.",
+      "Kg_other": "{{value}} කි.ග්‍රෑ.",
+      "Piece_one": "ගෙඩි {{value}}",
+      "Piece_other": "ගෙඩි {{value}}",
+      "Bunch_one": "කැන {{value}}",
+      "Bunch_other": "කැන {{value}}",
+      "Sack_one": "ගෝනි {{value}}",
+      "Sack_other": "ගෝනි {{value}}",
+      "Crate_one": "පෙට්ටි {{value}}",
+      "Crate_other": "පෙට්ටි {{value}}"
+    },
+    "pricePer": "රු. {{value}}/{{unit}}",
+    "availableQuantity": "{{quantity}} ඇත"
   },
   "fields": {
     "email": "විද්‍යුත් තැපෑල",
@@ -124,7 +153,8 @@
       "Pending": "අපේක්ෂිතයි",
       "Accepted": "පිළිගෙන ඇත",
       "Declined": "ප්‍රතික්ෂේප කර ඇත",
-      "Cancelled": "වසා ඇත – ලැයිස්තුව නොතිබේ"
+      "Cancelled": "වසා ඇත – ලැයිස්තුව නොතිබේ",
+      "Withdrawn": "ආපසු ගන්නා ලදී"
     },
     "order": {
       "Confirmed": "තහවුරු කර ඇත",

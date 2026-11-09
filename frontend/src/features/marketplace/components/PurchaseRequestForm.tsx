@@ -6,19 +6,23 @@ import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Textarea } from '@/components/ui/Textarea'
+import { useUnits, type QuantityUnit } from '@/lib/units'
 
 interface PurchaseRequestFormProps {
   availableQuantity: number
+  unit?: QuantityUnit
   isSubmitting?: boolean
   onSubmit: (values: { requestedQuantity: number; message?: string }) => void
 }
 
 export function PurchaseRequestForm({
   availableQuantity,
+  unit,
   isSubmitting,
   onSubmit,
 }: PurchaseRequestFormProps) {
   const { t } = useTranslation(['marketplace', 'common'])
+  const units = useUnits()
 
   const schema = useMemo(
     () =>
@@ -26,10 +30,13 @@ export function PurchaseRequestForm({
         requestedQuantity: z.coerce
           .number()
           .min(0.01, t('common:validation.quantityMin'))
-          .max(availableQuantity, t('common:validation.onlyAvailable', { max: availableQuantity })),
+          .max(
+            availableQuantity,
+            t('common:validation.onlyAvailable', { max: units.quantity(availableQuantity, unit) }),
+          ),
         message: z.string().max(500).optional(),
       }),
-    [t, availableQuantity],
+    [t, availableQuantity, unit, units],
   )
 
   const {
@@ -43,7 +50,9 @@ export function PurchaseRequestForm({
   return (
     <form className="flex flex-col gap-4" onSubmit={handleSubmit(onSubmit)}>
       <Input
-        label={t('marketplace:requestForm.quantityLabel', { max: availableQuantity })}
+        label={t('marketplace:requestForm.quantityLabel', {
+          max: units.quantity(availableQuantity, unit),
+        })}
         type="number"
         step="0.01"
         error={errors.requestedQuantity?.message}

@@ -17,7 +17,8 @@
     "myReviews": "எனது மதிப்பாய்வுகள்",
     "officerDashboard": "டாஷ்போர்டு",
     "pendingRegistrations": "ஒப்புதல்கள்",
-    "menu": "முதன்மை மெனு"
+    "menu": "முதன்மை மெனு",
+    "more": "மேலும்"
   },
   "actions": {
     "saving": "சேமிக்கிறது…",
@@ -79,7 +80,35 @@
     "kg": "{{value}} கி.கி.",
     "rupees": "ரூ. {{value}}",
     "rupeesPerUnit": "ரூ. {{value}}/அலகு",
-    "availableShort": "{{value}} உள்ளது"
+    "availableShort": "{{value}} உள்ளது",
+    "per": {
+      "Kg": "கி.கி.",
+      "Piece": "ஒன்று",
+      "Bunch": "குலை",
+      "Sack": "மூட்டை",
+      "Crate": "பெட்டி"
+    },
+    "name": {
+      "Kg": "கிலோகிராம் (கி.கி.)",
+      "Piece": "எண்ணிக்கை",
+      "Bunch": "குலைகள்",
+      "Sack": "மூட்டைகள்",
+      "Crate": "பெட்டிகள்"
+    },
+    "quantity": {
+      "Kg_one": "{{value}} கி.கி.",
+      "Kg_other": "{{value}} கி.கி.",
+      "Piece_one": "{{value}} எண்ணிக்கை",
+      "Piece_other": "{{value}} எண்ணிக்கை",
+      "Bunch_one": "{{value}} குலை",
+      "Bunch_other": "{{value}} குலைகள்",
+      "Sack_one": "{{value}} மூட்டை",
+      "Sack_other": "{{value}} மூட்டைகள்",
+      "Crate_one": "{{value}} பெட்டி",
+      "Crate_other": "{{value}} பெட்டிகள்"
+    },
+    "pricePer": "ரூ. {{value}}/{{unit}}",
+    "availableQuantity": "{{quantity}} உள்ளது"
   },
   "fields": {
     "email": "மின்னஞ்சல்",
@@ -124,7 +153,8 @@
       "Pending": "நிலுவையில்",
       "Accepted": "ஏற்கப்பட்டது",
       "Declined": "நிராகரிக்கப்பட்டது",
-      "Cancelled": "மூடப்பட்டது – பட்டியல் இல்லை"
+      "Cancelled": "மூடப்பட்டது – பட்டியல் இல்லை",
+      "Withdrawn": "திரும்பப் பெறப்பட்டது"
     },
     "order": {
       "Confirmed": "உறுதிப்படுத்தப்பட்டது",

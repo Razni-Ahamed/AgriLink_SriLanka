@@ -34,3 +34,11 @@ export async function respondToRequest(
   )
   return data
 }
+
+/** The buyer takes back their own request while it is still Pending. Buyer-only endpoint. */
+export async function withdrawRequest(requestId: number): Promise<PurchaseRequestResponse> {
+  const { data } = await apiClient.post<PurchaseRequestResponse>(
+    `/api/purchase-requests/${requestId}/withdraw`,
+  )
+  return data
+}

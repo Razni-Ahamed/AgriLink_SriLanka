@@ -24,7 +24,7 @@ export function FarmCard({ farm }: { farm: FarmDto }) {
               {farm.district}
             </p>
           </div>
-          <p className="font-mono text-sm text-brand-forest">
+          <p className="tabular-nums text-sm text-brand-forest">
             {t('units.acres', { value: formatQuantity(farm.area) })}
           </p>
         </Card>

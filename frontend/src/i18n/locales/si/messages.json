@@ -15,7 +15,7 @@
     "emptyHint": "මිලදී ගැනීමේ ඉල්ලීමකින්, ඇණවුමකින් හෝ ගැටලුවක උපදෙස් පිටුවෙන් කතාබහක් අරඹන්න.",
     "you": "ඔබ: {{text}}",
     "officersOf": "නිලධාරීන් · {{district}}",
-    "dealTitle": "{{crop}} · කි.ග්‍රෑ. {{quantity}}",
+    "dealTitle": "{{crop}} · {{quantity}}",
     "unread_one": "නොකියවූ පණිවිඩ {{count}}",
     "unread_other": "නොකියවූ පණිවිඩ {{count}}",
     "loadError": "ඔබගේ කතාබස් පූරණය කළ නොහැකි විය."

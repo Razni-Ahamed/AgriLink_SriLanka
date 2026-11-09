@@ -11,4 +11,8 @@ public class UpdateHarvestListingRequest
     [MaxLength(150)]
     public string? Location { get; set; }
     public DateOnly? HarvestDate { get; set; }
+
+    /// <summary>Only while nobody has sent a request on the listing, since a request's quantity is
+    /// counted in the listing's unit.</summary>
+    public QuantityUnit? Unit { get; set; }
 }

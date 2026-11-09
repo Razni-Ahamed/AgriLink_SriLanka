@@ -5,7 +5,8 @@ import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Shake } from '@/components/ui/motion/Shake'
 import { FlashOnSuccess } from '@/components/ui/motion/FlashOnSuccess'
-import { formatDate, formatQuantity } from '@/lib/utils'
+import { formatDate } from '@/lib/utils'
+import { useUnits } from '@/lib/units'
 import { useStatusLabel } from '@/lib/useStatusLabel'
 import { useAuthStore } from '@/auth/authStore'
 import { StartChatButton } from '@/features/messages/components/StartChatButton'
@@ -16,6 +17,7 @@ const statusVariant = {
   Accepted: 'success',
   Declined: 'danger',
   Cancelled: 'neutral',
+  Withdrawn: 'neutral',
 } as const
 
 interface PurchaseRequestCardProps {
@@ -24,6 +26,8 @@ interface PurchaseRequestCardProps {
   onAccept?: () => void
   onDecline?: () => void
   isResponding?: boolean
+  /** The buyer's own pending request: shows "Withdraw request". */
+  onWithdraw?: () => void
 }
 
 export function PurchaseRequestCard({
@@ -31,9 +35,11 @@ export function PurchaseRequestCard({
   onAccept,
   onDecline,
   isResponding,
+  onWithdraw,
 }: PurchaseRequestCardProps) {
   const { t } = useTranslation(['marketplace', 'common', 'messages'])
   const statusLabel = useStatusLabel()
+  const units = useUnits()
   const role = useAuthStore((state) => state.role)
   const [justAccepted, setJustAccepted] = useState(false)
   const [justDeclined, setJustDeclined] = useState(false)
@@ -55,7 +61,7 @@ export function PurchaseRequestCard({
           <div className="flex items-start justify-between">
             <div>
               <h3 className="font-display text-lg text-text-primary">{request.cropType}</h3>
-              <span className="font-mono tabular-nums text-xs text-text-secondary">
+              <span className="tabular-nums text-xs text-text-secondary">
                 {t('marketplace:requests.requestNumber', { id: request.requestId })}
               </span>
             </div>
@@ -72,14 +78,14 @@ export function PurchaseRequestCard({
             })}
           </p>
 
-          <p className="font-mono tabular-nums text-brand-forest">
-            {t('marketplace:requests.unitsRequested', {
-              quantity: formatQuantity(request.requestedQuantity),
+          <p className="text-lg font-semibold tabular-nums text-brand-forest">
+            {t('marketplace:requests.quantityRequested', {
+              quantity: units.quantity(request.requestedQuantity, request.unit),
             })}
           </p>
 
-          <p className="font-mono tabular-nums text-sm text-text-secondary">
-            {t('common:units.rupeesPerUnit', { value: formatQuantity(request.pricePerUnit) })}
+          <p className="tabular-nums text-sm text-text-secondary">
+            {units.price(request.pricePerUnit, request.unit)}
             {' · '}
             {request.district}
           </p>
@@ -97,6 +103,12 @@ export function PurchaseRequestCard({
                 variant="ghost"
               />
             )}
+
+          {request.status === 'Pending' && onWithdraw && (
+            <Button size="sm" variant="ghost" className="self-start" onClick={onWithdraw}>
+              {t('marketplace:sentRequests.withdraw')}
+            </Button>
+          )}
 
           {request.status === 'Pending' && onAccept && onDecline && (
             <div className="flex gap-2">

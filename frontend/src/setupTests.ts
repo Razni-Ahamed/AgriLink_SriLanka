@@ -1,4 +1,10 @@
 import '@testing-library/jest-dom'
+import { loadLanguage } from '@/i18n/config'
+
+// The app fetches Sinhala and Tamil only when someone picks them. Tests switch languages
+// synchronously, so have both here from the start (i18n/languageSwitching.test.tsx covers the
+// on-demand loading itself).
+await Promise.all([loadLanguage('si'), loadLanguage('ta')])
 
 // jsdom doesn't implement matchMedia, which the theme layer uses to resolve the
 // `system` preference. Default to light; tests that care drive it themselves

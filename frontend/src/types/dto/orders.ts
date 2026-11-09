@@ -1,3 +1,5 @@
+import type { QuantityUnit } from '@/lib/units'
+
 export type OrderStatus = 'Confirmed' | 'Completed' | 'Cancelled'
 
 export interface OrderResponse {
@@ -29,5 +31,7 @@ export interface OrderResponse {
 
   cropType: string
   pricePerUnit: number
+  /** What totalQuantity and pricePerUnit are counted in. */
+  unit: QuantityUnit
   harvestLocation: string
 }

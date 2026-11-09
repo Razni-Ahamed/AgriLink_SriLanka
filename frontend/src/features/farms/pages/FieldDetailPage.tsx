@@ -56,7 +56,7 @@ export function FieldDetailPage() {
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="font-display text-2xl text-text-primary">{field.name}</h1>
-          <p className="font-mono text-sm text-brand-forest">
+          <p className="tabular-nums text-sm text-brand-forest">
             {t('common:units.acres', { value: formatQuantity(field.area) })}
           </p>
         </div>
@@ -127,7 +127,7 @@ export function FieldDetailPage() {
                       <p className="text-sm text-text-secondary">
                         {crop.variety || t('farms:crop.noVariety')}
                       </p>
-                      <p className="font-mono text-xs text-brand-forest">
+                      <p className="tabular-nums text-xs text-brand-forest">
                         {statusLabel('crop', crop.status)}
                       </p>
                     </Card>

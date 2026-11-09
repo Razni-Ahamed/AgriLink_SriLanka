@@ -98,13 +98,16 @@ export function MyIssuesPage() {
   return (
     <div className="flex flex-col gap-6">
       {/* The only route to /issues/new used to be a button buried on a crop's detail page,
-          three levels inside Farms — so from "My Issues" there was no way to raise one. */}
+          three levels inside Farms — so from "My Issues" there was no way to raise one. With no
+          issues yet, the empty state below carries the one button instead. */}
       <div className="flex items-center justify-between">
         <h1 className="font-display text-2xl text-text-primary">{t('mine.title')}</h1>
-        <Button onClick={() => navigate('/issues/new')}>
-          <Plus size={16} weight="bold" />
-          {t('mine.reportIssue')}
-        </Button>
+        {issues && issues.length > 0 && (
+          <Button onClick={() => navigate('/issues/new')}>
+            <Plus size={16} weight="bold" />
+            {t('mine.reportIssue')}
+          </Button>
+        )}
       </div>
 
       {isLoading && (
@@ -120,9 +123,8 @@ export function MyIssuesPage() {
           <IconBadge tone="forest">
             <FirstAidKit size={20} weight="duotone" />
           </IconBadge>
-          <p className="text-sm text-text-primary">{t('mine.empty')}</p>
-          <p className="max-w-sm text-sm text-text-secondary">{t('mine.emptyHint')}</p>
-          <Button variant="secondary" onClick={() => navigate('/issues/new')}>
+          <p className="max-w-sm text-sm text-text-primary">{t('mine.empty')}</p>
+          <Button onClick={() => navigate('/issues/new')}>
             <Plus size={16} weight="bold" />
             {t('mine.reportIssue')}
           </Button>

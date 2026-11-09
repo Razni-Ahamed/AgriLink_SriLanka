@@ -60,15 +60,15 @@ export function CropDetailPage() {
       <dl className="grid grid-cols-2 gap-4 text-sm">
         <div>
           <dt className="text-text-secondary">{t('farms:crop.plantingDate')}</dt>
-          <dd className="font-mono text-text-primary">{formatDate(crop.plantingDate)}</dd>
+          <dd className="tabular-nums text-text-primary">{formatDate(crop.plantingDate)}</dd>
         </div>
         <div>
           <dt className="text-text-secondary">{t('farms:crop.expectedHarvest')}</dt>
-          <dd className="font-mono text-text-primary">{formatDate(crop.expectedHarvestDate)}</dd>
+          <dd className="tabular-nums text-text-primary">{formatDate(crop.expectedHarvestDate)}</dd>
         </div>
         <div>
           <dt className="text-text-secondary">{t('farms:crop.expectedQuantity')}</dt>
-          <dd className="font-mono text-text-primary">
+          <dd className="tabular-nums text-text-primary">
             {t('common:units.kg', { value: formatQuantity(crop.expectedQuantity) })}
           </dd>
         </div>

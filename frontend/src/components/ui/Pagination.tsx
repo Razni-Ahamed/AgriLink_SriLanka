@@ -33,7 +33,7 @@ export function Pagination({ page, totalPages, onPageChange, disabled, className
         <CaretLeft size={16} weight="bold" />
       </button>
 
-      <span className="font-mono text-sm text-text-secondary" aria-live="polite">
+      <span className="tabular-nums text-sm text-text-secondary" aria-live="polite">
         {t('pagination.pageOf', { page, totalPages: clampedTotalPages })}
       </span>
 

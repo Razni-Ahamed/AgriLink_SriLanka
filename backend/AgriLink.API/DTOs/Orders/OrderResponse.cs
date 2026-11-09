@@ -36,5 +36,8 @@ public class OrderResponse
     // always matches TotalAmount even if the farmer edits the listing later.
     public string CropType { get; set; } = string.Empty;
     public decimal PricePerUnit { get; set; }
+
+    /// <summary>The listing's unit: what TotalQuantity and PricePerUnit are counted in.</summary>
+    public string Unit { get; set; } = string.Empty;
     public string HarvestLocation { get; set; } = string.Empty;
 }

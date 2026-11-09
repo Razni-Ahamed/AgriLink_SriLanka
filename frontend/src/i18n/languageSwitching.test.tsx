@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter } from 'react-router-dom'
 import '@/i18n/config'
-import i18n, { resources } from '@/i18n/config'
+import i18n, { loadLanguage, resources } from '@/i18n/config'
 import { LoginPage } from '@/auth/LoginPage'
 import { hydrateLanguage, useLanguageStore } from '@/lib/useLanguageStore'
 import { readStoredLanguage } from '@/i18n/languageStorage'
@@ -83,7 +83,26 @@ describe('language switching', () => {
     expect(freshI18n.language).toBe('si')
   })
 
-  it('has a translation for every English key in all three languages', () => {
+  it('bundles only English, and fetches Sinhala and Tamil when they are first needed', async () => {
+    localStorage.setItem('agrilink.language', 'en')
+    vi.resetModules()
+    const fresh = await import('@/i18n/config')
+
+    expect(fresh.isLanguageLoaded('en')).toBe(true)
+    expect(fresh.isLanguageLoaded('si')).toBe(false)
+    expect(fresh.default.getResourceBundle('si', 'common')).toBeUndefined()
+
+    await fresh.loadLanguage('si')
+
+    expect(fresh.isLanguageLoaded('si')).toBe(true)
+    expect(fresh.default.getFixedT('si', 'auth')('login.subtitle')).toBe('ඔබගේ ගිණුමට පිවිසෙන්න')
+    expect(fresh.isLanguageLoaded('ta')).toBe(false)
+  })
+
+  it('has a translation for every English key in all three languages', async () => {
+    // The tests above re-import the config, which re-initialises the shared i18next instance and
+    // drops languages fetched earlier; fetch them again.
+    await Promise.all([loadLanguage('si'), loadLanguage('ta')])
     // Derived from the config rather than hardcoded, so a namespace added
     // later is covered without anyone remembering to update this list.
     const namespaces = Object.keys(resources.en) as (keyof typeof resources.en)[]

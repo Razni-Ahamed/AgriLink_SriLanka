@@ -7,6 +7,7 @@ import { Card } from '@/components/ui/Card'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { UserAvatar } from '@/components/ui/UserAvatar'
 import { formatDate, formatQuantity } from '@/lib/utils'
+import { useUnits } from '@/lib/units'
 import { useStatusLabel } from '@/lib/useStatusLabel'
 import { useUiStore } from '@/lib/useUiStore'
 import { useAuthStore } from '@/auth/authStore'
@@ -101,6 +102,7 @@ function OrderContacts({ order }: { order: OrderResponse }) {
 
 export function OrderDetailPage() {
   const { t } = useTranslation(['orders', 'common', 'messages'])
+  const units = useUnits()
   const role = useAuthStore((state) => state.role)
   const statusLabel = useStatusLabel()
   const { orderId } = useParams<{ orderId: string }>()
@@ -163,19 +165,19 @@ export function OrderDetailPage() {
         </div>
         <div>
           <p className="text-xs text-text-secondary">{t('orders:detail.quantity')}</p>
-          <p className="font-mono text-lg text-text-primary">
-            {t('common:units.kg', { value: formatQuantity(order.totalQuantity) })}
+          <p className="text-lg tabular-nums text-text-primary">
+            {units.quantity(order.totalQuantity, order.unit)}
           </p>
         </div>
         <div>
           <p className="text-xs text-text-secondary">{t('orders:detail.pricePerUnit')}</p>
-          <p className="font-mono text-lg text-text-primary">
-            {t('common:units.rupeesPerUnit', { value: formatQuantity(order.pricePerUnit) })}
+          <p className="text-lg tabular-nums text-text-primary">
+            {units.price(order.pricePerUnit, order.unit)}
           </p>
         </div>
         <div>
           <p className="text-xs text-text-secondary">{t('orders:detail.totalAmount')}</p>
-          <p className="font-mono text-lg text-brand-forest">
+          <p className="text-lg font-semibold tabular-nums text-brand-forest">
             {t('common:units.rupees', { value: formatQuantity(order.totalAmount) })}
           </p>
         </div>

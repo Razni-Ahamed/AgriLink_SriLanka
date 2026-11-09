@@ -20,7 +20,7 @@ export function MetricsCard({ label, value, icon, tone = 'forest', suffix }: Met
       <IconBadge tone={tone}>{icon}</IconBadge>
       <div>
         <p className="text-sm text-text-secondary">{label}</p>
-        <p className="font-mono text-2xl text-text-primary">
+        <p className="tabular-nums text-2xl text-text-primary">
           {formatQuantity(animated)}
           {suffix}
         </p>

@@ -76,11 +76,11 @@ export function PhotoDiagnosisPanel() {
                     <p className="text-text-primary">{cropLabel(model.crop)}</p>
                     <p className="font-mono text-xs text-text-secondary">{model.modelVersion}</p>
                   </td>
-                  <td className="py-2 pr-3 font-mono tabular-nums">{model.reviewed}</td>
-                  <td className="py-2 pr-3 font-mono tabular-nums">
+                  <td className="py-2 pr-3 tabular-nums">{model.reviewed}</td>
+                  <td className="py-2 pr-3 tabular-nums">
                     {model.agreed} ({Math.round(model.agreementRate * 100)}%)
                   </td>
-                  <td className="py-2 pr-3 font-mono tabular-nums">{model.confirmedOther}</td>
+                  <td className="py-2 pr-3 tabular-nums">{model.confirmedOther}</td>
                   <td className="py-2">
                     {model.topCorrections.length === 0 ? (
                       <span className="text-text-secondary">{t('admin.photoDiagnosis.noCorrections')}</span>

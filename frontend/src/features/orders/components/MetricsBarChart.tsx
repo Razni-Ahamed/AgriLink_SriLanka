@@ -44,7 +44,7 @@ export function MetricsBarChart({ data }: MetricsBarChartProps) {
                 }
                 return (
                   <div className="rounded-xl border border-brand-forest/10 bg-bg-surface px-3 py-2 text-sm shadow-lg">
-                    <span className="font-mono text-text-primary">
+                    <span className="tabular-nums text-text-primary">
                       {formatQuantity(Number(payload[0].value))}
                     </span>
                   </div>

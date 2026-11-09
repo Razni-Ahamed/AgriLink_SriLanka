@@ -9,6 +9,9 @@ public class HarvestListing : IHasUpdatedAt
     public decimal AvailableQuantity { get; set; }
     public DateOnly HarvestDate { get; set; }
     public decimal PricePerUnit { get; set; }
+
+    /// <summary>What <see cref="Quantity"/> and <see cref="PricePerUnit"/> are counted in.</summary>
+    public QuantityUnit Unit { get; set; } = QuantityUnit.Kg;
     public string Location { get; set; } = string.Empty;
     public HarvestStatus Status { get; set; } = HarvestStatus.Active;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

@@ -22,6 +22,7 @@ const STATUS_KEYS = {
     Accepted: 'status.request.Accepted',
     Declined: 'status.request.Declined',
     Cancelled: 'status.request.Cancelled',
+    Withdrawn: 'status.request.Withdrawn',
   },
   order: {
     Confirmed: 'status.order.Confirmed',

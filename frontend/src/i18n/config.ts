@@ -12,28 +12,6 @@ import enOfficer from './locales/en/officer.json'
 import enOrders from './locales/en/orders.json'
 import enRegistrations from './locales/en/registrations.json'
 
-import siAuth from './locales/si/auth.json'
-import siCommon from './locales/si/common.json'
-import siFarms from './locales/si/farms.json'
-import siHome from './locales/si/home.json'
-import siIssues from './locales/si/issues.json'
-import siMarketplace from './locales/si/marketplace.json'
-import siMessages from './locales/si/messages.json'
-import siOfficer from './locales/si/officer.json'
-import siOrders from './locales/si/orders.json'
-import siRegistrations from './locales/si/registrations.json'
-
-import taAuth from './locales/ta/auth.json'
-import taCommon from './locales/ta/common.json'
-import taFarms from './locales/ta/farms.json'
-import taHome from './locales/ta/home.json'
-import taIssues from './locales/ta/issues.json'
-import taMarketplace from './locales/ta/marketplace.json'
-import taMessages from './locales/ta/messages.json'
-import taOfficer from './locales/ta/officer.json'
-import taOrders from './locales/ta/orders.json'
-import taRegistrations from './locales/ta/registrations.json'
-
 import {
   DEFAULT_LANGUAGE,
   isSupportedLanguage,
@@ -80,42 +58,66 @@ export const resources = {
     orders: enOrders,
     registrations: enRegistrations,
   },
-  si: {
-    common: siCommon,
-    auth: siAuth,
-    farms: siFarms,
-    home: siHome,
-    issues: siIssues,
-    marketplace: siMarketplace,
-    messages: siMessages,
-    officer: siOfficer,
-    orders: siOrders,
-    registrations: siRegistrations,
-  },
-  ta: {
-    common: taCommon,
-    auth: taAuth,
-    farms: taFarms,
-    home: taHome,
-    issues: taIssues,
-    marketplace: taMarketplace,
-    messages: taMessages,
-    officer: taOfficer,
-    orders: taOrders,
-    registrations: taRegistrations,
-  },
 } as const
+
+/**
+ * Sinhala and Tamil are about 200 KB of text that English readers never need, so each is its own
+ * file, fetched the first time that language is wanted. English is always bundled: it is the
+ * default and every other language's fallback.
+ */
+const languageLoaders: Record<
+  Exclude<Language, 'en'>,
+  () => Promise<{ default: Record<string, object> }>
+> = {
+  si: () => import('./locales/si/index'),
+  ta: () => import('./locales/ta/index'),
+}
+
+export function isLanguageLoaded(language: Language): boolean {
+  return language === 'en' || i18n.hasResourceBundle(language, 'common')
+}
+
+/** Fetches a language's text if it isn't here yet. Safe to call repeatedly. */
+export async function loadLanguage(language: Language): Promise<void> {
+  if (language === 'en' || isLanguageLoaded(language)) return
+  const { default: namespaces } = await languageLoaders[language]()
+  for (const [namespace, bundle] of Object.entries(namespaces)) {
+    i18n.addResourceBundle(language, namespace, bundle, true, true)
+  }
+}
 
 void i18n.use(initReactI18next).init({
   resources,
+  // Sinhala and Tamil are added later by loadLanguage.
+  partialBundledLanguages: true,
   // Start in the stored language so the first paint is already correct —
   // hydrating this in an effect caused a visible flash of English.
   lng: readStoredLanguage(),
   fallbackLng: DEFAULT_LANGUAGE,
   defaultNS: 'common',
-  ns: ['common', 'auth', 'farms', 'home', 'issues', 'marketplace', 'messages', 'officer', 'orders', 'registrations'],
+  ns: [
+    'common',
+    'auth',
+    'farms',
+    'home',
+    'issues',
+    'marketplace',
+    'messages',
+    'officer',
+    'orders',
+    'registrations',
+  ],
   // React escapes interpolated values already.
   interpolation: { escapeValue: false },
 })
+
+/**
+ * The stored language's text, started now so it downloads alongside the rest of the app.
+ * main.tsx waits for it before the first render, so a Sinhala or Tamil reader never sees English
+ * first. A failed download (offline) resolves anyway, leaving English until the next try.
+ */
+export const storedLanguageReady: Promise<void> = loadLanguage(readStoredLanguage()).catch(
+  () => undefined,
+)
 
 export default i18n

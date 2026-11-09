@@ -12,6 +12,7 @@ function summary(overrides: Partial<ConversationSummary>): ConversationSummary {
     title: 'Tomato',
     cropType: 'Tomato',
     quantity: 50,
+    unit: 'Kg',
     district: 'Kandy',
     counterpartName: 'Kamala Stores',
     counterpartRole: 'Buyer',

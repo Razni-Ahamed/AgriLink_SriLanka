@@ -162,8 +162,8 @@ public class OrdersController : ControllerBase
             counterpartUserId,
             newStatus == OrderStatus.Completed ? $"Order #{order.OrderId} completed" : $"Order #{order.OrderId} cancelled",
             newStatus == OrderStatus.Completed
-                ? $"Your order for {order.TotalQuantity:0.##} kg of {crop} was marked as completed."
-                : $"Your order for {order.TotalQuantity:0.##} kg of {crop} was cancelled.");
+                ? $"Your order for {QuantityUnits.Describe(order.TotalQuantity, order.Request.Harvest.Unit)} of {crop} was marked as completed."
+                : $"Your order for {QuantityUnits.Describe(order.TotalQuantity, order.Request.Harvest.Unit)} of {crop} was cancelled.");
 
         return Ok(ToResponse(order));
     }
@@ -203,6 +203,7 @@ public class OrdersController : ControllerBase
         BuyerPhotoUrl = order.BuyerProfile.User.ProfilePhotoUrl,
         CropType = order.Request.Harvest.Crop.CropType,
         PricePerUnit = order.PricePerUnit,
+        Unit = order.Request.Harvest.Unit.ToString(),
         HarvestLocation = order.Request.Harvest.Location,
     };
 }

@@ -89,6 +89,7 @@ All routes are served by the ASP.NET Core API at `https://agrilink-api-sl.azurew
 | Notifications | PUT | `/api/notifications/{id}/read` | MarkRead | Signed in |
 | Notifications | POST | `/api/notifications/send` | Send | Admin |
 | Officer | GET | `/api/officer/metrics` | Metrics | Officer |
+| Farmer | GET | `/api/farmer/overview` | Overview | Farmer |
 | Orders | GET | `/api/orders/mine` | Mine | Buyer, Farmer |
 | Orders | GET | `/api/orders/{id:int}` | GetById | Signed in |
 | Orders | POST | `/api/orders/{id:int}/complete` | Complete | Buyer, Farmer |
@@ -101,6 +102,7 @@ All routes are served by the ASP.NET Core API at `https://agrilink-api-sl.azurew
 | PurchaseRequests | GET | `/api/purchase-requests/mine` | Mine | Farmer |
 | PurchaseRequests | GET | `/api/purchase-requests/sent` | Sent | Buyer |
 | PurchaseRequests | POST | `/api/purchase-requests/{id:int}/respond` | Respond | Farmer |
+| PurchaseRequests | POST | `/api/purchase-requests/{id:int}/withdraw` | Withdraw | Buyer |
 | Registrations | GET | `/api/registrations/pending` | Pending | Officer, Admin |
 | Registrations | GET | `/api/registrations/rejected` | Rejected | Officer, Admin |
 | Registrations | POST | `/api/registrations/{userId:int}/approve` | Approve | Officer, Admin |

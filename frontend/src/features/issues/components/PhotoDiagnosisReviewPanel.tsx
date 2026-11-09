@@ -48,14 +48,14 @@ export function PhotoDiagnosisReviewPanel({ advisory }: { advisory: AdvisoryResp
           {t('photoReview.disease', { disease: diagnosis.diseaseName })}
         </p>
         {diagnosis.modelConfidence != null && (
-          <span className="font-mono text-sm text-text-secondary">
+          <span className="tabular-nums text-sm text-text-secondary">
             {t('photoReview.modelConfidence', {
               value: Math.round(diagnosis.modelConfidence * 100),
             })}
           </span>
         )}
         {diagnosis.modelVersion && (
-          <span className="font-mono text-xs text-text-secondary">
+          <span className="tabular-nums text-xs text-text-secondary">
             {t('photoReview.modelVersion', { version: diagnosis.modelVersion })}
           </span>
         )}

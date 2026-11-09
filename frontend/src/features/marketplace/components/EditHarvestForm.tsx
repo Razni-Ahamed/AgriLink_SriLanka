@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useTranslation } from 'react-i18next'
@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
 import { useStatusLabel } from '@/lib/useStatusLabel'
+import { QUANTITY_UNITS, useUnits, type QuantityUnit } from '@/lib/units'
 import type {
   HarvestListingResponse,
   HarvestStatus,
@@ -31,6 +32,7 @@ interface EditHarvestFormProps {
 export function EditHarvestForm({ harvest, isSubmitting, onSubmit }: EditHarvestFormProps) {
   const { t } = useTranslation(['marketplace', 'common'])
   const statusLabel = useStatusLabel()
+  const units = useUnits()
 
   const schema = useMemo(
     () =>
@@ -39,11 +41,13 @@ export function EditHarvestForm({ harvest, isSubmitting, onSubmit }: EditHarvest
         pricePerUnit: z.coerce.number().min(0.01, t('common:validation.priceMin')).max(1000000),
         location: z.string().min(1, t('common:validation.locationRequired')).max(150),
         harvestDate: z.string().min(1, t('common:validation.harvestDateRequired')),
+        unit: z.enum(QUANTITY_UNITS as [QuantityUnit, ...QuantityUnit[]]),
       }),
     [t],
   )
 
   const {
+    control,
     register,
     handleSubmit,
     formState: { errors },
@@ -54,8 +58,11 @@ export function EditHarvestForm({ harvest, isSubmitting, onSubmit }: EditHarvest
       pricePerUnit: harvest.pricePerUnit,
       location: harvest.location,
       harvestDate: harvest.harvestDate,
+      unit: harvest.unit ?? 'Kg',
     },
   })
+
+  const unit = useWatch({ control, name: 'unit' })
 
   return (
     <form className="flex flex-col gap-4" onSubmit={handleSubmit(onSubmit)}>
@@ -70,8 +77,20 @@ export function EditHarvestForm({ harvest, isSubmitting, onSubmit }: EditHarvest
           </option>
         ))}
       </Select>
+      {/* The API refuses a change once a buyer has sent a request, and says why. */}
+      <Select
+        label={t('marketplace:listingForm.unit')}
+        error={errors.unit?.message}
+        {...register('unit')}
+      >
+        {QUANTITY_UNITS.map((option) => (
+          <option key={option} value={option}>
+            {units.name(option)}
+          </option>
+        ))}
+      </Select>
       <Input
-        label={t('marketplace:listingForm.pricePerUnit')}
+        label={t('marketplace:listingForm.pricePerUnitIn', { unit: units.per(unit) })}
         type="number"
         step="0.01"
         error={errors.pricePerUnit?.message}

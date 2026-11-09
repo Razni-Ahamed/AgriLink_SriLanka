@@ -3,23 +3,26 @@ import { Scales } from '@phosphor-icons/react'
 import { IconBadge } from '@/components/ui/IconBadge'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { useCropLabel } from '@/lib/useCropLabel'
-import { formatQuantity } from '@/lib/utils'
+import { useUnits, type QuantityUnit } from '@/lib/units'
 import type { PriceStats } from '@/types/dto/harvests'
 import { usePriceGuide } from '../hooks/useHarvests'
 
 interface PriceGuideHintProps {
   cropType: string
   district?: string
+  /** Only sales in this unit are compared. */
+  unit?: QuantityUnit
   /** Fills the price field with the given average. */
   onUsePrice: (price: number) => void
 }
 
 /** Recent agreed prices for the crop being listed, in the farm's district and nationwide. A guide
  *  only: it never blocks publishing, and a failed lookup simply shows nothing. */
-export function PriceGuideHint({ cropType, district, onUsePrice }: PriceGuideHintProps) {
+export function PriceGuideHint({ cropType, district, unit = 'Kg', onUsePrice }: PriceGuideHintProps) {
   const { t } = useTranslation(['marketplace', 'common'])
   const cropLabel = useCropLabel()
-  const { data: guide, isLoading, isError } = usePriceGuide(cropType, district)
+  const units = useUnits()
+  const { data: guide, isLoading, isError } = usePriceGuide(cropType, district, unit)
 
   if (isLoading) {
     return <Skeleton className="h-20" />
@@ -29,7 +32,7 @@ export function PriceGuideHint({ cropType, district, onUsePrice }: PriceGuideHin
   }
 
   const crop = cropLabel(cropType)
-  const rupees = (value: number) => t('common:units.rupeesPerUnit', { value: formatQuantity(value) })
+  const rupees = (value: number) => units.price(value, unit)
 
   return (
     <section

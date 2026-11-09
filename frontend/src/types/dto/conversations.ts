@@ -10,6 +10,8 @@ export interface ConversationSummary {
   title: string
   cropType: string
   quantity: number | null
+  /** A deal chat's unit for quantity; null for advice chats. */
+  unit: string | null
   district: string
   /** Null for a farmer's advice chat, which is with the district's officers as a group. */
   counterpartName: string | null
@@ -33,6 +35,8 @@ export interface ConversationDetail {
   title: string
   cropType: string
   quantity: number | null
+  /** A deal chat's unit for quantity; null for advice chats. */
+  unit: string | null
   district: string
   counterpartName: string | null
   /** Empty for an admin reviewing a report; see participants instead. */
