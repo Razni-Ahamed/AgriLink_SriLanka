@@ -102,6 +102,21 @@ public class ForecastServiceTests
     }
 
     [Fact]
+    public async Task GetForecastAsync_EverySpellingOfADistrictSharesOneEntryAndTheCanonicalName()
+    {
+        var (service, handler) = Create(() => Json(ForecastJson));
+
+        var first = await service.GetForecastAsync("nuwara eliya", CancellationToken.None);
+        var second = await service.GetForecastAsync("  NUWARA 	  Eliya ", CancellationToken.None);
+        var third = await service.GetForecastAsync("Nuwara   eliya", CancellationToken.None);
+
+        Assert.Single(handler.Requests);
+        Assert.Equal("Nuwara Eliya", first!.District);
+        Assert.Equal("Nuwara Eliya", second!.District);
+        Assert.Equal("Nuwara Eliya", third!.District);
+    }
+
+    [Fact]
     public async Task GetForecastAsync_UnknownDistrict_ReturnsNullWithoutCallingTheProvider()
     {
         var (service, handler) = Create(() => Json(ForecastJson));

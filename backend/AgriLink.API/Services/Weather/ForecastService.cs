@@ -54,23 +54,27 @@ public class ForecastService : IForecastService
         _logger = logger;
     }
 
-    public bool IsKnownDistrict(string district) => SriLankaDistrictCoordinates.Lookup(district) is not null;
+    public bool IsKnownDistrict(string district) => SriLankaDistrictCoordinates.CanonicalName(district) is not null;
 
     public async Task<DistrictForecastResponse?> GetForecastAsync(string district, CancellationToken cancellationToken)
     {
-        var coordinates = SriLankaDistrictCoordinates.Lookup(district);
-        if (coordinates is null)
+        // Keyed (and named in the reply) by the table's own spelling, never the caller's: every
+        // spelling Lookup accepts maps to one of 25 entries, so the cache and the provider calls
+        // stay bounded however the name is written.
+        var name = SriLankaDistrictCoordinates.CanonicalName(district);
+        var coordinates = SriLankaDistrictCoordinates.Lookup(name);
+        if (name is null || coordinates is null)
         {
             return null;
         }
 
-        var key = "forecast:" + district.Trim().ToLowerInvariant();
+        var key = "forecast:" + name;
         if (_cache.TryGetValue(key, out DistrictForecastResponse? cached) && cached is not null)
         {
             return cached;
         }
 
-        var forecast = await FetchAsync(district.Trim(), coordinates.Value, cancellationToken);
+        var forecast = await FetchAsync(name, coordinates.Value, cancellationToken);
         if (forecast is not null)
         {
             // Failures aren't cached, so the next visit tries again.
