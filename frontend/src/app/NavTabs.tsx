@@ -10,9 +10,9 @@ import { spring } from '@/lib/motion'
 interface NavTabsProps {
   items: NavItem[]
   /**
-   * `top` sits in the header on wide screens: icon and name for every tab, unless the role has so
-   * many that the names wouldn't fit beside the header's buttons (the admin's eight), in which
-   * case only the current tab's name shows and the others open on hover or keyboard focus.
+   * `top` sits in the header on wide screens: the current tab shows its icon and name, the others
+   * only their icon, and a tab's name slides open on hover or keyboard focus. Showing every name
+   * at once made the bar too busy.
    * `bottom` is the phone and tablet tab bar: a name under every icon, with any tabs past
    * {@link BOTTOM_TAB_LIMIT} gathered under "More".
    */
@@ -20,8 +20,6 @@ interface NavTabsProps {
   className?: string
 }
 
-/** Most names fit on a laptop header up to this many tabs, even in Tamil. */
-const TOP_ALWAYS_NAMED_LIMIT = 6
 /** Five tabs is the most a 375px phone fits with readable names; the fifth becomes "More". */
 const BOTTOM_TAB_LIMIT = 5
 
@@ -47,7 +45,8 @@ export function NavTabs({ items, variant, className }: NavTabsProps) {
   const overflows = variant === 'bottom' && items.length > BOTTOM_TAB_LIMIT
   const shown = overflows ? items.slice(0, BOTTOM_TAB_LIMIT - 1) : items
   const hidden = overflows ? items.slice(BOTTOM_TAB_LIMIT - 1) : []
-  const alwaysNamed = variant === 'bottom' || items.length <= TOP_ALWAYS_NAMED_LIMIT
+  // Only the phone bar names every tab; the top bar names the current one and opens the rest on hover.
+  const alwaysNamed = variant === 'bottom'
 
   return (
     <nav aria-label={t('nav.menu')} className={className}>
