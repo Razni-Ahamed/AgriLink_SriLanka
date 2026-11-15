@@ -1,3 +1,4 @@
+import { useDistrictLabel } from '@/lib/useDistrictLabel'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card } from '@/components/ui/Card'
@@ -38,6 +39,7 @@ export function PurchaseRequestCard({
   onWithdraw,
 }: PurchaseRequestCardProps) {
   const { t } = useTranslation(['marketplace', 'common', 'messages'])
+  const districtLabel = useDistrictLabel()
   const statusLabel = useStatusLabel()
   const units = useUnits()
   const role = useAuthStore((state) => state.role)
@@ -87,7 +89,7 @@ export function PurchaseRequestCard({
           <p className="tabular-nums text-sm text-text-secondary">
             {units.price(request.pricePerUnit, request.unit)}
             {' · '}
-            {request.district}
+            {districtLabel(request.district)}
           </p>
 
           {request.message && <p className="text-sm text-text-secondary">{request.message}</p>}

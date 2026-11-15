@@ -1,3 +1,4 @@
+import { useDistrictLabel } from '@/lib/useDistrictLabel'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
@@ -171,6 +172,7 @@ function Hero() {
 /** Real asking prices from the newest active listings, on dark glass over the hero photo. */
 function PriceBoard() {
   const { t } = useTranslation(['home', 'common'])
+  const districtLabel = useDistrictLabel()
   const cropLabel = useCropLabel()
   const units = useUnits()
   const { data: harvests, isLoading } = useHarvests({ sort: 'newest' })
@@ -216,7 +218,7 @@ function PriceBoard() {
                 />
                 <span className="min-w-0">
                   <b className="block truncate font-semibold">{cropLabel(harvest.cropType)}</b>
-                  <span className="block truncate text-xs text-white/65">{harvest.district}</span>
+                  <span className="block truncate text-xs text-white/65">{districtLabel(harvest.district)}</span>
                 </span>
                 <span className="text-right">
                   <span className="font-display text-xl font-bold">

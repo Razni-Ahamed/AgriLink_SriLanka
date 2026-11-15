@@ -1,3 +1,4 @@
+import { useDistrictLabel } from '@/lib/useDistrictLabel'
 import { useTranslation } from 'react-i18next'
 import { Scales } from '@phosphor-icons/react'
 import { IconBadge } from '@/components/ui/IconBadge'
@@ -20,6 +21,7 @@ interface PriceGuideHintProps {
  *  only: it never blocks publishing, and a failed lookup simply shows nothing. */
 export function PriceGuideHint({ cropType, district, unit = 'Kg', onUsePrice }: PriceGuideHintProps) {
   const { t } = useTranslation(['marketplace', 'common'])
+  const districtLabel = useDistrictLabel()
   const cropLabel = useCropLabel()
   const units = useUnits()
   const { data: guide, isLoading, isError } = usePriceGuide(cropType, district, unit)
@@ -58,9 +60,9 @@ export function PriceGuideHint({ cropType, district, unit = 'Kg', onUsePrice }: 
           <ul className="flex flex-col gap-2">
             {guide.district && (
               <PriceRow
-                label={t('marketplace:priceGuide.inDistrict', { district: guide.district })}
+                label={t('marketplace:priceGuide.inDistrict', { district: districtLabel(guide.district) })}
                 stats={guide.inDistrict}
-                empty={t('marketplace:priceGuide.districtNotEnough', { district: guide.district })}
+                empty={t('marketplace:priceGuide.districtNotEnough', { district: districtLabel(guide.district) })}
                 rupees={rupees}
                 onUsePrice={onUsePrice}
               />

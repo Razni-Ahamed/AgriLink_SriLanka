@@ -1,3 +1,4 @@
+import { useDistrictLabel } from '@/lib/useDistrictLabel'
 import { CropThumb } from '@/components/canopy/CropThumb'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
@@ -28,6 +29,7 @@ const statusVariant: Record<IssueStatus, 'success' | 'warning' | 'danger' | 'inf
 
 function AllIssuesCard({ issue }: { issue: CropIssueResponse }) {
   const { t } = useTranslation('issues')
+  const districtLabel = useDistrictLabel()
   const statusLabel = useStatusLabel()
 
   // Officer/Admin never get the Draft-advisory 404 a farmer would (AdvisoriesController.GetById
@@ -42,7 +44,7 @@ function AllIssuesCard({ issue }: { issue: CropIssueResponse }) {
             <h3 className="truncate font-display text-lg text-text-primary">{issue.title}</h3>
             <p className="truncate text-xs text-text-secondary">
               {t('all.reportedBy', { name: issue.reporterName || t('all.unknownReporter') })}
-              {issue.district && ` · ${issue.district}`}
+              {issue.district && ` · ${districtLabel(issue.district)}`}
             </p>
           </div>
         </div>

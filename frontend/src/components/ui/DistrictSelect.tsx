@@ -1,3 +1,4 @@
+import { useDistrictLabel } from '@/lib/useDistrictLabel'
 import { forwardRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Select } from './Select'
@@ -27,6 +28,7 @@ export const DistrictSelect = forwardRef<HTMLSelectElement, DistrictSelectProps>
   ({ label, error, emptyOptionLabel, disabled, ...props }, ref) => {
     const { t } = useTranslation('common')
     const { data: districts, isLoading } = useDistricts()
+    const districtLabel = useDistrictLabel()
 
     return (
       <Select
@@ -42,9 +44,10 @@ export const DistrictSelect = forwardRef<HTMLSelectElement, DistrictSelectProps>
         <option value="" hidden={!emptyOptionLabel}>
           {isLoading ? t('actions.loading') : (emptyOptionLabel ?? t('fields.selectDistrict'))}
         </option>
+        {/* Shown in the reader's language; the value stays the spelling the API stores. */}
         {districts?.map((district) => (
           <option key={district} value={district}>
-            {district}
+            {districtLabel(district)}
           </option>
         ))}
       </Select>

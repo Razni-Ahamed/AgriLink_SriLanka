@@ -325,5 +325,36 @@
   "errors": {
     "notFound": "ඔබ සොයන දෙය සොයාගත නොහැකි විය.",
     "generic": "යම් දෝෂයක් සිදු විය. නැවත උත්සාහ කරන්න."
+  },
+  "answers": {
+    "yes": "ඔව්",
+    "no": "නැත"
+  },
+  "districts": {
+    "Ampara": "අම්පාර",
+    "Anuradhapura": "අනුරාධපුරය",
+    "Badulla": "බදුල්ල",
+    "Batticaloa": "මඩකලපුව",
+    "Colombo": "කොළඹ",
+    "Galle": "ගාල්ල",
+    "Gampaha": "ගම්පහ",
+    "Hambantota": "හම්බන්තොට",
+    "Jaffna": "යාපනය",
+    "Kalutara": "කළුතර",
+    "Kandy": "මහනුවර",
+    "Kegalle": "කෑගල්ල",
+    "Kilinochchi": "කිලිනොච්චිය",
+    "Kurunegala": "කුරුණෑගල",
+    "Mannar": "මන්නාරම",
+    "Matale": "මාතලේ",
+    "Matara": "මාතර",
+    "Monaragala": "මොණරාගල",
+    "Mullaitivu": "මුලතිව්",
+    "NuwaraEliya": "නුවරඑළිය",
+    "Polonnaruwa": "පොළොන්නරුව",
+    "Puttalam": "පුත්තලම",
+    "Ratnapura": "රත්නපුර",
+    "Trincomalee": "ත්‍රිකුණාමලය",
+    "Vavuniya": "වවුනියාව"
   }
 }

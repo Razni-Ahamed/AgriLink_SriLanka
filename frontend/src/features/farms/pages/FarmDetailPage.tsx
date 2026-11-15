@@ -1,3 +1,4 @@
+import { useDistrictLabel } from '@/lib/useDistrictLabel'
 import { onPhotoButton } from '@/components/canopy/onPhoto'
 import { PhotoBanner } from '@/components/canopy/PhotoBanner'
 import { farmPhoto } from '@/lib/scenes'
@@ -17,6 +18,7 @@ import { useCreateField, useDeleteFarm, useFarm, useFields, useUpdateFarm } from
 
 export function FarmDetailPage() {
   const { t } = useTranslation(['farms', 'common'])
+  const districtLabel = useDistrictLabel()
   const { farmId } = useParams<{ farmId: string }>()
   const id = Number(farmId)
   const navigate = useNavigate()
@@ -44,7 +46,7 @@ export function FarmDetailPage() {
         photo={farmPhoto(farm.farmId)}
         back={{ to: '/farms', label: t('farms:detail.back') }}
         title={farm.name}
-        subtitle={`${farm.district} · ${t('common:units.acres', { value: formatQuantity(farm.area) })}`}
+        subtitle={`${districtLabel(farm.district)} · ${t('common:units.acres', { value: formatQuantity(farm.area) })}`}
         actions={
           <div className="flex flex-wrap gap-2">
             <Button variant="ghost" className={onPhotoButton} onClick={() => setEditOpen(true)}>

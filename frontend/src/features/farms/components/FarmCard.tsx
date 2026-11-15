@@ -1,3 +1,4 @@
+import { useDistrictLabel } from '@/lib/useDistrictLabel'
 import { MapPin } from '@phosphor-icons/react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
@@ -7,6 +8,7 @@ import type { FarmDto } from '@/types/dto/farms'
 
 export function FarmCard({ farm }: { farm: FarmDto }) {
   const { t } = useTranslation()
+  const districtLabel = useDistrictLabel()
   const photo = farmPhoto(farm.farmId)
 
   return (
@@ -31,7 +33,7 @@ export function FarmCard({ farm }: { farm: FarmDto }) {
             </h3>
             <p className="flex items-center gap-1 text-sm text-text-secondary">
               <MapPin size={14} aria-hidden="true" />
-              {farm.district}
+              {districtLabel(farm.district)}
             </p>
           </div>
           <p className="shrink-0 rounded-full bg-brand-forest/10 px-3 py-1 text-sm font-semibold tabular-nums text-brand-forest">

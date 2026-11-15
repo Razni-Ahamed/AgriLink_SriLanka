@@ -1,3 +1,4 @@
+import { useDistrictLabel } from '@/lib/useDistrictLabel'
 import { Fragment, useEffect, useRef, useState, type FormEvent, type KeyboardEvent, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
@@ -109,6 +110,7 @@ function ThreadHeader({
   backLabel: string
 }) {
   const { t } = useTranslation('messages')
+  const districtLabel = useDistrictLabel()
   const role = useAuthStore((state) => state.role)
   const counterpartLabel = useCounterpartLabel()
   const subjectLabel = useChatSubjectLabel()
@@ -120,7 +122,7 @@ function ThreadHeader({
           farmer: chat.participants[0]?.name ?? '',
           other:
             chat.kind === 'Advice'
-              ? t('thread.officersOfDistrict', { district: chat.district })
+              ? t('thread.officersOfDistrict', { district: districtLabel(chat.district) })
               : (chat.participants[1]?.name ?? ''),
         })
       : counterpartLabel(chat)
