@@ -1,11 +1,11 @@
 import { cn } from '@/lib/utils'
 
-// Shared by the header's small buttons (language, theme, log out). Collapsed, a compact square; on
+// Shared by the header's small buttons (language, theme, log out). Collapsed, a compact circle; on
 // hover or keyboard focus it turns to liquid glass, like the current navigation tab, and widens to
 // show its full name.
 export const headerButtonClass = cn(
-  'glass-hover group relative flex h-10 min-w-10 items-center justify-center overflow-hidden rounded-xl px-2.5',
-  'border border-brand-forest/15 bg-bg-canvas text-brand-forest',
+  'glass-hover group relative flex h-10 min-w-10 items-center justify-center overflow-hidden rounded-full px-2.5',
+  'border border-text-primary/10 bg-bg-surface/50 text-brand-forest',
   'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-forest',
 )
 

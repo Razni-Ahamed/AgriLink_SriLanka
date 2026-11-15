@@ -27,7 +27,7 @@ export function MessagesButton() {
       to={isAdmin ? '/admin/reported-chats' : '/messages'}
       aria-label={count > 0 ? `${label}, ${t(isAdmin ? 'header.openCount' : 'header.unread', { count })}` : label}
       title={label}
-      className="relative flex h-9 w-9 items-center justify-center rounded-xl text-brand-forest outline-none hover:bg-brand-forest/10 focus-visible:ring-2 focus-visible:ring-brand-forest/60"
+      className="relative flex h-10 w-10 items-center justify-center rounded-full text-brand-forest outline-none hover:bg-brand-forest/10 focus-visible:ring-2 focus-visible:ring-brand-forest/60"
     >
       <ChatsCircle size={20} weight="duotone" />
       {count > 0 && (

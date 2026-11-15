@@ -1,21 +1,35 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { motion } from 'motion/react'
 import { Warning } from '@phosphor-icons/react'
 import { useTranslation } from 'react-i18next'
+import { PhotoBanner } from '@/components/canopy/PhotoBanner'
 import { Card } from '@/components/ui/Card'
 import { CropPicker } from '@/components/ui/CropPicker'
-import { CropIcon } from '@/components/ui/CropIcon'
 import { IconBadge } from '@/components/ui/IconBadge'
 import { Skeleton } from '@/components/ui/Skeleton'
-import { FadeIn } from '@/components/ui/motion/FadeIn'
-import { FlashOnSuccess } from '@/components/ui/motion/FlashOnSuccess'
+import { cropPhoto } from '@/lib/cropPhotos'
+import { spring } from '@/lib/motion'
 import { useCropLabel } from '@/lib/useCropLabel'
 import { useUiStore } from '@/lib/useUiStore'
 import { useMyCrops } from '@/features/farms/hooks/useCrops'
 import { IssueForm } from '../components/IssueForm'
+import { ReportProgress } from '../components/ReportProgress'
 import { useCreateIssue } from '../hooks/useIssues'
 import { reportErrorKey } from '../lib/reportErrorKey'
 
+interface Sending {
+  photoUrl: string
+  /** An object URL made for the farmer's own photo, to release afterwards. */
+  ownPhoto: boolean
+  done: boolean
+}
+
+/**
+ * Reporting a crop problem. The banner shows the crop being reported; once sent, the form gives
+ * way to the farmer's photo with a scan line and steps ticking off while the server works (about
+ * half a minute). The form stays mounted underneath, so nothing typed is lost if sending fails.
+ */
 export function NewIssuePage() {
   const { t } = useTranslation(['issues', 'common'])
   const cropLabel = useCropLabel()
@@ -23,7 +37,7 @@ export function NewIssuePage() {
   const navigate = useNavigate()
   const addToast = useUiStore((state) => state.addToast)
   const createIssue = useCreateIssue()
-  const [submitted, setSubmitted] = useState(false)
+  const [sending, setSending] = useState<Sending | null>(null)
 
   const { data: crops, isLoading: isLoadingCrops } = useMyCrops()
 
@@ -35,90 +49,108 @@ export function NewIssuePage() {
     prefilledCropId ? Number(prefilledCropId) : undefined,
   )
 
+  // Release the object URL made for the farmer's photo.
+  useEffect(
+    () => () => {
+      if (sending?.ownPhoto) URL.revokeObjectURL(sending.photoUrl)
+    },
+    [sending],
+  )
+
   if (isLoadingCrops) {
-    return <Skeleton className="h-64" />
+    return <Skeleton className="h-64 rounded-[28px]" />
   }
 
   // No crops at all: an issue is always about a crop, so send them to plant one first.
   if (!crops || crops.length === 0) {
     return (
-      <FadeIn>
-        <Card className="flex flex-col items-center gap-3 py-10 text-center">
-          <IconBadge tone="terracotta">
-            <Warning size={20} weight="duotone" />
-          </IconBadge>
-          <p className="text-text-primary">{t('issues:new.noCrop')}</p>
-          <Link to="/farms" className="text-sm font-medium text-brand-forest hover:underline">
-            {t('issues:new.goToFarms')}
-          </Link>
-        </Card>
-      </FadeIn>
+      <Card className="flex flex-col items-center gap-3 py-10 text-center">
+        <IconBadge tone="terracotta">
+          <Warning size={20} weight="duotone" />
+        </IconBadge>
+        <p className="text-text-primary">{t('issues:new.noCrop')}</p>
+        <Link to="/farms" className="text-sm font-medium text-brand-forest hover:underline">
+          {t('issues:new.goToFarms')}
+        </Link>
+      </Card>
     )
   }
 
   const selectedCrop = crops.find((crop) => crop.cropId === selectedCropId)
 
   return (
-    <FadeIn>
-      <div className="flex flex-col gap-6">
-        <h1 className="font-display text-2xl text-text-primary">{t('issues:new.title')}</h1>
+    <div className="flex flex-col gap-6">
+      <PhotoBanner
+        size="compact"
+        photo={selectedCrop ? cropPhoto(selectedCrop.cropType) : 'inspection'}
+        focus={selectedCrop ? 'center' : 'center 82%'}
+        back={{ to: '/issues/mine', label: t('issues:mine.title') }}
+        eyebrow={
+          selectedCrop
+            ? `${cropLabel(selectedCrop.cropType)}${selectedCrop.variety ? ` · ${selectedCrop.variety}` : ''} · ${t('common:fields.cropLocation', { field: selectedCrop.fieldName, farm: selectedCrop.farmName })}`
+            : undefined
+        }
+        title={t('issues:new.title')}
+      />
 
-        <FlashOnSuccess trigger={submitted}>
-          <Card className="flex flex-col gap-6">
-            <CropPicker
-              crops={crops}
-              value={selectedCropId}
-              onChange={setSelectedCropId}
-              label={t('issues:new.whichCrop')}
+      <div className="mx-auto w-full max-w-2xl">
+        {sending && (
+          <motion.div
+            className="glass rounded-[28px] p-5 sm:p-7"
+            initial={{ opacity: 0, y: 24, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={spring.reveal}
+          >
+            <ReportProgress
+              photoUrl={sending.photoUrl}
+              hasPhoto={sending.ownPhoto}
+              done={sending.done}
             />
+          </motion.div>
+        )}
 
-            {selectedCrop && (
-              <div className="flex items-center gap-3 rounded-2xl border border-brand-forest/10 bg-brand-forest/5 p-3">
-                <IconBadge tone="forest">
-                  <CropIcon cropType={selectedCrop.cropType} size={20} />
-                </IconBadge>
-                <div className="min-w-0 text-sm">
-                  <p className="truncate font-medium text-text-primary">
-                    {cropLabel(selectedCrop.cropType)}
-                    {selectedCrop.variety && (
-                      <span className="text-text-secondary"> · {selectedCrop.variety}</span>
-                    )}
-                  </p>
-                  <p className="truncate text-xs text-text-secondary">
-                    {t('common:fields.cropLocation', {
-                      field: selectedCrop.fieldName,
-                      farm: selectedCrop.farmName,
-                    })}
-                  </p>
-                </div>
-              </div>
-            )}
+        <Card className="flex flex-col gap-6 rounded-[28px] p-5 sm:p-7" hidden={sending !== null}>
+          <CropPicker
+            crops={crops}
+            value={selectedCropId}
+            onChange={setSelectedCropId}
+            label={t('issues:new.whichCrop')}
+          />
 
-            {selectedCropId === undefined ? (
-              <p className="text-sm text-text-secondary">{t('issues:new.pickCropFirst')}</p>
-            ) : (
-              <IssueForm
-                cropId={selectedCropId}
-                isSubmitting={createIssue.isPending}
-                onSubmit={(values) =>
-                  createIssue.mutate(values, {
-                    onSuccess: () => {
-                      setSubmitted(true)
-                      addToast({ type: 'success', message: t('issues:new.reported') })
-                      setTimeout(() => navigate('/issues/mine'), 500)
-                    },
-                    onError: (error) =>
-                      addToast({
-                        type: 'error',
-                        message: t(reportErrorKey(error, Boolean(values.photo))),
-                      }),
-                  })
-                }
-              />
-            )}
-          </Card>
-        </FlashOnSuccess>
+          {selectedCropId === undefined ? (
+            <p className="text-sm text-text-secondary">{t('issues:new.pickCropFirst')}</p>
+          ) : (
+            <IssueForm
+              cropId={selectedCropId}
+              isSubmitting={createIssue.isPending}
+              onSubmit={(values) => {
+                const ownPhoto = Boolean(values.photo)
+                setSending({
+                  photoUrl: values.photo
+                    ? URL.createObjectURL(values.photo)
+                    : cropPhoto(selectedCrop?.cropType ?? 'Other'),
+                  ownPhoto,
+                  done: false,
+                })
+                createIssue.mutate(values, {
+                  onSuccess: () => {
+                    setSending((current) => current && { ...current, done: true })
+                    addToast({ type: 'success', message: t('issues:new.reported') })
+                    setTimeout(() => navigate('/issues/mine'), 1200)
+                  },
+                  onError: (error) => {
+                    setSending(null)
+                    addToast({
+                      type: 'error',
+                      message: t(reportErrorKey(error, ownPhoto)),
+                    })
+                  },
+                })
+              }}
+            />
+          )}
+        </Card>
       </div>
-    </FadeIn>
+    </div>
   )
 }

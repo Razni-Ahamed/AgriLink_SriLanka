@@ -12,6 +12,7 @@ import { parseApiError } from '@/lib/apiErrors'
 import { useUiStore } from '@/lib/useUiStore'
 import { PurchaseRequestCard } from '../components/PurchaseRequestCard'
 import { useSentPurchaseRequests, useWithdrawPurchaseRequest } from '../hooks/usePurchaseRequests'
+import { PhotoBanner } from '@/components/canopy/PhotoBanner'
 
 /** Buyer-only: what a buyer requested and where each request stands. A pending one can be withdrawn. */
 export function MySentPurchaseRequestsPage() {
@@ -44,9 +45,12 @@ export function MySentPurchaseRequestsPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="font-display text-2xl text-text-primary">
-        {t('marketplace:sentRequests.title')}
-      </h1>
+      <PhotoBanner
+        size="compact"
+        photo="produce"
+        focus="center 55%"
+        title={t('marketplace:sentRequests.title')}
+      />
 
       {isLoading && (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">

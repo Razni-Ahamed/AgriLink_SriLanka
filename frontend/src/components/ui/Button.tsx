@@ -1,5 +1,6 @@
 import type { ButtonHTMLAttributes, ReactNode } from 'react'
 import { motion } from 'motion/react'
+import { PRESS_SCALE, spring } from '@/lib/motion'
 import { buttonClasses, type ButtonSize, type ButtonVariant } from './buttonClasses'
 import { Spinner } from './Spinner'
 
@@ -26,7 +27,8 @@ export function Button({
 }: ButtonProps) {
   return (
     <motion.button
-      whileTap={{ scale: 0.96 }}
+      whileTap={{ scale: PRESS_SCALE }}
+      transition={spring.tap}
       disabled={disabled || isLoading}
       className={buttonClasses(variant, size, className)}
       {...props}

@@ -93,7 +93,7 @@ export function applyTheme(theme: ResolvedTheme, { animate = true } = {}): void 
 
 /** Keeps the mobile browser chrome in step with the canvas color. */
 function syncThemeColorMeta(theme: ResolvedTheme): void {
-  const content = theme === 'dark' ? '#0f1512' : '#faf7f0'
+  const content = theme === 'dark' ? '#0b201a' : '#eef2e8'
   let meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]')
 
   if (!meta) {

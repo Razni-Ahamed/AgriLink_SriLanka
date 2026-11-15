@@ -3,84 +3,102 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 /*
- * Design tokens for the "Organic Bento" theme.
+ * Design tokens for the "Canopy" theme: photos underneath, glass layers on top.
  *
- * Every color in the app resolves through one of these tokens — no component
- * hardcodes a palette class — so the two blocks below are the whole theme.
- * Adding a color here means adding it to BOTH blocks.
+ * Two palettes with one set of names. `@theme` is Daylight (white glass on rice-paper green,
+ * for reading in full sun); `.dark` is Canopy (deep forest green, the brand look). Every color
+ * in the app resolves through these tokens, so these two blocks are the whole palette. Adding a
+ * color here means adding it to BOTH blocks (themeTokens.test.ts checks).
  *
- * Dark mode is class-based (`.dark` on <html>) rather than a bare
- * prefers-color-scheme media query, because the preference is three-valued:
- * light, dark, or system. src/lib/themeStorage.ts resolves that to a class,
- * and a pre-paint script in index.html applies it before first paint.
+ * The names predate Canopy and are kept so no component has to change:
+ *   brand-forest      the one main action (paddy green / sage)
+ *   brand-harvest     "needs you" (turmeric)
+ *   brand-terracotta  warm accent: unread counts, eyebrows (clay)
+ *   brand-ink         text on a bright fill
+ *
+ * Dark mode is class-based (`.dark` on <html>) rather than a bare prefers-color-scheme media
+ * query, because the preference is three-valued: light, dark, or system (the default).
+ * src/lib/themeStorage.ts resolves that to a class, and a pre-paint script in index.html
+ * applies it before first paint.
+ *
+ * Contrast, WCAG 2.1, Daylight on the canvas (#eef2e8) / Canopy on the surface (#133429):
+ *   text-primary 13.5 / 11.7 · text-secondary 6.0 / 6.7 · brand-forest 7.1 / 7.9
+ *   brand-harvest 5.1 / 8.0 · state-danger 5.0 / 5.5
+ * Filled pairs (forest + bg-surface): Daylight 8.1:1, Canopy 7.9:1; danger 5.7 / 5.5.
  */
 @theme {
-  --color-brand-forest: #1f4d36;
-  --color-brand-forest-light: #4a7c59;
-  --color-brand-harvest: #d9a441;
-  --color-brand-terracotta: #c4623b;
-  /* Ink for text sitting on a *bright* accent fill (the gold secondary
-     button). Can't be brand-forest: that flips light in dark mode, which
-     would put light green on light gold. */
-  --color-brand-ink: #1f4d36;
-  --color-bg-canvas: #faf7f0;
-  --color-bg-surface: #fffdf9;
-  /* Modal scrim. Carries its own alpha so it can go from a forest tint in
-     light mode to near-black in dark, where a green wash would wash out
-     rather than recede. */
-  --color-bg-overlay: rgb(31 77 54 / 0.3);
-  --color-text-primary: #26201a;
-  --color-text-secondary: #6b6259;
-  --color-state-success: #3e7a4f;
-  --color-state-danger: #b84c3c;
-  --color-state-info: #3e7a82;
+  --color-brand-forest: #1f5a3f;
+  --color-brand-forest-light: #2b7351;
+  --color-brand-harvest: #8a5d00;
+  --color-brand-terracotta: #a8532f;
+  --color-brand-ink: #0f2a21;
+  --color-bg-canvas: #eef2e8;
+  --color-bg-surface: #ffffff;
+  /* Modal scrim. Carries its own alpha: a forest tint in Daylight, near-black in Canopy. */
+  --color-bg-overlay: rgb(15 42 33 / 0.35);
+  --color-text-primary: #0f2a21;
+  --color-text-secondary: #4c5f56;
+  --color-state-success: #2f6e3b;
+  --color-state-danger: #b2412b;
+  --color-state-info: #2f6c7a;
 
-  --font-display: 'Fraunces', serif;
-  --font-body: 'Plus Jakarta Sans', sans-serif;
+  /* Abhaya Libre and Yaldevi carry Latin and Sinhala in one family (both made in Sri Lanka by
+     Mooniak); Tamil falls through, glyph by glyph, to its own pair. */
+  --font-display: 'Abhaya Libre', 'Noto Serif Tamil', Georgia, serif;
+  --font-body: 'Yaldevi', 'Anek Tamil', 'Segoe UI', system-ui, sans-serif;
   /* Only technical text (usernames, model versions, agent traces) is monospace, so the system's
      own monospace face is used rather than downloading a web font for it. */
   --font-mono: ui-monospace, 'Cascadia Mono', Consolas, 'SFMono-Regular', Menlo, monospace;
 }
 
-/* Stated rather than left to the UA default, so native controls are right even
-   with JS disabled. `.dark` below overrides it (same specificity, later rule),
-   and applyTheme()'s inline style overrides both. */
+/*
+ * Glass recipe tokens. Not `--color-*` on purpose: they are layers with their own alpha, not
+ * palette colors, and Tailwind doesn't need utilities for them.
+ */
 :root {
   color-scheme: light;
+  --glass-tint: rgb(255 255 255 / 0.62);
+  --glass-sheen: rgb(255 255 255 / 0.55);
+  --glass-rim: rgb(255 255 255 / 0.75);
+  --glass-rim-top: rgb(255 255 255 / 0.95);
+  --glass-rim-bottom: rgb(15 42 33 / 0.08);
+  --glass-highlight: rgb(255 255 255 / 0.65);
+  --glass-drop: 0 18px 40px -26px rgb(15 42 33 / 0.45);
+  /* Soft light behind the page, so the glass has something to bend. */
+  --canvas-glow-a: rgb(183 217 140 / 0.35);
+  --canvas-glow-b: rgb(214 228 196 / 0.6);
 }
 
 /*
- * Dark palette — "night harvest": a moonlit estate rather than a generic
- * dark UI. Surfaces are green-tinted charcoal (warm-leaning, never blue),
- * text is warm parchment so it stays in the same family as the light
- * theme's #26201a, and the accents brighten to stay legible on them.
- *
- * brand-forest deliberately *inverts* from a deep to a luminous green. That
- * is what keeps the `bg-brand-forest` + `text-bg-surface` pairing readable in
- * both modes: both sides of the pair flip together, so filled buttons and the
- * active nav item go from dark-on-light to light-on-dark without any
- * component needing a `dark:` override.
- *
- * Contrast on the dark canvas (#0f1512), WCAG 2.1 ratios:
- *   text-primary 14.8:1 · text-secondary 7.0:1 · brand-forest 8.6:1
- *   brand-harvest 10.5:1 · state-danger 6.9:1 · state-info 7.7:1
- *   brand-terracotta 6.4:1
- * Filled pairs: forest/surface 7.4:1 · harvest/ink 10.2:1 · danger/surface 6.2:1
+ * Canopy — deep forest green. brand-forest inverts from a deep green to a light sage, which is
+ * what keeps the `bg-brand-forest` + `text-bg-surface` pairing readable in both modes: both sides
+ * flip together, so filled buttons go from light-on-dark to dark-on-light without any component
+ * needing a `dark:` override.
  */
 .dark {
-  --color-brand-forest: #7cbe8c;
-  --color-brand-forest-light: #9ed4aa;
-  --color-brand-harvest: #e8bd60;
-  --color-brand-terracotta: #dd7d55;
-  --color-brand-ink: #10170f;
-  --color-bg-canvas: #0f1512;
-  --color-bg-surface: #17201a;
-  --color-bg-overlay: rgb(6 10 8 / 0.66);
-  --color-text-primary: #e9e4d9;
-  --color-text-secondary: #a49c8e;
-  --color-state-success: #74c489;
-  --color-state-danger: #e8806c;
-  --color-state-info: #66b3bb;
+  --color-brand-forest: #b5cda0;
+  --color-brand-forest-light: #c9dcb8;
+  --color-brand-harvest: #efc062;
+  --color-brand-terracotta: #e9a27a;
+  --color-brand-ink: #0b201a;
+  --color-bg-canvas: #0b201a;
+  --color-bg-surface: #133429;
+  --color-bg-overlay: rgb(3 10 8 / 0.7);
+  --color-text-primary: #eaf0e7;
+  --color-text-secondary: #a9bbaf;
+  --color-state-success: #9ed58b;
+  --color-state-danger: #f08a73;
+  --color-state-info: #8cc7d3;
+
+  --glass-tint: rgb(16 44 35 / 0.55);
+  --glass-sheen: rgb(234 240 231 / 0.1);
+  --glass-rim: rgb(255 255 255 / 0.12);
+  --glass-rim-top: rgb(255 255 255 / 0.28);
+  --glass-rim-bottom: rgb(0 0 0 / 0.25);
+  --glass-highlight: rgb(255 255 255 / 0.12);
+  --glass-drop: 0 24px 50px -24px rgb(0 0 0 / 0.75);
+  --canvas-glow-a: rgb(47 122 52 / 0.22);
+  --canvas-glow-b: rgb(181 205 160 / 0.08);
 
   /* Native UI — scrollbars, date pickers, autofill, select popups. Also set
      inline by applyTheme() so it takes effect before this sheet loads. */
@@ -91,6 +109,28 @@ body {
   background-color: var(--color-bg-canvas);
   color: var(--color-text-primary);
   font-family: var(--font-body);
+  line-height: 1.5;
+  /* Abhaya Libre's default figures are old-style (they rise and fall); prices and counts read
+     better, and line up, with lining figures. */
+  font-variant-numeric: lining-nums;
+}
+
+/* Sinhala and Tamil letters carry marks above and below the line, so they need more room. */
+html:lang(si) body,
+html:lang(ta) body {
+  line-height: 1.7;
+}
+
+/* Two soft pools of light behind every page. Fixed and painted once, so scrolling costs nothing. */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(60rem 40rem at 85% -10%, var(--canvas-glow-a), transparent 70%),
+    radial-gradient(50rem 36rem at -10% 110%, var(--canvas-glow-b), transparent 70%);
 }
 
 /*
@@ -129,34 +169,81 @@ body {
   box-shadow:
     0 1px 2px 0 rgb(0 0 0 / 0.4),
     0 1px 3px 0 rgb(0 0 0 / 0.28),
-    inset 0 1px 0 0 rgb(255 255 255 / 0.03);
+    inset 0 1px 0 0 rgb(255 255 255 / 0.04);
 }
 
 .dark .shadow-lg {
   box-shadow:
     0 12px 32px -8px rgb(0 0 0 / 0.7),
     0 4px 12px -4px rgb(0 0 0 / 0.5),
-    inset 0 1px 0 0 rgb(255 255 255 / 0.04);
+    inset 0 1px 0 0 rgb(255 255 255 / 0.05);
 }
 
 /*
- * Liquid glass: the highlight behind the current navigation tab. A bright top edge and a
- * brighter-at-the-top gradient read as a curved pane catching the light, a faint forest tint ties
- * it to the brand, and the blur frosts whatever scrolls beneath the sticky header.
+ * Liquid glass.
+ *
+ * .glass      a floating panel (the price board, weather card, bottom sheets).
+ * .glass-bar  the app's top bar and phone tab bar: the same glass, a little more opaque so the
+ *             page scrolling underneath never fights the buttons on it.
+ *
+ * Tint + blur turn whatever is behind into coloured light; three rims (bright top line, faint
+ * outline, dark bottom line) make it read as thick glass rather than grey fog; ::before is a soft
+ * highlight that follows the pointer (useGlassHighlight sets --glass-x / --glass-y).
+ * Rule: glass is for the frame, solid surfaces are for the work. Lists and forms don't use it.
+ *
+ * In the components layer so utilities win: `fixed` or `sticky` on a glass bar must beat the
+ * `position: relative` here (the ::before highlight only needs *some* positioned ancestor).
  */
-/* .glass-hover takes the same glass on hover or keyboard focus (the header's language and
-   theme buttons). */
+@layer components {
+  .glass,
+  .glass-bar {
+    position: relative;
+    isolation: isolate;
+    background: linear-gradient(160deg, var(--glass-sheen) 0%, transparent 46%), var(--glass-tint);
+    -webkit-backdrop-filter: blur(22px) saturate(150%);
+    backdrop-filter: blur(22px) saturate(150%);
+    box-shadow:
+      inset 0 1px 0 var(--glass-rim-top),
+      inset 0 0 0 1px var(--glass-rim),
+      inset 0 -1px 0 var(--glass-rim-bottom),
+      var(--glass-drop);
+  }
+
+  .glass-bar {
+    background:
+      linear-gradient(160deg, var(--glass-sheen) 0%, transparent 46%),
+      color-mix(in srgb, var(--color-bg-surface) 72%, transparent);
+  }
+
+  .glass::before,
+  .glass-bar::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    pointer-events: none;
+    background: radial-gradient(
+      240px circle at var(--glass-x, 25%) var(--glass-y, -20%),
+      var(--glass-highlight),
+      transparent 62%
+    );
+  }
+}
+
+/* The highlight behind the current navigation tab and other selected pills: a curved pane
+   catching the light. .glass-hover takes the same glass on hover or keyboard focus (the header's
+   language and theme buttons). */
 .glass-pill,
 .glass-hover:is(:hover, :focus-visible) {
   background:
-    linear-gradient(180deg, rgb(255 255 255 / 0.85), rgb(255 255 255 / 0.4)),
-    color-mix(in srgb, var(--color-brand-forest) 12%, transparent);
+    linear-gradient(180deg, rgb(255 255 255 / 0.85), rgb(255 255 255 / 0.35)),
+    color-mix(in srgb, var(--color-brand-forest) 14%, transparent);
   border: 1px solid rgb(255 255 255 / 0.8);
   box-shadow:
     inset 0 1px 0 rgb(255 255 255 / 0.95),
-    inset 0 -1px 1px rgb(31 77 54 / 0.08),
-    0 4px 14px -4px rgb(31 77 54 / 0.3),
-    0 1px 3px rgb(31 77 54 / 0.12);
+    inset 0 -1px 1px rgb(15 42 33 / 0.08),
+    0 4px 14px -4px rgb(15 42 33 / 0.3);
   -webkit-backdrop-filter: blur(14px) saturate(170%);
   backdrop-filter: blur(14px) saturate(170%);
 }
@@ -164,14 +251,185 @@ body {
 .dark .glass-pill,
 .dark .glass-hover:is(:hover, :focus-visible) {
   background:
-    linear-gradient(180deg, rgb(255 255 255 / 0.16), rgb(255 255 255 / 0.04)),
-    color-mix(in srgb, var(--color-brand-forest) 16%, transparent);
+    linear-gradient(180deg, rgb(255 255 255 / 0.16), rgb(255 255 255 / 0.03)),
+    color-mix(in srgb, var(--color-brand-forest) 22%, transparent);
   border-color: rgb(255 255 255 / 0.14);
   box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.22),
+    inset 0 1px 0 rgb(255 255 255 / 0.25),
     inset 0 -1px 1px rgb(0 0 0 / 0.3),
-    0 6px 18px -6px rgb(0 0 0 / 0.7),
-    0 0 0 1px rgb(124 190 140 / 0.1);
+    0 6px 18px -6px rgb(0 0 0 / 0.7);
+}
+
+/*
+ * Motion levels (src/lib/motionLevel.ts puts data-motion on <html>).
+ *   full  everything
+ *   lite  no blur and no pointer highlight: solid panels, cheap to draw on slow phones
+ *   off   no transitions or animations at all (also what reduced-motion users get)
+ */
+html[data-motion='lite']
+  :is(.glass, .glass-bar, .glass-pill, .glass-hover:is(:hover, :focus-visible)),
+html[data-motion='off']
+  :is(.glass, .glass-bar, .glass-pill, .glass-hover:is(:hover, :focus-visible)) {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+html[data-motion='lite'] :is(.glass, .glass-bar),
+html[data-motion='off'] :is(.glass, .glass-bar) {
+  background: var(--color-bg-surface);
+}
+
+html[data-motion='lite'] :is(.glass, .glass-bar)::before,
+html[data-motion='off'] :is(.glass, .glass-bar)::before {
+  display: none;
+}
+
+html[data-motion='off'] *,
+html[data-motion='off'] *::before,
+html[data-motion='off'] *::after {
+  animation-duration: 0s !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0s !important;
+  scroll-behavior: auto !important;
+}
+
+/*
+ * Glass floating on a photo banner (PhotoBanner's BannerGlass). Always dark, since the photo
+ * under it is darkened in both themes.
+ */
+.banner-glass {
+  border: 1px solid rgb(255 255 255 / 0.16);
+  background: linear-gradient(160deg, rgb(255 255 255 / 0.12), transparent 50%), rgb(10 30 24 / 0.42);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.28), 0 18px 40px -24px rgb(0 0 0 / 0.7);
+  -webkit-backdrop-filter: blur(18px) saturate(150%);
+  backdrop-filter: blur(18px) saturate(150%);
+}
+
+html:is([data-motion='lite'], [data-motion='off']) .banner-glass {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  background: rgb(10 30 24 / 0.88);
+}
+
+/*
+ * Odometer: each digit is a reel of 0–9 inside a one-digit window, moved with a transform.
+ * The window is a little taller than the font so no digit is clipped.
+ */
+.odometer {
+  display: inline-flex;
+  height: 1.15em;
+  line-height: 1.15em;
+  overflow: hidden;
+  vertical-align: bottom;
+  font-variant-numeric: lining-nums tabular-nums;
+}
+
+.odometer-cell {
+  display: inline-block;
+  height: 1.15em;
+  overflow: hidden;
+  /* The reels are decoration (the number itself is in a screen-reader span); keep them out of
+     text selection and copy. */
+  user-select: none;
+}
+
+.odometer-reel {
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.7s cubic-bezier(0.22, 1.2, 0.36, 1);
+}
+
+.odometer-reel > span {
+  height: 1.15em;
+}
+
+/* The scan line that sweeps over a crop photo while a report is being worked on. */
+@keyframes scan-sweep {
+  from {
+    transform: translateY(-20%);
+  }
+  to {
+    transform: translateY(420%);
+  }
+}
+
+.scan-line {
+  position: absolute;
+  inset-inline: 6%;
+  top: 0;
+  height: 22%;
+  border-bottom: 2px solid #d3e77a;
+  background: linear-gradient(180deg, transparent, rgb(211 231 122 / 0.35) 85%, rgb(211 231 122 / 0.9));
+  animation: scan-sweep 1.6s ease-in-out infinite alternate;
+}
+
+html:is([data-motion='lite'], [data-motion='off']) .scan-line {
+  animation: none;
+  transform: translateY(180%);
+}
+
+/* Weather pictures (WeatherIcon): slow, small loops. */
+@keyframes weather-turn {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes weather-drift {
+  from {
+    transform: translateX(-3px);
+  }
+  to {
+    transform: translateX(4px);
+  }
+}
+@keyframes weather-fall {
+  from {
+    stroke-dashoffset: 14;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes weather-flash {
+  0%,
+  86%,
+  100% {
+    opacity: 0;
+  }
+  88%,
+  94% {
+    opacity: 1;
+  }
+}
+
+.weather-rays {
+  transform-origin: 34px 30px;
+  animation: weather-turn 18s linear infinite;
+}
+.weather-cloud {
+  animation: weather-drift 6s ease-in-out infinite alternate;
+}
+.weather-rain line {
+  stroke-dasharray: 4 10;
+  animation: weather-fall 0.9s linear infinite;
+}
+.weather-rain line:nth-child(2) {
+  animation-delay: -0.3s;
+}
+.weather-rain line:nth-child(3) {
+  animation-delay: -0.6s;
+}
+.weather-bolt {
+  animation: weather-flash 4s linear infinite;
+}
+
+html:is([data-motion='lite'], [data-motion='off'])
+  :is(.weather-rays, .weather-cloud, .weather-rain line, .weather-bolt) {
+  animation: none;
+}
+
+html:is([data-motion='lite'], [data-motion='off']) .weather-bolt {
+  opacity: 1;
 }
 
 /* Text selection, in-theme in both modes. */

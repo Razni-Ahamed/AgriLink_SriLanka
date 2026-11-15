@@ -111,7 +111,7 @@ export function PurchaseRequestCard({
           )}
 
           {request.status === 'Pending' && onAccept && onDecline && (
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <Button size="sm" onClick={handleAccept} isLoading={isResponding && justAccepted}>
                 {t('common:actions.accept')}
               </Button>

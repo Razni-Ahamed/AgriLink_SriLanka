@@ -3,17 +3,22 @@ import { cn } from '@/lib/utils'
 export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger'
 export type ButtonSize = 'sm' | 'md' | 'lg'
 
+// One filled button per screen (primary); everything else is an outline that sits quietly on
+// glass or a card (secondary), or plain text (ghost).
 const variantClasses: Record<ButtonVariant, string> = {
-  primary: 'bg-brand-forest text-bg-surface hover:bg-brand-forest-light',
-  secondary: 'bg-brand-harvest text-brand-ink hover:brightness-95',
+  primary: 'bg-brand-forest text-bg-surface shadow-sm hover:bg-brand-forest-light',
+  secondary:
+    'border border-text-primary/15 bg-bg-surface/70 text-text-primary hover:border-brand-forest/40 hover:bg-bg-surface',
   ghost: 'bg-transparent text-brand-forest hover:bg-brand-forest/10',
-  danger: 'bg-state-danger text-bg-surface hover:brightness-95',
+  danger: 'bg-state-danger text-bg-surface shadow-sm hover:brightness-95',
 }
 
+// Minimum heights rather than fixed ones, so a long Sinhala or Tamil label can wrap. `md` and
+// `lg` meet the 44 px touch-target guideline.
 const sizeClasses: Record<ButtonSize, string> = {
-  sm: 'px-3 py-1.5 text-xs',
-  md: 'px-4 py-2 text-sm',
-  lg: 'px-5 py-2.5 text-base',
+  sm: 'min-h-9 px-4 py-1.5 text-xs',
+  md: 'min-h-11 px-5 py-2 text-sm',
+  lg: 'min-h-12 px-6 py-2.5 text-base',
 }
 
 /**
@@ -27,7 +32,7 @@ export function buttonClasses(
   className?: string,
 ) {
   return cn(
-    'inline-flex items-center justify-center gap-2 rounded-2xl font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50',
+    'inline-flex items-center justify-center gap-2 rounded-full font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50',
     variantClasses[variant],
     sizeClasses[size],
     className,

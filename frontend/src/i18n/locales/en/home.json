@@ -92,5 +92,11 @@
     "account": "Account",
     "adminLogin": "Admin sign in",
     "rights": "© {{year}} AgriLink Sri Lanka"
+  },
+  "board": {
+    "title": "Fresh prices",
+    "note": "Asking prices on active listings right now.",
+    "empty": "No listings yet. Check back soon.",
+    "see": "See every listing"
   }
 }

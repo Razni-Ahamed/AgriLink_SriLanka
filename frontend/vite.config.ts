@@ -33,10 +33,15 @@ export default defineConfig({
     globals: true,
     setupFiles: ['./src/setupTests.ts'],
     // src/lib/env.ts refuses to start without an API address, and anything importing the API client
-    // loads it. Tests never reach a real API, so give them one here rather than depending on a
-    // developer's gitignored .env — CI has none, and those suites crashed on import there.
+    // loads it, so give tests one here rather than depending on a developer's gitignored .env —
+    // CI has none, and those suites crashed on import there.
+    //
+    // It is an address nothing listens on, not the dev API's own port. A few components make a
+    // real request in tests (an unread count, a profile check). With a local backend running,
+    // those reached it, the tests' made-up token got a 401, and the 401 signed the user out
+    // mid-test: three AppLayout tests failed whenever a developer had the API up.
     env: {
-      VITE_API_BASE_URL: 'http://localhost:5266',
+      VITE_API_BASE_URL: 'http://localhost:1',
     },
   },
 })

@@ -1,3 +1,4 @@
+import { AuthScene } from '@/components/canopy/AuthScene'
 import { useMemo } from 'react'
 import { isAxiosError } from 'axios'
 import { useForm } from 'react-hook-form'
@@ -84,7 +85,7 @@ export function LoginPage() {
   })
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-bg-canvas px-4">
+    <AuthScene photo="fields">
       {/* `layout` tweens the height change when switching language — Sinhala and
           Tamil strings wrap differently, which otherwise snaps the card. */}
       <motion.div
@@ -93,7 +94,7 @@ export function LoginPage() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ layout: { duration: 0.25, ease: 'easeOut' } }}
       >
-        <Card className="w-full max-w-sm">
+        <Card className="glass w-full max-w-sm rounded-[28px] p-6 sm:p-7">
           <div className="mb-4 flex flex-wrap items-center justify-center gap-2">
             <LanguageSwitcher />
             <ThemeToggle variant="compact" />
@@ -142,6 +143,6 @@ export function LoginPage() {
           </p>
         </Card>
       </motion.div>
-    </div>
+    </AuthScene>
   )
 }

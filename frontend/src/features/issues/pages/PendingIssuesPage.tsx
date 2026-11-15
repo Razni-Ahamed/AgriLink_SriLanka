@@ -1,11 +1,10 @@
+import { CropThumb } from '@/components/canopy/CropThumb'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Camera, MapPin } from '@phosphor-icons/react'
 import { Badge } from '@/components/ui/Badge'
 import { Card } from '@/components/ui/Card'
-import { CropIcon } from '@/components/ui/CropIcon'
-import { IconBadge } from '@/components/ui/IconBadge'
 import { Pagination } from '@/components/ui/Pagination'
 import { SearchSortBar } from '@/components/ui/SearchSortBar'
 import { Skeleton } from '@/components/ui/Skeleton'
@@ -17,6 +16,7 @@ import { SeverityBadge } from '../components/SeverityBadge'
 import { usePendingIssues } from '../hooks/useIssues'
 import { hoursSince, isOverdue, useFormatWait } from '../lib/reviewTiming'
 import type { IssueSort } from '@/types/dto/issues'
+import { PhotoBanner } from '@/components/canopy/PhotoBanner'
 
 export function PendingIssuesPage() {
   const { t } = useTranslation(['issues', 'common'])
@@ -38,18 +38,22 @@ export function PendingIssuesPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="font-display text-2xl text-text-primary">{t('pending.title')}</h1>
-        {/* This queue is scoped to the officer's own district on the backend
-            (IssuesController.Pending) — said explicitly here so it doesn't read as "the whole
-            queue happens to be short today" when it's actually always this district only. */}
-        {role === 'Officer' && officerDistrict && (
-          <p className="mt-1 flex items-center gap-1 text-sm text-text-secondary">
-            <MapPin size={14} />
-            {t('pending.scopedToDistrict', { district: officerDistrict })}
-          </p>
-        )}
-      </div>
+      {/* The queue is scoped to the officer's own district on the backend
+          (IssuesController.Pending) — said explicitly so it doesn't read as "the whole queue
+          happens to be short today" when it's actually always this district only. */}
+      <PhotoBanner
+        size="compact"
+        photo="care"
+        title={t('pending.title')}
+        subtitle={
+          role === 'Officer' && officerDistrict ? (
+            <span className="flex items-center gap-1">
+              <MapPin size={14} />
+              {t('pending.scopedToDistrict', { district: officerDistrict })}
+            </span>
+          ) : undefined
+        }
+      />
 
       <SearchSortBar
         search={searchInput}
@@ -89,9 +93,7 @@ export function PendingIssuesPage() {
                 <Link to={issue.advisoryId ? `/advisories/${issue.advisoryId}` : '#'}>
                   <Card interactive className="flex items-center justify-between gap-4">
                     <div className="flex min-w-0 items-center gap-3">
-                      <IconBadge tone="forest" className="shrink-0">
-                        <CropIcon cropType={issue.cropType} size={18} />
-                      </IconBadge>
+                      <CropThumb cropType={issue.cropType} />
                       <div className="min-w-0">
                         <h3 className="truncate font-display text-base text-text-primary">
                           {issue.title}

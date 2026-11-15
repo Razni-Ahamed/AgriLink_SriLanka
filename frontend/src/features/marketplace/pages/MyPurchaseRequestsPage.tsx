@@ -1,3 +1,4 @@
+import { PhotoBanner } from '@/components/canopy/PhotoBanner'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Card } from '@/components/ui/Card'
@@ -20,7 +21,7 @@ export function MyPurchaseRequestsPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="font-display text-2xl text-text-primary">{t('requests.title')}</h1>
+      <PhotoBanner size="compact" photo="market" focus="center 60%" title={t('requests.title')} />
 
       {isLoading && (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">

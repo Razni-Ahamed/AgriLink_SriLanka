@@ -1,10 +1,9 @@
+import { CropThumb } from '@/components/canopy/CropThumb'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Badge } from '@/components/ui/Badge'
 import { Card } from '@/components/ui/Card'
-import { CropIcon } from '@/components/ui/CropIcon'
-import { IconBadge } from '@/components/ui/IconBadge'
 import { Pagination } from '@/components/ui/Pagination'
 import { SearchSortBar } from '@/components/ui/SearchSortBar'
 import { Select } from '@/components/ui/Select'
@@ -16,6 +15,7 @@ import { useStatusLabel } from '@/lib/useStatusLabel'
 import { SeverityBadge } from '../components/SeverityBadge'
 import { useAllIssues } from '../hooks/useIssues'
 import type { CropIssueResponse, IssueSort, IssueStatus } from '@/types/dto/issues'
+import { PhotoBanner } from '@/components/canopy/PhotoBanner'
 
 const FILTERABLE_STATUSES: IssueStatus[] = ['AwaitingReview', 'Resolved', 'Rejected']
 
@@ -37,9 +37,7 @@ function AllIssuesCard({ issue }: { issue: CropIssueResponse }) {
     <Card interactive={Boolean(issue.advisoryId)} className="flex flex-col gap-3">
       <div className="flex items-start justify-between gap-2">
         <div className="flex min-w-0 items-start gap-2.5">
-          <IconBadge tone="forest" className="shrink-0">
-            <CropIcon cropType={issue.cropType} size={18} />
-          </IconBadge>
+          <CropThumb cropType={issue.cropType} />
           <div className="min-w-0">
             <h3 className="truncate font-display text-lg text-text-primary">{issue.title}</h3>
             <p className="truncate text-xs text-text-secondary">
@@ -87,10 +85,13 @@ export function AllIssuesPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="font-display text-2xl text-text-primary">{t('all.title')}</h1>
-        <p className="text-sm text-text-secondary">{t('all.subtitle')}</p>
-      </div>
+      <PhotoBanner
+        size="compact"
+        photo="inspection"
+        focus="center 82%"
+        title={t('all.title')}
+        subtitle={t('all.subtitle')}
+      />
 
       <SearchSortBar
         search={searchInput}

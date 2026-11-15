@@ -70,7 +70,7 @@ export function HarvestFilterBar({ filters, onChange }: HarvestFilterBarProps) {
     <form
       role="search"
       onSubmit={handleSubmit}
-      className="grid grid-cols-1 items-end gap-3 rounded-2xl border border-brand-forest/10 bg-bg-surface p-4 sm:grid-cols-2 lg:grid-cols-4"
+      className="glass grid grid-cols-1 items-end gap-3 rounded-[24px] p-4 sm:grid-cols-2 lg:grid-cols-4"
     >
       <div className="sm:col-span-2">
         <Input

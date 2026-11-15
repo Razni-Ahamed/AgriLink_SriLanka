@@ -1,3 +1,4 @@
+import { CropThumb } from '@/components/canopy/CropThumb'
 import { useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { Basket, PencilSimple, Plus } from '@phosphor-icons/react'
@@ -6,7 +7,6 @@ import { Button } from '@/components/ui/Button'
 import { Modal } from '@/components/ui/Modal'
 import { Card } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
-import { CropIcon } from '@/components/ui/CropIcon'
 import { IconBadge } from '@/components/ui/IconBadge'
 import { Select } from '@/components/ui/Select'
 import { Skeleton } from '@/components/ui/Skeleton'
@@ -19,6 +19,7 @@ import { EditHarvestForm } from '../components/EditHarvestForm'
 import { HarvestListingForm } from '../components/HarvestListingForm'
 import { useCreateHarvest, useMyHarvests, useUpdateHarvest } from '../hooks/useHarvests'
 import type { HarvestListingResponse, HarvestStatus } from '@/types/dto/harvests'
+import { PhotoBanner } from '@/components/canopy/PhotoBanner'
 
 const statusVariant = {
   Active: 'success',
@@ -40,9 +41,7 @@ function MyListingCard({ harvest }: { harvest: HarvestListingResponse }) {
     <Card className="flex flex-col gap-3">
       <div className="flex items-start justify-between">
         <div className="flex min-w-0 items-center gap-2.5">
-          <IconBadge tone="forest" className="shrink-0">
-            <CropIcon cropType={harvest.cropType} size={18} />
-          </IconBadge>
+          <CropThumb cropType={harvest.cropType} />
           <div className="min-w-0">
             <h3 className="truncate font-display text-lg text-text-primary">{harvest.cropType}</h3>
             <p className="truncate text-sm text-text-secondary">{harvest.variety}</p>
@@ -144,15 +143,18 @@ export function MyListingsPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
-        <h1 className="font-display text-2xl text-text-primary">
-          {t('marketplace:listings.title')}
-        </h1>
-        <Button onClick={() => setModalOpen(true)}>
-          <Plus size={16} weight="bold" />
-          {t('marketplace:listings.newListing')}
-        </Button>
-      </div>
+      <PhotoBanner
+        size="compact"
+        photo="produce"
+        focus="center 55%"
+        title={t('marketplace:listings.title')}
+        actions={
+          <Button onClick={() => setModalOpen(true)}>
+            <Plus size={16} weight="bold" />
+            {t('marketplace:listings.newListing')}
+          </Button>
+        }
+      />
 
       {isLoading && (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">

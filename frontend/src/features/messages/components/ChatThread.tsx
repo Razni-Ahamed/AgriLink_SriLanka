@@ -340,7 +340,7 @@ function Composer({ conversationId }: { conversationId: number }) {
           placeholder={t('composer.placeholder')}
           maxLength={MAX_MESSAGE}
           rows={2}
-          className="max-h-40 min-h-[2.75rem] flex-1 resize-y rounded-xl border border-text-secondary/25 bg-bg-canvas px-3 py-2 text-sm text-text-primary outline-none focus:border-brand-forest"
+          className="max-h-40 min-h-[2.75rem] flex-1 resize-y rounded-[14px] border border-text-primary/15 bg-bg-surface px-3.5 py-2.5 text-sm text-text-primary outline-none transition-[border-color,box-shadow] focus:border-brand-forest focus:ring-4 focus:ring-brand-forest/15"
         />
         <Button type="submit" isLoading={send.isPending} disabled={!trimmed} aria-label={t('composer.send')}>
           {!send.isPending && <PaperPlaneRight size={18} weight="duotone" />}

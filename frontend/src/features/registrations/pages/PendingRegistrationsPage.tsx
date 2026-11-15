@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { cn } from '@/lib/utils'
 import { ProfileChangesTab } from '../components/ProfileChangesTab'
 import { RegistrationsTab } from '../components/RegistrationsTab'
+import { PhotoBanner } from '@/components/canopy/PhotoBanner'
 
 type ApprovalsTab = 'registrations' | 'profileChanges'
 
@@ -46,7 +47,7 @@ export function PendingRegistrationsPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="font-display text-2xl text-text-primary">{t('pending.pageTitle')}</h1>
+      <PhotoBanner size="compact" photo="people" title={t('pending.pageTitle')} />
 
       <div
         role="tablist"

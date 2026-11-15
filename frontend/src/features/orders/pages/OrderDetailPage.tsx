@@ -1,7 +1,8 @@
-import { Link, useParams } from 'react-router-dom'
-import { ArrowLeft, EnvelopeSimple, Phone } from '@phosphor-icons/react'
+import { PhotoBanner } from '@/components/canopy/PhotoBanner'
+import { cropPhoto } from '@/lib/cropPhotos'
+import { useParams } from 'react-router-dom'
+import { EnvelopeSimple, Phone } from '@phosphor-icons/react'
 import { useTranslation } from 'react-i18next'
-import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Skeleton } from '@/components/ui/Skeleton'
@@ -13,13 +14,7 @@ import { useUiStore } from '@/lib/useUiStore'
 import { useAuthStore } from '@/auth/authStore'
 import { StartChatButton } from '@/features/messages/components/StartChatButton'
 import { useOrder, useOrderTransition } from '../hooks/useOrders'
-import type { OrderResponse, OrderStatus } from '@/types/dto/orders'
-
-const statusVariant: Record<OrderStatus, 'warning' | 'success' | 'danger'> = {
-  Confirmed: 'warning',
-  Completed: 'success',
-  Cancelled: 'danger',
-}
+import type { OrderResponse } from '@/types/dto/orders'
 
 interface ContactCardProps {
   title: string
@@ -33,7 +28,16 @@ interface ContactCardProps {
 }
 
 /** Phone and email as tappable tel:/mailto: links; when a phone is missing, email only. */
-function ContactCard({ title, role, photoUrl, name, business, district, phone, email }: ContactCardProps) {
+function ContactCard({
+  title,
+  role,
+  photoUrl,
+  name,
+  business,
+  district,
+  phone,
+  email,
+}: ContactCardProps) {
   const { t } = useTranslation('orders')
 
   return (
@@ -121,7 +125,9 @@ export function OrderDetailPage() {
         onSuccess: () =>
           addToast({
             type: 'success',
-            message: t(action === 'complete' ? 'orders:detail.completed' : 'orders:detail.cancelled'),
+            message: t(
+              action === 'complete' ? 'orders:detail.completed' : 'orders:detail.cancelled',
+            ),
           }),
         onError: () => addToast({ type: 'error', message: t('orders:detail.transitionError') }),
       },
@@ -138,25 +144,18 @@ export function OrderDetailPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <Link
-        to="/orders/mine"
-        className="flex w-fit items-center gap-1 text-sm text-text-secondary hover:text-brand-forest"
-      >
-        <ArrowLeft size={14} />
-        {t('orders:detail.back')}
-      </Link>
-
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="font-display text-2xl text-text-primary">
-            {t('orders:card.orderNumber', { id: order.orderId })}
-          </h1>
-          <p className="text-sm text-text-secondary">
-            {t('orders:detail.placedOn', { date: formatDate(order.orderDate) })}
-          </p>
-        </div>
-        <Badge variant={statusVariant[order.status]}>{statusLabel('order', order.status)}</Badge>
-      </div>
+      <PhotoBanner
+        size="compact"
+        photo={cropPhoto(order.cropType)}
+        back={{ to: '/orders/mine', label: t('orders:detail.back') }}
+        eyebrow={t('orders:detail.placedOn', { date: formatDate(order.orderDate) })}
+        title={t('orders:card.orderNumber', { id: order.orderId })}
+        actions={
+          <span className="banner-glass rounded-full px-3 py-1.5 text-sm font-semibold">
+            {statusLabel('order', order.status)}
+          </span>
+        }
+      />
 
       <Card className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         <div>
@@ -189,7 +188,9 @@ export function OrderDetailPage() {
           {(role === 'Farmer' || role === 'Buyer') && (
             <StartChatButton
               subject={{ kind: 'Deal', requestId: order.requestId }}
-              label={t(role === 'Farmer' ? 'messages:start.messageBuyer' : 'messages:start.messageFarmer')}
+              label={t(
+                role === 'Farmer' ? 'messages:start.messageBuyer' : 'messages:start.messageFarmer',
+              )}
             />
           )}
         </div>

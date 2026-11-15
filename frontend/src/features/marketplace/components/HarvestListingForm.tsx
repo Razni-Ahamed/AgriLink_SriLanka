@@ -1,3 +1,4 @@
+import { CropThumb } from '@/components/canopy/CropThumb'
 import { useEffect, useMemo } from 'react'
 import { Controller, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -7,7 +8,6 @@ import { Link } from 'react-router-dom'
 import { CurrencyCircleDollar, Package, Receipt, Warning } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/Button'
 import { CropPicker } from '@/components/ui/CropPicker'
-import { CropIcon } from '@/components/ui/CropIcon'
 import { IconBadge } from '@/components/ui/IconBadge'
 import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
@@ -106,9 +106,7 @@ export function HarvestListingForm({ prefill, isSubmitting, onSubmit }: HarvestL
 
       {selectedCrop && (
         <div className="flex items-center gap-3 rounded-2xl border border-brand-forest/10 bg-brand-forest/5 p-3">
-          <IconBadge tone="forest">
-            <CropIcon cropType={selectedCrop.cropType} size={20} />
-          </IconBadge>
+          <CropThumb cropType={selectedCrop.cropType} />
           <div className="min-w-0 text-sm">
             <p className="truncate font-medium text-text-primary">
               {cropLabel(selectedCrop.cropType)}

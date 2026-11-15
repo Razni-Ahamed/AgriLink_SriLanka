@@ -145,7 +145,7 @@ describe('RegistrationsTab', () => {
 
     render(<RegistrationsTab />)
 
-    const row = within(screen.getByText('Test Buyer').closest('div.rounded-2xl') as HTMLElement)
+    const row = within(screen.getByText('Test Buyer').closest('div.bg-bg-surface') as HTMLElement)
     expect(row.getByText('Buyer application')).toBeInTheDocument()
     expect(row.getByText('Business: Buyer Traders Ltd')).toBeInTheDocument()
   })

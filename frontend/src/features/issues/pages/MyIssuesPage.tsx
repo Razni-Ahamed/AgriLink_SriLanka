@@ -1,3 +1,4 @@
+import { CropThumb } from '@/components/canopy/CropThumb'
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Camera, Plus, FirstAidKit } from '@phosphor-icons/react'
@@ -5,7 +6,6 @@ import { useTranslation } from 'react-i18next'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
-import { CropIcon } from '@/components/ui/CropIcon'
 import { IconBadge } from '@/components/ui/IconBadge'
 import { Pagination } from '@/components/ui/Pagination'
 import { Skeleton } from '@/components/ui/Skeleton'
@@ -16,6 +16,7 @@ import { StartChatButton } from '@/features/messages/components/StartChatButton'
 import { SeverityBadge } from '../components/SeverityBadge'
 import { useMyIssues } from '../hooks/useIssues'
 import type { CropIssueResponse, IssueStatus } from '@/types/dto/issues'
+import { PhotoBanner } from '@/components/canopy/PhotoBanner'
 
 const statusVariant: Record<IssueStatus, 'success' | 'warning' | 'danger' | 'info'> = {
   Pending: 'info',
@@ -40,9 +41,7 @@ function IssueCard({ issue }: { issue: CropIssueResponse }) {
     <Card interactive={canLink} className="flex flex-col gap-3">
       <div className="flex items-start justify-between gap-2">
         <div className="flex min-w-0 items-start gap-2.5">
-          <IconBadge tone="forest" className="shrink-0">
-            <CropIcon cropType={issue.cropType} size={18} />
-          </IconBadge>
+          <CropThumb cropType={issue.cropType} />
           <div className="min-w-0">
             <h3 className="truncate font-display text-lg text-text-primary">{issue.title}</h3>
             {issue.cropType && (
@@ -100,15 +99,21 @@ export function MyIssuesPage() {
       {/* The only route to /issues/new used to be a button buried on a crop's detail page,
           three levels inside Farms — so from "My Issues" there was no way to raise one. With no
           issues yet, the empty state below carries the one button instead. */}
-      <div className="flex items-center justify-between">
-        <h1 className="font-display text-2xl text-text-primary">{t('mine.title')}</h1>
-        {issues && issues.length > 0 && (
-          <Button onClick={() => navigate('/issues/new')}>
-            <Plus size={16} weight="bold" />
-            {t('mine.reportIssue')}
-          </Button>
-        )}
-      </div>
+      <PhotoBanner
+        size="compact"
+        photo="inspection"
+        focus="center 82%"
+        title={t('mine.title')}
+        actions={
+          issues &&
+          issues.length > 0 && (
+            <Button onClick={() => navigate('/issues/new')}>
+              <Plus size={16} weight="bold" />
+              {t('mine.reportIssue')}
+            </Button>
+          )
+        }
+      />
 
       {isLoading && (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">

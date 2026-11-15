@@ -1,9 +1,12 @@
-import { Link, useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, Basket, Trash, Warning } from '@phosphor-icons/react'
+import { BannerGlass, PhotoBanner } from '@/components/canopy/PhotoBanner'
+import { SeasonVine } from '@/components/canopy/SeasonVine'
+import { cropPhoto } from '@/lib/cropPhotos'
+import { seasonProgress } from '@/lib/season'
+import { useCropLabel } from '@/lib/useCropLabel'
+import { useNavigate, useParams } from 'react-router-dom'
+import { Basket, Trash, Warning } from '@phosphor-icons/react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/Button'
-import { CropIcon } from '@/components/ui/CropIcon'
-import { IconBadge } from '@/components/ui/IconBadge'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { Select } from '@/components/ui/Select'
 import { parseApiError } from '@/lib/apiErrors'
@@ -17,6 +20,7 @@ const statusOptions: CropStatus[] = ['Seeded', 'Growing', 'Harvested']
 export function CropDetailPage() {
   const { t } = useTranslation(['farms', 'common'])
   const statusLabel = useStatusLabel()
+  const cropLabel = useCropLabel()
   const { farmId, fieldId, cropId } = useParams<{
     farmId: string
     fieldId: string
@@ -37,42 +41,54 @@ export function CropDetailPage() {
     return <p className="text-sm text-text-secondary">{t('farms:crop.notFound')}</p>
   }
 
+  const season = seasonProgress(crop.plantingDate, crop.expectedHarvestDate)
+
   return (
     <div className="flex flex-col gap-6">
-      <Link
-        to={`/farms/${farmId}/fields/${fieldId}`}
-        className="flex w-fit items-center gap-1 text-sm text-text-secondary hover:text-brand-forest"
+      <PhotoBanner
+        photo={cropPhoto(crop.cropType)}
+        back={{ to: `/farms/${farmId}/fields/${fieldId}`, label: t('farms:crop.back') }}
+        title={cropLabel(crop.cropType)}
+        subtitle={crop.variety || t('farms:crop.noVariety')}
       >
-        <ArrowLeft size={14} />
-        {t('farms:crop.back')}
-      </Link>
-
-      <div className="flex items-center gap-3">
-        <IconBadge tone="forest">
-          <CropIcon cropType={crop.cropType} size={20} />
-        </IconBadge>
-        <div>
-          <h1 className="font-display text-2xl text-text-primary">{crop.cropType}</h1>
-          <p className="text-sm text-text-secondary">{crop.variety || t('farms:crop.noVariety')}</p>
-        </div>
-      </div>
-
-      <dl className="grid grid-cols-2 gap-4 text-sm">
-        <div>
-          <dt className="text-text-secondary">{t('farms:crop.plantingDate')}</dt>
-          <dd className="tabular-nums text-text-primary">{formatDate(crop.plantingDate)}</dd>
-        </div>
-        <div>
-          <dt className="text-text-secondary">{t('farms:crop.expectedHarvest')}</dt>
-          <dd className="tabular-nums text-text-primary">{formatDate(crop.expectedHarvestDate)}</dd>
-        </div>
-        <div>
-          <dt className="text-text-secondary">{t('farms:crop.expectedQuantity')}</dt>
-          <dd className="tabular-nums text-text-primary">
-            {t('common:units.kg', { value: formatQuantity(crop.expectedQuantity) })}
-          </dd>
-        </div>
-      </dl>
+        <BannerGlass className="px-4 pt-2 pb-4 sm:px-5">
+          <SeasonVine
+            fraction={season.fraction}
+            label={t('farms:today.vineLabel', {
+              crop: cropLabel(crop.cropType),
+              day: season.day,
+              total: season.total,
+            })}
+            className="text-white"
+          />
+          <dl className="mt-1 grid grid-cols-2 gap-x-4 gap-y-3 text-sm sm:grid-cols-4">
+            <div>
+              <dt className="text-white/65">{t('farms:crop.plantingDate')}</dt>
+              <dd className="font-semibold tabular-nums">{formatDate(crop.plantingDate)}</dd>
+            </div>
+            <div>
+              <dt className="text-white/65">{t('farms:crop.expectedHarvest')}</dt>
+              <dd className="font-semibold tabular-nums">{formatDate(crop.expectedHarvestDate)}</dd>
+            </div>
+            <div>
+              <dt className="text-white/65">{t('farms:crop.expectedQuantity')}</dt>
+              <dd className="font-semibold tabular-nums">
+                {t('common:units.kg', { value: formatQuantity(crop.expectedQuantity) })}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-white/65">
+                {t('farms:today.day', { day: season.day, total: season.total })}
+              </dt>
+              <dd className="font-semibold">
+                {season.daysLeft > 0
+                  ? t('farms:today.harvestIn', { count: season.daysLeft })
+                  : t('farms:today.harvestDue')}
+              </dd>
+            </div>
+          </dl>
+        </BannerGlass>
+      </PhotoBanner>
 
       <div className="flex flex-col gap-2">
         <span className="text-sm font-medium text-text-primary">{t('common:fields.status')}</span>
@@ -89,7 +105,7 @@ export function CropDetailPage() {
         </Select>
       </div>
 
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         <Button
           variant="secondary"
           onClick={() =>

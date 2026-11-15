@@ -1,3 +1,4 @@
+import { AuthScene } from '@/components/canopy/AuthScene'
 import { useId, useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -13,6 +14,7 @@ import { PasswordChecklist } from '@/components/ui/PasswordChecklist'
 import { UsernameAvailabilityHint } from '@/components/ui/UsernameAvailabilityHint'
 import { DistrictSelect } from '@/components/ui/DistrictSelect'
 import { Card } from '@/components/ui/Card'
+import { ChipGroup } from '@/components/ui/ChipGroup'
 import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
 import { buildPasswordSchema } from '@/lib/passwordSchema'
@@ -205,8 +207,8 @@ export function RegisterPage() {
 
   if (mutation.isSuccess) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-bg-canvas px-4 py-10">
-        <Card className="w-full max-w-sm text-center">
+      <AuthScene photo="farm">
+        <Card className="glass w-full max-w-sm rounded-[28px] p-6 sm:p-7 text-center">
           <h1 className="mb-2 font-display text-2xl text-brand-forest">
             {t('auth:register.pendingTitle')}
           </h1>
@@ -215,19 +217,19 @@ export function RegisterPage() {
             <Button className="w-full">{t('auth:register.backToLogin')}</Button>
           </a>
         </Card>
-      </div>
+      </AuthScene>
     )
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-bg-canvas px-4 py-10">
+    <AuthScene photo="farm">
       <motion.div
         layout
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ layout: { duration: 0.25, ease: 'easeOut' } }}
       >
-        <Card className="w-full max-w-sm">
+        <Card className="glass w-full max-w-sm rounded-[28px] p-6 sm:p-7">
           <div className="mb-4 flex flex-wrap items-center justify-center gap-2">
             <LanguageSwitcher />
             <ThemeToggle variant="compact" />
@@ -241,22 +243,17 @@ export function RegisterPage() {
           </h1>
           <p className="mb-6 text-sm text-text-secondary">{t('auth:register.subtitle')}</p>
 
-          <div className="mb-4 grid grid-cols-2 gap-2">
-            <Button
-              type="button"
-              variant={role === 'Farmer' ? 'primary' : 'secondary'}
-              onClick={() => selectRole('Farmer')}
-            >
-              {t('auth:register.roleFarmer')}
-            </Button>
-            <Button
-              type="button"
-              variant={role === 'Buyer' ? 'primary' : 'secondary'}
-              onClick={() => selectRole('Buyer')}
-            >
-              {t('auth:register.roleBuyer')}
-            </Button>
-          </div>
+          <ChipGroup<Role>
+            fill
+            className="mb-4"
+            label={t('auth:register.title')}
+            value={role}
+            onChange={selectRole}
+            options={[
+              { value: 'Farmer', label: t('auth:register.roleFarmer') },
+              { value: 'Buyer', label: t('auth:register.roleBuyer') },
+            ]}
+          />
 
           <form className="flex flex-col gap-4" onSubmit={onSubmit}>
             <Input
@@ -371,6 +368,6 @@ export function RegisterPage() {
           </p>
         </Card>
       </motion.div>
-    </div>
+    </AuthScene>
   )
 }

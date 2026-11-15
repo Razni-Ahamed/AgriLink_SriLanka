@@ -8,6 +8,7 @@ import { MetricsBarChart } from '../components/MetricsBarChart'
 import { PhotoDiagnosisPanel } from '../components/PhotoDiagnosisPanel'
 import { MetricsCard } from '@/components/ui/MetricsCard'
 import { useAdminMetrics } from '../hooks/useAdminMetrics'
+import { PhotoBanner } from '@/components/canopy/PhotoBanner'
 
 export function AdminDashboardPage() {
   const { t } = useTranslation('orders')
@@ -34,7 +35,7 @@ export function AdminDashboardPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="font-display text-2xl text-text-primary">{t('admin.dashboardTitle')}</h1>
+      <PhotoBanner size="compact" photo="fields" title={t('admin.dashboardTitle')} />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <MetricsCard

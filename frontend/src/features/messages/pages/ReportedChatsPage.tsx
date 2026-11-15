@@ -13,6 +13,7 @@ import { useUiStore } from '@/lib/useUiStore'
 import type { ConversationReport } from '@/types/dto/conversations'
 import { ChatThread } from '../components/ChatThread'
 import { useConversationReports, useResolveConversationReport } from '../hooks/useConversations'
+import { PhotoBanner } from '@/components/canopy/PhotoBanner'
 
 const KIND_KEY = { Deal: 'kind.Deal', Advice: 'kind.Advice' } as const
 
@@ -24,10 +25,12 @@ export function ReportedChatsPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="font-display text-2xl text-text-primary">{t('reports.title')}</h1>
-        <p className="text-sm text-text-secondary">{t('reports.subtitle')}</p>
-      </div>
+      <PhotoBanner
+        size="compact"
+        photo="path"
+        title={t('reports.title')}
+        subtitle={t('reports.subtitle')}
+      />
 
       {isLoading && <Skeleton className="h-32" />}
 
