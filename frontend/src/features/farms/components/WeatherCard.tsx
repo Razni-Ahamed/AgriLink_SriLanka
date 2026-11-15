@@ -1,3 +1,4 @@
+import { useDistrictLabel } from '@/lib/useDistrictLabel'
 import { CloudSlash, Drop, Warning } from '@phosphor-icons/react'
 import { useTranslation } from 'react-i18next'
 import { BannerGlass } from '@/components/canopy/PhotoBanner'
@@ -13,6 +14,7 @@ import { useDistrictForecast } from '../hooks/useDistrictForecast'
  */
 export function WeatherCard({ district }: { district: string }) {
   const { t, i18n } = useTranslation('farms')
+  const districtLabel = useDistrictLabel()
   const locale = dateLocale(i18n.language)
   const { data: forecast, isLoading, isError } = useDistrictForecast(district)
 
@@ -41,7 +43,7 @@ export function WeatherCard({ district }: { district: string }) {
 
   return (
     <BannerGlass className="flex h-full flex-col p-4 sm:p-5">
-      <section aria-label={t('weather.label', { district: forecast.district })}>
+      <section aria-label={t('weather.label', { district: districtLabel(forecast.district) })}>
         <div className="grid grid-cols-[5rem_minmax(0,1fr)] items-center gap-3">
           <WeatherIcon kind={kind} className="h-[4.5rem] w-20" />
           <div className="text-right">
@@ -49,7 +51,7 @@ export function WeatherCard({ district }: { district: string }) {
               {Math.round(forecast.current.temperatureC)}°
             </p>
             <p className="mt-1 text-sm text-white/75">
-              {t(`weather.kind.${kind}`)} · {forecast.district}
+              {t(`weather.kind.${kind}`)} · {districtLabel(forecast.district)}
             </p>
             {forecast.today.maxC != null && forecast.today.minC != null && (
               <p className="text-xs text-white/60">

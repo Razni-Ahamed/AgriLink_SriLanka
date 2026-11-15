@@ -1,3 +1,4 @@
+import { useDistrictLabel } from '@/lib/useDistrictLabel'
 import { useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { Calendar, MapPin } from '@phosphor-icons/react'
@@ -24,6 +25,7 @@ const statusTone = {
  */
 export function HarvestCard({ harvest }: { harvest: HarvestListingResponse }) {
   const { t } = useTranslation()
+  const districtLabel = useDistrictLabel()
   const statusLabel = useStatusLabel()
   const cropLabel = useCropLabel()
   const units = useUnits()
@@ -84,7 +86,7 @@ export function HarvestCard({ harvest }: { harvest: HarvestListingResponse }) {
           <div className="mt-auto flex flex-wrap gap-x-4 gap-y-1 border-t border-text-primary/[0.07] pt-2.5 text-xs text-text-secondary">
             <span className="flex items-center gap-1">
               <MapPin size={13} aria-hidden="true" />
-              {harvest.district}
+              {districtLabel(harvest.district)}
             </span>
             <span className="flex items-center gap-1 tabular-nums">
               <Calendar size={13} aria-hidden="true" />

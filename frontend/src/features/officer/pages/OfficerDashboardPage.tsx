@@ -1,3 +1,4 @@
+import { useDistrictLabel } from '@/lib/useDistrictLabel'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import {
@@ -24,6 +25,7 @@ import { PhotoBanner } from '@/components/canopy/PhotoBanner'
  */
 export function OfficerDashboardPage() {
   const { t } = useTranslation('officer')
+  const districtLabel = useDistrictLabel()
   const { data: metrics, isLoading } = useOfficerMetrics()
 
   if (isLoading || !metrics) {
@@ -46,7 +48,7 @@ export function OfficerDashboardPage() {
           <div className="flex flex-wrap items-center gap-2 text-sm">
             <span className="banner-glass flex items-center gap-1 rounded-full px-3 py-1.5">
               <MapPin size={14} />
-              {metrics.district}
+              {districtLabel(metrics.district)}
             </span>
             <span className="banner-glass flex items-center gap-1 rounded-full px-3 py-1.5">
               <Building size={14} />

@@ -1,3 +1,4 @@
+import { useDistrictLabel } from '@/lib/useDistrictLabel'
 import { CropThumb } from '@/components/canopy/CropThumb'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
@@ -20,6 +21,7 @@ import { PhotoBanner } from '@/components/canopy/PhotoBanner'
 
 export function PendingIssuesPage() {
   const { t } = useTranslation(['issues', 'common'])
+  const districtLabel = useDistrictLabel()
   const formatWait = useFormatWait()
   const [searchInput, setSearchInput] = useState('')
   const search = useDebouncedValue(searchInput.trim(), 300)
@@ -49,7 +51,7 @@ export function PendingIssuesPage() {
           role === 'Officer' && officerDistrict ? (
             <span className="flex items-center gap-1">
               <MapPin size={14} />
-              {t('pending.scopedToDistrict', { district: officerDistrict })}
+              {t('pending.scopedToDistrict', { district: districtLabel(officerDistrict) })}
             </span>
           ) : undefined
         }
@@ -109,7 +111,7 @@ export function PendingIssuesPage() {
                         {issue.reporterName && (
                           <p className="truncate text-xs text-text-secondary">
                             {t('pending.reportedBy', { name: issue.reporterName })}
-                            {issue.district && ` · ${issue.district}`}
+                            {issue.district && ` · ${districtLabel(issue.district)}`}
                           </p>
                         )}
                       </div>

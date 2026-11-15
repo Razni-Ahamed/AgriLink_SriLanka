@@ -1,3 +1,4 @@
+import { useDistrictLabel } from '@/lib/useDistrictLabel'
 import { ClockCountdown } from '@phosphor-icons/react'
 import { useTranslation } from 'react-i18next'
 import { Badge } from '@/components/ui/Badge'
@@ -29,6 +30,7 @@ interface AdvisoryPanelProps {
 
 export function AdvisoryPanel({ advisory, audience = 'reviewer' }: AdvisoryPanelProps) {
   const { t } = useTranslation('issues')
+  const districtLabel = useDistrictLabel()
   const statusLabel = useStatusLabel()
 
   // An officer who rejected the AI's advice and wrote their own has replaced it: showing the
@@ -73,7 +75,7 @@ export function AdvisoryPanel({ advisory, audience = 'reviewer' }: AdvisoryPanel
         <p className="text-xs text-text-secondary">
           {t('advisory.reportedBy', {
             name: advisory.reporterName || t('advisory.unknownReporter'),
-            district: advisory.district,
+            district: districtLabel(advisory.district),
             date: formatDate(advisory.issueCreatedAt),
           })}
         </p>

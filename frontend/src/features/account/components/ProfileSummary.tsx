@@ -1,3 +1,4 @@
+import { useDistrictLabel } from '@/lib/useDistrictLabel'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Badge } from '@/components/ui/Badge'
@@ -26,6 +27,7 @@ function SummaryItem({ label, value, note }: SummaryItemProps) {
  *  fields that are changed somewhere else. */
 export function ProfileSummary({ user }: { user: UserProfileResponse }) {
   const { t } = useTranslation(['auth', 'common'])
+  const districtLabel = useDistrictLabel()
   const notSet = <span className="text-text-secondary">{t('auth:profile.general.notSet')}</span>
   const securityNote = t('auth:profile.general.noteSecuritySettings')
   const requiresApprovalNote = t('auth:profile.general.noteRequiresApproval')
@@ -69,7 +71,7 @@ export function ProfileSummary({ user }: { user: UserProfileResponse }) {
         />
         <SummaryItem label={t('common:fields.email')} value={user.email} note={directOrApprovalNote} />
         <SummaryItem label={t('common:fields.role')} value={t(`common:roles.${user.role}`)} note={adminNote} />
-        <SummaryItem label={t('common:fields.district')} value={user.district || notSet} note={adminNote} />
+        <SummaryItem label={t('common:fields.district')} value={user.district ? districtLabel(user.district) : notSet} note={adminNote} />
         <SummaryItem label={t('common:fields.phoneNumber')} value={user.phoneNumber || notSet} note={securityNote} />
 
         {user.role === 'Farmer' && (

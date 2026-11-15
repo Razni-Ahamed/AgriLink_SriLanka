@@ -1,3 +1,4 @@
+import { useDistrictLabel } from '@/lib/useDistrictLabel'
 import { useRef, useState, type ReactNode } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { motion } from 'motion/react'
@@ -34,6 +35,7 @@ const statusTone = {
  */
 export function HarvestDetailPage() {
   const { t } = useTranslation(['marketplace', 'common'])
+  const districtLabel = useDistrictLabel()
   const units = useUnits()
   const statusLabel = useStatusLabel()
   const cropLabel = useCropLabel()
@@ -130,7 +132,7 @@ export function HarvestDetailPage() {
 
           <dl className="mt-5 grid grid-cols-2 border-y border-text-primary/10 py-4 sm:grid-cols-4">
             <Spec icon={<MapPin size={16} />} label={t('marketplace:detail.district')}>
-              {harvest.district}
+              {districtLabel(harvest.district)}
             </Spec>
             <Spec icon={<Calendar size={16} />} label={t('marketplace:detail.harvestDate')}>
               {formatDate(harvest.harvestDate)}
