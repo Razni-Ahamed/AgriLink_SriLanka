@@ -56,5 +56,40 @@
     "ordersInProgress": "Orders in progress",
     "latestAdvice": "Latest advice: {{title}} ({{crop}})",
     "label": "Your work at a glance"
+  },
+  "today": {
+    "morning": "Good morning, {{name}}",
+    "afternoon": "Good afternoon, {{name}}",
+    "evening": "Good evening, {{name}}",
+    "subtitle": "Here is what needs you today.",
+    "crops": "Your crops",
+    "cropsEmpty": "Nothing is growing yet. Open a farm and a field to plant your first crop.",
+    "farms": "Your farms",
+    "day": "Day {{day}} of {{total}}",
+    "harvestIn_one": "Harvest in {{count}} day",
+    "harvestIn_other": "Harvest in {{count}} days",
+    "harvestDue": "Harvest is due",
+    "vineLabel": "{{crop}}: day {{day}} of {{total}}"
+  },
+  "weather": {
+    "label": "Weather in {{district}}",
+    "range": "Today {{max}}° / {{min}}°",
+    "now": "Now",
+    "kind": {
+      "clear": "Clear",
+      "night": "Clear night",
+      "partly": "Partly cloudy",
+      "cloudy": "Cloudy",
+      "fog": "Misty",
+      "rain": "Rain",
+      "storm": "Thunderstorms"
+    },
+    "advice": {
+      "heavyRain": "Heavy rain today (about {{mm}} mm). Check that your fields drain well.",
+      "rainSoon": "Rain likely around {{time}}. Hold any spraying until it passes.",
+      "hot": "A hot day. Water early in the morning or in the evening.",
+      "calm": "No rain expected in the next few hours."
+    },
+    "unavailable": "The weather isn't available right now."
   }
 }

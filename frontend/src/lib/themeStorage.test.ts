@@ -114,10 +114,10 @@ describe('applyTheme', () => {
   it('keeps the theme-color meta in step for mobile browser chrome', () => {
     applyTheme('dark')
     const meta = document.querySelector('meta[name="theme-color"]')
-    expect(meta?.getAttribute('content')).toBe('#0f1512')
+    expect(meta?.getAttribute('content')).toBe('#0b201a')
 
     applyTheme('light')
-    expect(meta?.getAttribute('content')).toBe('#faf7f0')
+    expect(meta?.getAttribute('content')).toBe('#eef2e8')
   })
 
   it('does not animate the very first paint', () => {

@@ -27,7 +27,13 @@
     "availableQuantity": "Available quantity",
     "pricePerUnit": "Price per unit",
     "requestPurchase": "Request Purchase",
-    "requestSent": "Your request has been sent — the farmer will respond soon; you'll see it in Orders once accepted."
+    "requestSent": "Your request has been sent — the farmer will respond soon; you'll see it in Orders once accepted.",
+    "total": "Total",
+    "quantity": "Quantity",
+    "soldBy": "Sold by",
+    "requestNote": "The farmer will accept or decline your request.",
+    "sent": "Request sent",
+    "request": "Ask to buy"
   },
   "listings": {
     "title": "My Listings",

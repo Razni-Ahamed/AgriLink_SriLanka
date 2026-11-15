@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { motion, useReducedMotion, useScroll, useTransform, type MotionValue } from 'motion/react'
+import { motion, useReducedMotion } from 'motion/react'
 import { ArrowRight, Storefront, UserPlus } from '@phosphor-icons/react'
 import { Basket, CheckCircle, ClipboardText, Farm, Plant } from '@/components/ui/icons'
 import { buttonClasses } from '@/components/ui/buttonClasses'
@@ -13,23 +13,17 @@ import { LanguageCycleButton, ThemeCycleButton } from '@/components/ui/Preferenc
 import { StaggerList } from '@/components/ui/motion/StaggerList'
 import { HarvestCard } from '@/features/marketplace/components/HarvestCard'
 import { useHarvests } from '@/features/marketplace/hooks/useHarvests'
+import { GlassLens } from '@/components/canopy/GlassLens'
+import { onPhotoButton } from '@/components/canopy/onPhoto'
+import { Odometer } from '@/components/canopy/Odometer'
+import { cropPhoto } from '@/lib/cropPhotos'
+import { spring } from '@/lib/motion'
+import { useUnits } from '@/lib/units'
+import { useCropLabel } from '@/lib/useCropLabel'
 import { cn } from '@/lib/utils'
 import { PHOTOS, type HomePhoto } from './homePhotos'
 
 const PREVIEW_COUNT = 6
-
-/**
- * The hero's photo mosaic, in three columns on a six-row grid so the tiles stagger rather than line
- * up like a spreadsheet. Each column drifts at its own pace as the page scrolls (`drift`, in px over
- * the hero's height), which gives the mosaic a little depth.
- */
-const HERO_TILES = [
-  { photo: PHOTOS.paddyFarmer, area: 'col-start-1 row-span-4 row-start-1', drift: -36 },
-  { photo: PHOTOS.fruitStall, area: 'col-start-1 row-span-2 row-start-5', drift: -36 },
-  { photo: PHOTOS.teaHaputale, area: 'col-start-2 row-span-3 row-start-1', drift: 28 },
-  { photo: PHOTOS.paddyAerial, area: 'col-start-2 row-span-3 row-start-4', drift: 28 },
-  { photo: PHOTOS.riceWinnowing, area: 'col-start-3 row-span-5 row-start-2', drift: -18 },
-] as const
 
 /**
  * The public landing page at `/` for visitors who aren't signed in. It stands outside AppLayout
@@ -38,7 +32,7 @@ const HERO_TILES = [
  */
 export function HomePage() {
   return (
-    <div className="min-h-screen bg-bg-canvas text-text-primary">
+    <div className="min-h-screen text-text-primary">
       <HomeHeader />
       <main>
         <Hero />
@@ -83,10 +77,11 @@ function HomeHeader() {
   const { t } = useTranslation(['home', 'common'])
 
   return (
-    <header className="sticky top-0 z-40 border-b border-brand-forest/10 bg-bg-surface/80 backdrop-blur-md">
-      {/* The same logo and language and theme buttons as the signed-in header. On phones the
-          logo shrinks to its leaf, so the two buttons and the sign-in links fit on one row. */}
-      <div className="mx-auto flex max-w-7xl items-center gap-2 px-4 py-3 sm:gap-3 sm:px-6 lg:px-8">
+    <div className="sticky top-0 z-40 px-2 pt-2 sm:px-4 sm:pt-3">
+      {/* The same floating glass bar, logo and language and theme buttons as the signed-in
+          header. On phones the logo shrinks to its leaf, so the two buttons and the sign-in
+          links fit on one row. */}
+      <header className="glass-bar mx-auto flex max-w-7xl items-center gap-2 rounded-[22px] px-3 py-2 sm:gap-3 sm:rounded-full sm:px-4">
         <Link to="/" aria-label={t('common:appName')} className="mr-auto shrink-0">
           <BrandMark nameClassName="max-sm:sr-only" />
         </Link>
@@ -102,99 +97,147 @@ function HomeHeader() {
             {t('home:nav.register')}
           </Link>
         </nav>
-      </div>
-    </header>
+      </header>
+    </div>
   )
 }
 
+/**
+ * The opening: terraced paddy from above, full width, with a glass lens drifting over it (follow
+ * it with the pointer: it shows the fields closer and clearer, the way glass bends light). The
+ * promise and the two ways in sit on the left; on the right a glass board of real asking prices
+ * from active listings, whose digits roll up as it appears.
+ */
 function Hero() {
   const { t } = useTranslation('home')
 
   return (
-    <Section band="hero" className="grid items-center gap-10 pt-12 md:grid-cols-2 md:py-20">
-      <motion.div
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.35 }}
-      >
-        <p className="mb-3 text-sm font-medium text-brand-terracotta">{t('hero.eyebrow')}</p>
-        <h1 className="font-display text-4xl leading-tight text-brand-forest sm:text-5xl">
-          {t('hero.title')}
-        </h1>
-        <p className="mt-4 max-w-xl text-base text-text-secondary sm:text-lg">
-          {t('hero.subtitle')}
-        </p>
-
-        <div className="mt-8 flex flex-wrap gap-3">
-          <Link to="/register" className={buttonClasses('primary', 'lg')}>
-            <UserPlus size={20} weight="duotone" />
-            {t('hero.register')}
-          </Link>
-          <Link to="/marketplace/browse" className={buttonClasses('secondary', 'lg')}>
-            <Storefront size={20} weight="duotone" />
-            {t('hero.browse')}
-          </Link>
-        </div>
-      </motion.div>
-
-      <HeroMosaic />
-    </Section>
-  )
-}
-
-function HeroMosaic() {
-  const { t } = useTranslation('home')
-  const ref = useRef<HTMLDivElement>(null)
-  const reduceMotion = useReducedMotion()
-  // 0 while the mosaic's top is at the top of the window, 1 once it has scrolled out of view.
-  const { scrollYProgress } = useScroll({ target: ref, offset: ['start start', 'end start'] })
-
-  return (
-    <motion.div
-      ref={ref}
-      className="grid h-80 grid-cols-3 grid-rows-6 gap-3 sm:h-[28rem] lg:h-[32rem]"
-      initial={{ opacity: 0, scale: 0.97 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ duration: 0.45, delay: 0.1 }}
-    >
-      {HERO_TILES.map(({ photo, area, drift }, index) => (
-        <DriftingTile
-          key={photo.key}
-          photo={photo}
-          caption={t(`photos.${photo.key}`)}
-          className={area}
-          progress={scrollYProgress}
-          drift={reduceMotion ? 0 : drift}
-          // The first tiles are in view at once: fetch them eagerly, the first one first.
-          priority={index === 0}
+    <section className="px-2 pt-3 sm:px-4">
+      <div className="relative isolate mx-auto max-w-7xl overflow-hidden rounded-[32px] bg-brand-ink shadow-lg">
+        <img
+          src={PHOTOS.paddyAerial.src}
+          srcSet={PHOTOS.paddyAerial.srcSet}
+          sizes="100vw"
+          alt=""
+          aria-hidden="true"
+          className="absolute inset-0 -z-20 size-full object-cover"
         />
-      ))}
-    </motion.div>
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 -z-10 bg-[linear-gradient(95deg,rgb(4_16_11/0.88)_0%,rgb(4_16_11/0.72)_34%,rgb(4_16_11/0.2)_75%),linear-gradient(0deg,rgb(4_16_11/0.55)_0%,transparent_30%)]"
+        />
+        <GlassLens src={PHOTOS.paddyAerial.src} naturalWidth={640} naturalHeight={360} />
+
+        <div className="relative z-[2] grid items-center gap-10 px-5 py-12 text-white sm:px-10 md:grid-cols-[1.1fr_0.9fr] md:py-20 lg:px-14">
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ ...spring.reveal, delay: 0.05 }}
+          >
+            <p className="mb-4 text-sm font-medium text-[#efc062]">{t('hero.eyebrow')}</p>
+            <h1 className="font-display text-5xl leading-[0.98] font-extrabold text-balance sm:text-6xl lg:text-7xl">
+              {t('hero.title')}
+            </h1>
+            <p className="mt-5 max-w-xl text-base text-white/80 sm:text-lg">{t('hero.subtitle')}</p>
+
+            <div className="mt-8 flex flex-wrap gap-3">
+              <Link to="/register" className={buttonClasses('primary', 'lg')}>
+                <UserPlus size={20} weight="duotone" />
+                {t('hero.register')}
+              </Link>
+              <Link
+                to="/marketplace/browse"
+                className={cn(buttonClasses('secondary', 'lg'), onPhotoButton)}
+              >
+                <Storefront size={20} weight="duotone" />
+                {t('hero.browse')}
+              </Link>
+            </div>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 40 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ ...spring.reveal, delay: 0.2 }}
+          >
+            <PriceBoard />
+          </motion.div>
+        </div>
+      </div>
+    </section>
   )
 }
 
-interface DriftingTileProps {
-  photo: HomePhoto
-  caption: string
-  className: string
-  progress: MotionValue<number>
-  drift: number
-  priority: boolean
-}
+/** Real asking prices from the newest active listings, on dark glass over the hero photo. */
+function PriceBoard() {
+  const { t } = useTranslation(['home', 'common'])
+  const cropLabel = useCropLabel()
+  const units = useUnits()
+  const { data: harvests, isLoading } = useHarvests({ sort: 'newest' })
+  const rows = (harvests ?? []).filter((harvest) => harvest.status === 'Active').slice(0, 5)
 
-function DriftingTile({ photo, caption, className, progress, drift, priority }: DriftingTileProps) {
-  const y = useTransform(progress, [0, 1], [0, drift])
   return (
-    <motion.figure style={{ y }} className={cn('m-0 min-h-0', className)}>
-      <PhotoFrame
-        photo={photo}
-        caption={caption}
-        sizes="(min-width: 768px) 16vw, 33vw"
-        loading="eager"
-        priority={priority}
-        className="h-full rounded-3xl"
-      />
-    </motion.figure>
+    <div className="banner-glass rounded-[26px] p-4 sm:p-5">
+      <div className="mb-2 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 px-1">
+        <h2 className="font-display text-2xl font-bold">{t('board.title')}</h2>
+        <span className="flex items-center gap-1.5 text-xs text-white/70">
+          <span className="relative flex size-2">
+            <span className="absolute inline-flex size-full animate-ping rounded-full bg-[#d3e77a] opacity-60" />
+            <span className="relative inline-flex size-2 rounded-full bg-[#d3e77a]" />
+          </span>
+          {t('board.note')}
+        </span>
+      </div>
+
+      {isLoading && <div className="h-56 animate-pulse rounded-2xl bg-white/5" />}
+
+      {!isLoading && rows.length === 0 && (
+        <p className="px-1 py-6 text-sm text-white/75">{t('board.empty')}</p>
+      )}
+
+      {rows.length > 0 && (
+        <ul className="divide-y divide-white/10">
+          {rows.map((harvest, index) => (
+            <motion.li
+              key={harvest.harvestId}
+              initial={{ opacity: 0, x: 16 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ ...spring.move, delay: 0.35 + index * 0.07 }}
+            >
+              <Link
+                to={`/marketplace/${harvest.harvestId}`}
+                className="grid grid-cols-[2.75rem_minmax(0,1fr)_auto] items-center gap-3 rounded-xl px-1 py-2.5 transition-colors hover:bg-white/[0.06]"
+              >
+                <img
+                  src={cropPhoto(harvest.cropType)}
+                  alt=""
+                  aria-hidden="true"
+                  className="size-11 rounded-xl object-cover"
+                />
+                <span className="min-w-0">
+                  <b className="block truncate font-semibold">{cropLabel(harvest.cropType)}</b>
+                  <span className="block truncate text-xs text-white/65">{harvest.district}</span>
+                </span>
+                <span className="text-right">
+                  <span className="font-display text-xl font-bold">
+                    Rs <Odometer value={harvest.pricePerUnit} rollIn />
+                  </span>
+                  <span className="block text-xs text-white/65">/{units.per(harvest.unit)}</span>
+                </span>
+              </Link>
+            </motion.li>
+          ))}
+        </ul>
+      )}
+
+      <Link
+        to="/marketplace/browse"
+        className="mt-2 flex items-center justify-end gap-1 px-1 text-sm text-white/80 hover:text-white"
+      >
+        {t('board.see')}
+        <ArrowRight size={14} aria-hidden="true" />
+      </Link>
+    </div>
   )
 }
 

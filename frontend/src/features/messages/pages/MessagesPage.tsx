@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils'
 import { ChatThread } from '../components/ChatThread'
 import { ConversationList } from '../components/ConversationList'
 import { useConversations } from '../hooks/useConversations'
+import { PhotoBanner } from '@/components/canopy/PhotoBanner'
 
 /**
  * The chat list beside the open chat on wide screens; on a phone, one or the other. The height
@@ -24,10 +25,13 @@ export function MessagesPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className={cn(hasSelection && 'hidden lg:block')}>
-        <h1 className="font-display text-2xl text-text-primary">{t('title')}</h1>
-        <p className="text-sm text-text-secondary">{t('subtitle')}</p>
-      </div>
+      <PhotoBanner
+        size="compact"
+        photo="path"
+        title={t('title')}
+        subtitle={t('subtitle')}
+        className={cn(hasSelection && 'hidden lg:block')}
+      />
 
       <div className="grid h-[calc(100dvh-12rem)] min-h-[26rem] grid-cols-1 gap-4 lg:grid-cols-[20rem_1fr] xl:h-[calc(100dvh-12.5rem)]">
         <Card className={cn('min-h-0 overflow-y-auto p-2', hasSelection && 'hidden lg:block')}>

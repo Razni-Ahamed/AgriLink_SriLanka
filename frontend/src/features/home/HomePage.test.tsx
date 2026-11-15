@@ -25,12 +25,8 @@ describe('HomePage photos', () => {
   it('describes every photo in its alt text, in words that only describe the scene', () => {
     renderHome()
 
+    // The hero's paddy photo is decoration behind the headline (aria-hidden), so it isn't listed.
     for (const alt of [
-      'A farmer in a rice paddy, Ambanpola',
-      'Among the tea bushes, Haputale',
-      'Rice paddies from above',
-      'A fruit stall, Anuradhapura',
-      'Winnowing rice, Eastern Province',
       'Working a vegetable garden',
       'Out in the fields',
       'A vegetable stall, Colombo',

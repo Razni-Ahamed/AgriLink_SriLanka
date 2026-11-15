@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next'
 import { DotsThreeOutline } from '@phosphor-icons/react'
 import type { NavItem } from '@/types/common'
 import { cn } from '@/lib/utils'
+import { spring } from '@/lib/motion'
 
 interface NavTabsProps {
   items: NavItem[]
@@ -24,7 +25,10 @@ const TOP_ALWAYS_NAMED_LIMIT = 6
 /** Five tabs is the most a 375px phone fits with readable names; the fifth becomes "More". */
 const BOTTOM_TAB_LIMIT = 5
 
-const pillTransition = { type: 'spring', stiffness: 380, damping: 32 } as const
+// The highlight glides between tabs like a drop of water: a spring that overshoots slightly. On
+// the phone bar it is looser still, so the drop visibly stretches and wobbles into place.
+const pillTransition = spring.move
+const liquidTransition = { type: 'spring', stiffness: 260, damping: 19, mass: 0.9 } as const
 
 /** Whether an item is the open page, by the same rule NavLink uses for its highlight. */
 function isCurrent(item: NavItem, items: NavItem[], pathname: string) {
@@ -51,7 +55,7 @@ export function NavTabs({ items, variant, className }: NavTabsProps) {
         className={cn(
           'flex items-center',
           variant === 'top'
-            ? 'gap-2 rounded-2xl border border-brand-forest/10 bg-brand-forest/[0.04] p-1.5'
+            ? 'gap-1 rounded-full border border-text-primary/[0.08] bg-text-primary/[0.03] p-1'
             : 'justify-around gap-0.5 px-1',
         )}
       >
@@ -71,7 +75,7 @@ export function NavTabs({ items, variant, className }: NavTabsProps) {
                 end={end}
                 className={({ isActive }) =>
                   cn(
-                    'group relative flex items-center rounded-xl font-medium transition-colors',
+                    'group relative flex items-center rounded-full font-medium transition-colors',
                     'outline-none focus-visible:ring-2 focus-visible:ring-brand-forest/60',
                     variant === 'top'
                       ? 'h-10 px-3 text-sm'
@@ -87,8 +91,14 @@ export function NavTabs({ items, variant, className }: NavTabsProps) {
                     {isActive && (
                       <motion.span
                         layoutId={pillId}
-                        transition={reduceMotion ? { duration: 0 } : pillTransition}
-                        className="glass-pill absolute inset-0 rounded-xl"
+                        transition={
+                          reduceMotion
+                            ? { duration: 0 }
+                            : variant === 'bottom'
+                              ? liquidTransition
+                              : pillTransition
+                        }
+                        className="glass-pill absolute inset-0 rounded-full"
                         aria-hidden="true"
                       />
                     )}
@@ -191,7 +201,7 @@ function MoreMenu({
         aria-controls={menuId}
         onClick={() => setOpen((value) => !value)}
         className={cn(
-          'relative flex min-h-12 w-full flex-col items-center justify-center gap-0.5 rounded-xl px-0.5 py-1 text-[11px] leading-tight font-medium transition-colors',
+          'relative flex min-h-12 w-full flex-col items-center justify-center gap-0.5 rounded-full px-0.5 py-1 text-[11px] leading-tight font-medium transition-colors',
           'outline-none focus-visible:ring-2 focus-visible:ring-brand-forest/60',
           active || open
             ? 'text-brand-forest'
@@ -201,8 +211,8 @@ function MoreMenu({
         {active && (
           <motion.span
             layoutId={pillId}
-            transition={reduceMotion ? { duration: 0 } : pillTransition}
-            className="glass-pill absolute inset-0 rounded-xl"
+            transition={reduceMotion ? { duration: 0 } : liquidTransition}
+            className="glass-pill absolute inset-0 rounded-full"
             aria-hidden="true"
           />
         )}
@@ -213,7 +223,7 @@ function MoreMenu({
       {open && (
         <ul
           id={menuId}
-          className="absolute right-0 bottom-full mb-2 flex w-56 flex-col gap-1 rounded-2xl border border-brand-forest/10 bg-bg-surface p-1.5 shadow-lg"
+          className="absolute right-0 bottom-full mb-3 flex w-56 flex-col gap-1 rounded-[22px] border border-brand-forest/10 bg-bg-surface p-1.5 shadow-lg"
         >
           {items.map((item) => (
             <li key={item.path}>

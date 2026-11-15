@@ -28,6 +28,7 @@ import {
   type UserStatusFilter,
 } from '../lib/userListFilters'
 import type { AdminUserSummary, ManagedRole } from '@/types/dto/admin'
+import { PhotoBanner } from '@/components/canopy/PhotoBanner'
 
 const ROLES: ManagedRole[] = ['Farmer', 'Buyer', 'Officer', 'Admin']
 const STATUS_LABEL_KEYS = {
@@ -93,10 +94,12 @@ export function AdminUsersPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="font-display text-2xl text-text-primary">{t('orders:admin.usersTitle')}</h1>
-        <p className="text-sm text-text-secondary">{t('orders:admin.usersSubtitle')}</p>
-      </div>
+      <PhotoBanner
+        size="compact"
+        photo="people"
+        title={t('orders:admin.usersTitle')}
+        subtitle={t('orders:admin.usersSubtitle')}
+      />
 
       <Card>
         <UserCreateForm

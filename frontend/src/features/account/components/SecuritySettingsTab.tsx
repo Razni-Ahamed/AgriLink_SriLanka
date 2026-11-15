@@ -239,7 +239,7 @@ export function SecuritySettingsTab() {
             onChange={(event) => setUnlockInput(event.target.value)}
             error={unlockError ?? undefined}
           />
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button type="submit" size="sm" isLoading={verifyPasswordMutation.isPending}>
               {t('auth:profile.security.unlock')}
             </Button>

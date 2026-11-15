@@ -1,3 +1,4 @@
+import { AuthScene } from '@/components/canopy/AuthScene'
 import { useMemo } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -51,14 +52,14 @@ export function AdminLoginPage() {
     axios.isAxiosError(mutation.error) && mutation.error.response?.status === 403
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-bg-canvas px-4">
+    <AuthScene photo="harvestWork">
       <motion.div
         layout
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ layout: { duration: 0.25, ease: 'easeOut' } }}
       >
-        <Card className="w-full max-w-sm">
+        <Card className="glass w-full max-w-sm rounded-[28px] p-6 sm:p-7">
           <div className="mb-4 flex flex-wrap items-center justify-center gap-2">
             <LanguageSwitcher />
             <ThemeToggle variant="compact" />
@@ -113,6 +114,6 @@ export function AdminLoginPage() {
           </p>
         </Card>
       </motion.div>
-    </div>
+    </AuthScene>
   )
 }

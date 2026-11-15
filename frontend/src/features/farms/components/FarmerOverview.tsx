@@ -1,16 +1,25 @@
 import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Basket, ClipboardText, FirstAidKit, Lightbulb, Truck } from '@phosphor-icons/react'
-import { Skeleton } from '@/components/ui/Skeleton'
+import {
+  ArrowRight,
+  Basket,
+  ClipboardText,
+  FirstAidKit,
+  Lightbulb,
+  Truck,
+} from '@phosphor-icons/react'
+import { Odometer } from '@/components/canopy/Odometer'
+import { BannerGlass } from '@/components/canopy/PhotoBanner'
 import { useCropLabel } from '@/lib/useCropLabel'
-import { cn, formatQuantity } from '@/lib/utils'
+import { cn } from '@/lib/utils'
 import { useFarmerOverview } from '../hooks/useFarmerOverview'
 
 /**
- * The top of a farmer's home page: what needs them, each a link to the page that deals with it.
- * A count that needs action (a problem awaiting advice, a buyer waiting for an answer) is
- * coloured; zero stays quiet. Shows nothing if it can't load, so the farms below still work.
+ * What needs the farmer, as a glass strip floating on the home page's photo: four counts, each a
+ * link to the page that deals with it, and the newest advice under them. A count that someone is
+ * waiting on (a problem awaiting advice, a buyer waiting for an answer) glows turmeric; zero stays
+ * quiet. Shows nothing if it can't load, so the rest of the page still works.
  */
 export function FarmerOverview() {
   const { t } = useTranslation('farms')
@@ -18,68 +27,69 @@ export function FarmerOverview() {
   const { data, isLoading, isError } = useFarmerOverview()
 
   if (isLoading) {
-    return (
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        {Array.from({ length: 4 }).map((_, index) => (
-          <Skeleton key={index} className="h-24" />
-        ))}
-      </div>
-    )
+    return <BannerGlass className="h-[104px] animate-pulse" />
   }
   if (isError || !data) {
     return null
   }
 
   return (
-    <section aria-label={t('overview.label')} className="flex flex-col gap-3">
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Tile
-          to="/issues/mine"
-          value={data.openIssues}
-          label={t('overview.openIssues')}
-          icon={<FirstAidKit size={20} weight="duotone" />}
-          needsAction
-        />
-        <Tile
-          to="/marketplace/requests"
-          value={data.pendingRequests}
-          label={t('overview.pendingRequests')}
-          icon={<ClipboardText size={20} weight="duotone" />}
-          needsAction
-        />
-        <Tile
-          to="/marketplace/mine"
-          value={data.activeListings}
-          label={t('overview.activeListings')}
-          icon={<Basket size={20} weight="duotone" />}
-        />
-        <Tile
-          to="/orders/mine"
-          value={data.ordersInProgress}
-          label={t('overview.ordersInProgress')}
-          icon={<Truck size={20} weight="duotone" />}
-        />
-      </div>
-
-      {data.latestAdvice && (
-        <Link
-          to={`/advisories/${data.latestAdvice.advisoryId}`}
-          className="flex items-center gap-3 rounded-2xl border border-brand-harvest/25 bg-brand-harvest/[0.07] px-4 py-3 text-sm text-text-primary transition-colors hover:bg-brand-harvest/15 focus-visible:outline-2 focus-visible:outline-brand-forest"
-        >
-          <Lightbulb
-            size={20}
-            weight="duotone"
-            className="shrink-0 text-brand-harvest"
-            aria-hidden="true"
+    <section aria-label={t('overview.label')}>
+      <BannerGlass className="overflow-hidden">
+        <div className="grid grid-cols-2 divide-white/10 lg:grid-cols-4 lg:divide-x">
+          <Tile
+            to="/issues/mine"
+            value={data.openIssues}
+            label={t('overview.openIssues')}
+            icon={<FirstAidKit size={20} weight="duotone" />}
+            needsAction
           />
-          <span className="min-w-0 truncate">
-            {t('overview.latestAdvice', {
-              title: data.latestAdvice.issueTitle,
-              crop: cropLabel(data.latestAdvice.cropType),
-            })}
-          </span>
-        </Link>
-      )}
+          <Tile
+            to="/marketplace/requests"
+            value={data.pendingRequests}
+            label={t('overview.pendingRequests')}
+            icon={<ClipboardText size={20} weight="duotone" />}
+            needsAction
+          />
+          <Tile
+            to="/marketplace/mine"
+            value={data.activeListings}
+            label={t('overview.activeListings')}
+            icon={<Basket size={20} weight="duotone" />}
+          />
+          <Tile
+            to="/orders/mine"
+            value={data.ordersInProgress}
+            label={t('overview.ordersInProgress')}
+            icon={<Truck size={20} weight="duotone" />}
+          />
+        </div>
+
+        {data.latestAdvice && (
+          <Link
+            to={`/advisories/${data.latestAdvice.advisoryId}`}
+            className="group flex items-center gap-3 border-t border-white/10 px-4 py-3 text-sm transition-colors hover:bg-white/[0.06] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-white"
+          >
+            <Lightbulb
+              size={20}
+              weight="duotone"
+              className="shrink-0 text-[#efc062]"
+              aria-hidden="true"
+            />
+            <span className="min-w-0 flex-1 truncate">
+              {t('overview.latestAdvice', {
+                title: data.latestAdvice.issueTitle,
+                crop: cropLabel(data.latestAdvice.cropType),
+              })}
+            </span>
+            <ArrowRight
+              size={16}
+              className="shrink-0 transition-transform group-hover:translate-x-1"
+              aria-hidden="true"
+            />
+          </Link>
+        )}
+      </BannerGlass>
     </section>
   )
 }
@@ -102,28 +112,25 @@ function Tile({
   return (
     <Link
       to={to}
-      className={cn(
-        'flex flex-col gap-1 rounded-2xl border p-4 transition-colors focus-visible:outline-2 focus-visible:outline-brand-forest',
-        highlighted
-          ? 'border-brand-terracotta/30 bg-brand-terracotta/[0.06] hover:bg-brand-terracotta/10'
-          : 'border-brand-forest/10 bg-bg-surface hover:bg-brand-forest/[0.05]',
-      )}
+      className="group flex flex-col gap-1 px-4 py-3.5 transition-colors hover:bg-white/[0.06] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-white"
     >
-      <span
-        className={cn('flex', highlighted ? 'text-brand-terracotta' : 'text-brand-forest')}
-        aria-hidden="true"
-      >
-        {icon}
+      <span className="flex items-center gap-2">
+        <span
+          className={cn('flex', highlighted ? 'text-[#efc062]' : 'text-white/70')}
+          aria-hidden="true"
+        >
+          {icon}
+        </span>
+        <span
+          className={cn(
+            'font-display text-3xl leading-none font-bold',
+            highlighted ? 'text-[#efc062]' : 'text-white',
+          )}
+        >
+          <Odometer value={value} />
+        </span>
       </span>
-      <span
-        className={cn(
-          'text-3xl font-semibold tabular-nums',
-          highlighted ? 'text-brand-terracotta' : 'text-text-primary',
-        )}
-      >
-        {formatQuantity(value)}
-      </span>
-      <span className="text-sm leading-snug text-text-secondary">{label}</span>
+      <span className="text-sm leading-snug text-white/75">{label}</span>
     </Link>
   )
 }

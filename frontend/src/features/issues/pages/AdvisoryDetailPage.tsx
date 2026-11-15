@@ -1,3 +1,4 @@
+import { PhotoBanner } from '@/components/canopy/PhotoBanner'
 import { useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { Link, useParams } from 'react-router-dom'
@@ -55,31 +56,32 @@ export function AdvisoryDetailPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <Link
-        to={
-          role === 'Farmer' ? '/issues/mine' : role === 'Admin' ? '/issues/all' : '/issues/pending'
+      {/* Follow-up questions about this issue, between the farmer and the district's officers. */}
+      <PhotoBanner
+        photo="inspection"
+        focus="center 82%"
+        back={{
+          to:
+            role === 'Farmer'
+              ? '/issues/mine'
+              : role === 'Admin'
+                ? '/issues/all'
+                : '/issues/pending',
+          label: t('advisory.back'),
+        }}
+        eyebrow={t('advisory.number', { id: advisory.advisoryId })}
+        title={advisory.issueTitle}
+        actions={
+          (role === 'Farmer' || role === 'Officer') && (
+            <StartChatButton
+              subject={{ kind: 'Advice', issueId: advisory.issueId }}
+              label={t(
+                role === 'Farmer' ? 'messages:start.askOfficer' : 'messages:start.messageFarmer',
+              )}
+            />
+          )
         }
-        className="flex w-fit items-center gap-1 text-sm text-text-secondary hover:text-brand-forest"
-      >
-        <ArrowLeft size={14} />
-        {t('advisory.back')}
-      </Link>
-
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="font-display text-2xl text-text-primary">{advisory.issueTitle}</h1>
-          <p className="text-sm text-text-secondary">
-            {t('advisory.number', { id: advisory.advisoryId })}
-          </p>
-        </div>
-        {/* Follow-up questions about this issue, between the farmer and the district's officers. */}
-        {(role === 'Farmer' || role === 'Officer') && (
-          <StartChatButton
-            subject={{ kind: 'Advice', issueId: advisory.issueId }}
-            label={t(role === 'Farmer' ? 'messages:start.askOfficer' : 'messages:start.messageFarmer')}
-          />
-        )}
-      </div>
+      />
 
       {role === 'Farmer' && advisory.status === 'Approved' ? (
         <Card className="flex flex-col items-center gap-3 py-8 text-center">

@@ -15,7 +15,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           ref={ref}
           id={id}
           className={cn(
-            'rounded-xl border border-text-secondary/25 bg-bg-canvas px-3 py-2 text-text-primary outline-none focus:border-brand-forest',
+            'rounded-[14px] border border-text-primary/15 bg-bg-surface px-3.5 py-2.5 text-text-primary outline-none transition-[border-color,box-shadow] focus:border-brand-forest focus:ring-4 focus:ring-brand-forest/15',
             error && 'border-state-danger',
             className,
           )}

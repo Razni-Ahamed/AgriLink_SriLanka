@@ -36,7 +36,9 @@
     "dismiss": "Dismiss",
     "showPassword": "Show password",
     "hidePassword": "Hide password",
-    "retry": "Try again"
+    "retry": "Try again",
+    "increase": "More",
+    "decrease": "Less"
   },
   "pagination": {
     "navigation": "Pagination",
@@ -74,6 +76,14 @@
     "light": "Light",
     "dark": "Dark",
     "system": "System"
+  },
+  "motion": {
+    "label": "Animations",
+    "system": "Automatic",
+    "full": "Full",
+    "lite": "Lite",
+    "off": "Off",
+    "hint": "Lite turns off the glass and background effects for slower phones. Automatic follows your device's settings."
   },
   "units": {
     "acres": "{{value}} acres",

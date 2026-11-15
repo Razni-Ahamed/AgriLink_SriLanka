@@ -1,6 +1,9 @@
+import { onPhotoButton } from '@/components/canopy/onPhoto'
+import { PhotoBanner } from '@/components/canopy/PhotoBanner'
+import { farmPhoto } from '@/lib/scenes'
 import { useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, PencilSimple, Plus, Trash } from '@phosphor-icons/react'
+import { useNavigate, useParams } from 'react-router-dom'
+import { PencilSimple, Plus, Trash } from '@phosphor-icons/react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/Button'
 import { Modal } from '@/components/ui/Modal'
@@ -37,40 +40,31 @@ export function FarmDetailPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <Link
-        to="/farms"
-        className="flex w-fit items-center gap-1 text-sm text-text-secondary hover:text-brand-forest"
-      >
-        <ArrowLeft size={14} />
-        {t('farms:detail.back')}
-      </Link>
-
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="font-display text-2xl text-text-primary">{farm.name}</h1>
-          <p className="text-sm text-text-secondary">{farm.district}</p>
-          <p className="tabular-nums text-sm text-brand-forest">
-            {t('common:units.acres', { value: formatQuantity(farm.area) })}
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="ghost" onClick={() => setEditOpen(true)}>
-            <PencilSimple size={16} />
-            {t('common:actions.edit')}
-          </Button>
-          <Button
-            variant="danger"
-            onClick={() => {
-              if (confirm(t('farms:detail.deleteConfirm'))) {
-                deleteFarm.mutate(farm.farmId, { onSuccess: () => navigate('/farms') })
-              }
-            }}
-          >
-            <Trash size={16} />
-            {t('common:actions.delete')}
-          </Button>
-        </div>
-      </div>
+      <PhotoBanner
+        photo={farmPhoto(farm.farmId)}
+        back={{ to: '/farms', label: t('farms:detail.back') }}
+        title={farm.name}
+        subtitle={`${farm.district} · ${t('common:units.acres', { value: formatQuantity(farm.area) })}`}
+        actions={
+          <div className="flex flex-wrap gap-2">
+            <Button variant="ghost" className={onPhotoButton} onClick={() => setEditOpen(true)}>
+              <PencilSimple size={16} />
+              {t('common:actions.edit')}
+            </Button>
+            <Button
+              variant="danger"
+              onClick={() => {
+                if (confirm(t('farms:detail.deleteConfirm'))) {
+                  deleteFarm.mutate(farm.farmId, { onSuccess: () => navigate('/farms') })
+                }
+              }}
+            >
+              <Trash size={16} />
+              {t('common:actions.delete')}
+            </Button>
+          </div>
+        }
+      />
 
       {deleteFarm.isError && (
         <p className="text-sm text-state-danger">

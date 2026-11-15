@@ -14,6 +14,7 @@ import { MetricsCard } from '@/components/ui/MetricsCard'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { ReviewTimingPanel } from '@/features/issues/components/ReviewTimingPanel'
 import { useOfficerMetrics } from '../hooks/useOfficerMetrics'
+import { PhotoBanner } from '@/components/canopy/PhotoBanner'
 
 /**
  * The officer's home screen — Admin has had a dashboard like this since the start; Officer had
@@ -37,19 +38,23 @@ export function OfficerDashboardPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="font-display text-2xl text-text-primary">{t('dashboard.title')}</h1>
-        <div className="flex items-center gap-2 text-sm text-text-secondary">
-          <span className="flex items-center gap-1 rounded-full bg-brand-forest/10 px-3 py-1">
-            <MapPin size={14} />
-            {metrics.district}
-          </span>
-          <span className="flex items-center gap-1 rounded-full bg-brand-forest/10 px-3 py-1">
-            <Building size={14} />
-            {metrics.departmentName}
-          </span>
-        </div>
-      </div>
+      <PhotoBanner
+        size="compact"
+        photo="care"
+        title={t('dashboard.title')}
+        actions={
+          <div className="flex flex-wrap items-center gap-2 text-sm">
+            <span className="banner-glass flex items-center gap-1 rounded-full px-3 py-1.5">
+              <MapPin size={14} />
+              {metrics.district}
+            </span>
+            <span className="banner-glass flex items-center gap-1 rounded-full px-3 py-1.5">
+              <Building size={14} />
+              {metrics.departmentName}
+            </span>
+          </div>
+        }
+      />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Link to="/issues/pending" className="block transition-opacity hover:opacity-90">

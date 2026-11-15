@@ -130,8 +130,8 @@ export function Modal({ open, onClose, title, children, size = 'md', fullScreenO
               'flex w-full flex-col overflow-hidden bg-bg-surface shadow-lg outline-none',
               sizeClasses[size],
               fullScreenOnMobile
-                ? 'h-full sm:h-auto sm:max-h-[90vh] sm:rounded-2xl'
-                : 'max-h-[90vh] max-w-md rounded-2xl',
+                ? 'h-full sm:h-auto sm:max-h-[90vh] sm:rounded-[28px]'
+                : 'max-h-[90vh] max-w-md rounded-[28px]',
             )}
             initial={{ opacity: 0, scale: 0.96 }}
             animate={{ opacity: 1, scale: 1 }}

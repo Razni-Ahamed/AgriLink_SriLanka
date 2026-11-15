@@ -8,6 +8,7 @@ using AgriLink.API.Services.Agents.ImageClassification;
 using AgriLink.API.Services.Agents.Llm;
 using AgriLink.API.Services.Images;
 using AgriLink.API.Services.RateLimiting;
+using AgriLink.API.Services.Weather;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
@@ -124,6 +125,14 @@ builder.Services.AddScoped<IValidationAgent, ValidationAgent>();
 builder.Services.AddScoped<IAgentOrchestrator, AgentOrchestrator>();
 
 builder.Services.AddHttpClient<IWeatherAgent, WeatherAgent>((sp, client) =>
+{
+    var options = sp.GetRequiredService<IOptions<WeatherOptions>>().Value;
+    client.Timeout = TimeSpan.FromSeconds(options.TimeoutSeconds);
+});
+
+// The farmer's home-page forecast: the same provider and settings, cached per district.
+builder.Services.AddMemoryCache();
+builder.Services.AddHttpClient<IForecastService, ForecastService>((sp, client) =>
 {
     var options = sp.GetRequiredService<IOptions<WeatherOptions>>().Value;
     client.Timeout = TimeSpan.FromSeconds(options.TimeoutSeconds);

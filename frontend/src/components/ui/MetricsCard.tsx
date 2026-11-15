@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react'
+import { Odometer } from '@/components/canopy/Odometer'
 import { Card } from '@/components/ui/Card'
 import { IconBadge } from '@/components/ui/IconBadge'
 import { formatQuantity } from '@/lib/utils'
-import { useCountUp } from '@/lib/useCountUp'
 
 interface MetricsCardProps {
   label: string
@@ -12,18 +12,17 @@ interface MetricsCardProps {
   suffix?: string
 }
 
+/** A dashboard number whose digits roll up from zero when the card appears. */
 export function MetricsCard({ label, value, icon, tone = 'forest', suffix }: MetricsCardProps) {
-  const animated = useCountUp(value)
-
   return (
-    <Card className="flex flex-col gap-3">
+    <Card className="flex flex-col gap-4">
       <IconBadge tone={tone}>{icon}</IconBadge>
       <div>
-        <p className="text-sm text-text-secondary">{label}</p>
-        <p className="tabular-nums text-2xl text-text-primary">
-          {formatQuantity(animated)}
+        <p className="font-display text-4xl leading-none font-bold text-text-primary">
+          <Odometer value={value} format={formatQuantity} rollIn />
           {suffix}
         </p>
+        <p className="mt-2 text-sm text-text-secondary">{label}</p>
       </div>
     </Card>
   )

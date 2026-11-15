@@ -32,7 +32,7 @@ export function NotificationBell() {
         type="button"
         onClick={() => setOpen((open) => !open)}
         aria-label={t('orders:notifications.title')}
-        className="relative flex h-9 w-9 items-center justify-center rounded-xl text-brand-forest hover:bg-brand-forest/10"
+        className="relative flex h-10 w-10 items-center justify-center rounded-full text-brand-forest hover:bg-brand-forest/10"
       >
         <Bell size={20} weight="duotone" />
         {unread > 0 && (

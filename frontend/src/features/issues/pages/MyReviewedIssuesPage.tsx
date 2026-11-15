@@ -1,10 +1,9 @@
+import { CropThumb } from '@/components/canopy/CropThumb'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Badge } from '@/components/ui/Badge'
 import { Card } from '@/components/ui/Card'
-import { CropIcon } from '@/components/ui/CropIcon'
-import { IconBadge } from '@/components/ui/IconBadge'
 import { Pagination } from '@/components/ui/Pagination'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { StaggerList } from '@/components/ui/motion/StaggerList'
@@ -12,6 +11,7 @@ import { formatDate } from '@/lib/utils'
 import { SeverityBadge } from '../components/SeverityBadge'
 import { useReviewedIssues } from '../hooks/useIssues'
 import type { CropIssueResponse } from '@/types/dto/issues'
+import { PhotoBanner } from '@/components/canopy/PhotoBanner'
 
 // A reviewed issue's IssueStatus is always one of these two outcomes — Pending/AwaitingReview
 // can't appear here, since GET /api/issues/reviewed only returns issues this officer has
@@ -29,9 +29,7 @@ function ReviewedIssueCard({ issue }: { issue: CropIssueResponse }) {
     <Card interactive={Boolean(issue.advisoryId)} className="flex flex-col gap-3">
       <div className="flex items-start justify-between gap-2">
         <div className="flex min-w-0 items-start gap-2.5">
-          <IconBadge tone="forest" className="shrink-0">
-            <CropIcon cropType={issue.cropType} size={18} />
-          </IconBadge>
+          <CropThumb cropType={issue.cropType} />
           <div className="min-w-0">
             <h3 className="truncate font-display text-lg text-text-primary">{issue.title}</h3>
             <p className="truncate text-xs text-text-secondary">
@@ -73,10 +71,12 @@ export function MyReviewedIssuesPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="font-display text-2xl text-text-primary">{t('reviewed.title')}</h1>
-        <p className="text-sm text-text-secondary">{t('reviewed.subtitle')}</p>
-      </div>
+      <PhotoBanner
+        size="compact"
+        photo="care"
+        title={t('reviewed.title')}
+        subtitle={t('reviewed.subtitle')}
+      />
 
       {isLoading && (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">

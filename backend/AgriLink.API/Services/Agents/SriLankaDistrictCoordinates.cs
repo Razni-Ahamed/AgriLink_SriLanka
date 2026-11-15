@@ -21,7 +21,17 @@ public static class SriLankaDistrictCoordinates
 
     // District is entered as free text in FarmsController, so match leniently: trim the ends, collapse
     // any run of internal whitespace to a single space, and compare case-insensitively.
-    public static (double Lat, double Lon)? Lookup(string? district)
+    public static (double Lat, double Lon)? Lookup(string? district) =>
+        Find(district) is { } match ? match.Coordinates : null;
+
+    /// <summary>
+    /// The district's name exactly as this table spells it ("nuwara  eliya" → "Nuwara Eliya"), or
+    /// null if it isn't one of the 25. Use it wherever a name is stored or keyed on, so the many
+    /// spellings Lookup accepts all count as one district.
+    /// </summary>
+    public static string? CanonicalName(string? district) => Find(district)?.Name;
+
+    private static (string Name, (double Lat, double Lon) Coordinates)? Find(string? district)
     {
         if (string.IsNullOrWhiteSpace(district))
         {
@@ -29,6 +39,13 @@ public static class SriLankaDistrictCoordinates
         }
 
         var normalized = string.Join(' ', district.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
-        return Districts.TryGetValue(normalized, out var coords) ? coords : null;
+        foreach (var (name, coordinates) in Districts)
+        {
+            if (string.Equals(name, normalized, StringComparison.OrdinalIgnoreCase))
+            {
+                return (name, coordinates);
+            }
+        }
+        return null;
     }
 }

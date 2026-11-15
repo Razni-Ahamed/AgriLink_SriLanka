@@ -1,11 +1,13 @@
+import { CropThumb } from '@/components/canopy/CropThumb'
+import { onPhotoButton } from '@/components/canopy/onPhoto'
+import { PhotoBanner } from '@/components/canopy/PhotoBanner'
+import { farmPhoto } from '@/lib/scenes'
 import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, PencilSimple, Plus, Trash } from '@phosphor-icons/react'
+import { PencilSimple, Plus, Trash } from '@phosphor-icons/react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
-import { CropIcon } from '@/components/ui/CropIcon'
-import { IconBadge } from '@/components/ui/IconBadge'
 import { Modal } from '@/components/ui/Modal'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { CardHover } from '@/components/ui/motion/CardHover'
@@ -45,42 +47,34 @@ export function FieldDetailPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <Link
-        to={`/farms/${farmIdNum}`}
-        className="flex w-fit items-center gap-1 text-sm text-text-secondary hover:text-brand-forest"
-      >
-        <ArrowLeft size={14} />
-        {t('farms:field.back')}
-      </Link>
-
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="font-display text-2xl text-text-primary">{field.name}</h1>
-          <p className="tabular-nums text-sm text-brand-forest">
-            {t('common:units.acres', { value: formatQuantity(field.area) })}
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="ghost" onClick={() => setEditOpen(true)}>
-            <PencilSimple size={16} />
-            {t('common:actions.edit')}
-          </Button>
-          <Button
-            variant="danger"
-            disabled={deleteField.isPending}
-            onClick={() => {
-              if (confirm(t('farms:field.deleteConfirm'))) {
-                deleteField.mutate(field.fieldId, {
-                  onSuccess: () => navigate(`/farms/${farmIdNum}`),
-                })
-              }
-            }}
-          >
-            <Trash size={16} />
-            {t('common:actions.delete')}
-          </Button>
-        </div>
-      </div>
+      <PhotoBanner
+        photo={farmPhoto(farmIdNum + field.fieldId)}
+        back={{ to: `/farms/${farmIdNum}`, label: t('farms:field.back') }}
+        title={field.name}
+        subtitle={t('common:units.acres', { value: formatQuantity(field.area) })}
+        actions={
+          <div className="flex flex-wrap gap-2">
+            <Button variant="ghost" className={onPhotoButton} onClick={() => setEditOpen(true)}>
+              <PencilSimple size={16} />
+              {t('common:actions.edit')}
+            </Button>
+            <Button
+              variant="danger"
+              disabled={deleteField.isPending}
+              onClick={() => {
+                if (confirm(t('farms:field.deleteConfirm'))) {
+                  deleteField.mutate(field.fieldId, {
+                    onSuccess: () => navigate(`/farms/${farmIdNum}`),
+                  })
+                }
+              }}
+            >
+              <Trash size={16} />
+              {t('common:actions.delete')}
+            </Button>
+          </div>
+        }
+      />
 
       {/* The API says why a delete was refused (the field still has crops). */}
       {deleteField.isError && (
@@ -120,9 +114,7 @@ export function FieldDetailPage() {
                 <CardHover>
                   <Link to={`/farms/${farmIdNum}/fields/${fieldIdNum}/crops/${crop.cropId}`}>
                     <Card className="flex flex-col gap-3">
-                      <IconBadge tone="forest">
-                        <CropIcon cropType={crop.cropType} size={20} />
-                      </IconBadge>
+                      <CropThumb cropType={crop.cropType} />
                       <h3 className="font-display text-lg text-text-primary">{crop.cropType}</h3>
                       <p className="text-sm text-text-secondary">
                         {crop.variety || t('farms:crop.noVariety')}

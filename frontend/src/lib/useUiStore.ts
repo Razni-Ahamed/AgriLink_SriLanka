@@ -8,8 +8,18 @@ import {
   type ResolvedTheme,
   type ThemePreference,
 } from '@/lib/themeStorage'
+import {
+  applyMotionLevel,
+  readStoredMotionPreference,
+  resolveMotionLevel,
+  subscribeToSystemMotion,
+  writeStoredMotionPreference,
+  type MotionLevel,
+  type MotionPreference,
+} from '@/lib/motionLevel'
 
 export type { ResolvedTheme, ThemePreference } from '@/lib/themeStorage'
+export type { MotionLevel, MotionPreference } from '@/lib/motionLevel'
 
 /** @deprecated Prefer `ResolvedTheme`; kept so existing imports keep compiling. */
 export type Theme = ResolvedTheme
@@ -29,8 +39,13 @@ interface UiState {
   themePreference: ThemePreference
   /** What is on screen, with `system` already resolved. */
   theme: ResolvedTheme
+  /** What the user picked for animations — `system` follows the device. */
+  motionPreference: MotionPreference
+  /** The level in use, with `system` already resolved. */
+  motion: MotionLevel
   toasts: Toast[]
   setThemePreference: (preference: ThemePreference) => void
+  setMotionPreference: (preference: MotionPreference) => void
   /** Flips to the opposite of what is currently *shown*, pinning the result. */
   toggleTheme: () => void
   addToast: (toast: Omit<Toast, 'id'>) => void
@@ -42,6 +57,8 @@ export const useUiStore = create<UiState>((set, get) => ({
   // index.html already rendered — no first-paint flash to correct.
   themePreference: readStoredThemePreference(),
   theme: resolveTheme(readStoredThemePreference()),
+  motionPreference: readStoredMotionPreference(),
+  motion: resolveMotionLevel(readStoredMotionPreference()),
 
   toasts: [],
 
@@ -50,6 +67,13 @@ export const useUiStore = create<UiState>((set, get) => ({
     const theme = resolveTheme(preference)
     applyTheme(theme)
     set({ themePreference: preference, theme })
+  },
+
+  setMotionPreference: (preference) => {
+    writeStoredMotionPreference(preference)
+    const motion = resolveMotionLevel(preference)
+    applyMotionLevel(motion)
+    set({ motionPreference: preference, motion })
   },
 
   toggleTheme: () => {
@@ -95,5 +119,22 @@ export function hydrateTheme(): void {
     }
     applyTheme(systemTheme)
     useUiStore.setState({ theme: systemTheme })
+  })
+}
+
+let unsubscribeFromSystemMotion: (() => void) | undefined
+
+/** Put the stored motion level on <html> and follow the device's reduced-motion setting. */
+export function hydrateMotion(): void {
+  const preference = readStoredMotionPreference()
+  const motion = resolveMotionLevel(preference)
+  applyMotionLevel(motion)
+  useUiStore.setState({ motionPreference: preference, motion })
+
+  unsubscribeFromSystemMotion?.()
+  unsubscribeFromSystemMotion = subscribeToSystemMotion((systemLevel) => {
+    if (useUiStore.getState().motionPreference !== 'system') return
+    applyMotionLevel(systemLevel)
+    useUiStore.setState({ motion: systemLevel })
   })
 }

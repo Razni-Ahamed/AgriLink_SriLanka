@@ -4,6 +4,7 @@ import { Pagination } from '@/components/ui/Pagination'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { AuditLogTable } from '../components/AuditLogTable'
 import { useAuditLogs } from '../hooks/useAuditLogs'
+import { PhotoBanner } from '@/components/canopy/PhotoBanner'
 
 export function AuditLogPage() {
   const { t } = useTranslation('orders')
@@ -13,10 +14,12 @@ export function AuditLogPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="font-display text-2xl text-text-primary">{t('auditLog.title')}</h1>
-        <p className="text-sm text-text-secondary">{t('auditLog.subtitle')}</p>
-      </div>
+      <PhotoBanner
+        size="compact"
+        photo="harvestWork"
+        title={t('auditLog.title')}
+        subtitle={t('auditLog.subtitle')}
+      />
 
       {isLoading && (
         <div className="flex flex-col gap-2">

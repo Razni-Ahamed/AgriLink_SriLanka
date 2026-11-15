@@ -7,6 +7,7 @@ import { Skeleton } from '@/components/ui/Skeleton'
 import { cn, formatDate } from '@/lib/utils'
 import { useMarkNotificationRead, useNotifications } from '../hooks/useNotifications'
 import type { NotificationResponse } from '@/types/dto/notifications'
+import { PhotoBanner } from '@/components/canopy/PhotoBanner'
 
 function NotificationRow({ notification }: { notification: NotificationResponse }) {
   const { t } = useTranslation('common')
@@ -64,7 +65,7 @@ export function NotificationsPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="font-display text-2xl text-text-primary">{t('notifications.title')}</h1>
+      <PhotoBanner size="compact" photo="harvestWork" title={t('notifications.title')} />
 
       {isLoading && (
         <div className="flex flex-col gap-3">

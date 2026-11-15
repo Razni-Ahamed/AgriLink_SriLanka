@@ -4,6 +4,7 @@ import { Skeleton } from '@/components/ui/Skeleton'
 import { StaggerList } from '@/components/ui/motion/StaggerList'
 import { OrderCard } from '../components/OrderCard'
 import { useOrders } from '../hooks/useOrders'
+import { PhotoBanner } from '@/components/canopy/PhotoBanner'
 
 export function MyOrdersPage() {
   const { t } = useTranslation('orders')
@@ -12,7 +13,7 @@ export function MyOrdersPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="font-display text-2xl text-text-primary">{t('list.title')}</h1>
+      <PhotoBanner size="compact" photo="handover" title={t('list.title')} />
 
       {isLoading && (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">

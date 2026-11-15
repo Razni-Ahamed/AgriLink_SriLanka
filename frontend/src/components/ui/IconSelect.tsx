@@ -167,8 +167,8 @@ export function IconSelect({
           onClick={() => (isOpen ? setOpen(false) : open())}
           onKeyDown={handleKeyDown}
           className={cn(
-            'flex w-full items-center gap-2 rounded-xl border border-text-secondary/25 bg-bg-canvas px-3 py-2 text-left text-text-primary outline-none transition-colors',
-            'focus:border-brand-forest disabled:cursor-not-allowed disabled:opacity-60',
+            'flex w-full items-center gap-2 rounded-[14px] border border-text-primary/15 bg-bg-surface px-3.5 py-2.5 text-left text-text-primary outline-none transition-colors',
+            'focus:border-brand-forest focus:ring-4 focus:ring-brand-forest/15 disabled:cursor-not-allowed disabled:opacity-60',
             isOpen && 'border-brand-forest',
             error && 'border-state-danger',
           )}
