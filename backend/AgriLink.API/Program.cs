@@ -11,6 +11,7 @@ using AgriLink.API.Services.RateLimiting;
 using AgriLink.API.Services.Weather;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -25,7 +26,14 @@ const string FrontendCorsPolicy = "FrontendCorsPolicy";
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? throw new InvalidOperationException("ConnectionStrings:DefaultConnection is not configured.");
 
-builder.Services.AddDbContext<AgriLinkDbContext>(options => options.UseNpgsql(connectionString));
+// The per-request account check (see OnTokenValidated below) reads through AccountStateCache;
+// the interceptor evicts a user's cached state whenever their row is saved.
+builder.Services.AddMemoryCache();
+builder.Services.AddSingleton<AccountStateCache>();
+builder.Services.AddSingleton<AccountStateInvalidationInterceptor>();
+builder.Services.AddDbContext<AgriLinkDbContext>((sp, options) => options
+    .UseNpgsql(connectionString)
+    .AddInterceptors(sp.GetRequiredService<AccountStateInvalidationInterceptor>()));
 
 // ----- Identity -----
 builder.Services.AddIdentityCore<ApplicationUser>(options =>
@@ -76,6 +84,8 @@ builder.Services.AddAuthentication(options =>
         // A token outlives the account state it was issued for (8 hours), so deactivating a user
         // only took effect at their next login. Re-check the account — and, since a password
         // change rotates SecurityStamp, the token's own "stamp" claim — on every request instead.
+        // The account's state is cached for a few seconds (AccountStateCache) and evicted the
+        // moment the user row is saved, so this stays as strict without a query per request.
         options.Events = new JwtBearerEvents
         {
             OnTokenValidated = async context =>
@@ -130,8 +140,8 @@ builder.Services.AddHttpClient<IWeatherAgent, WeatherAgent>((sp, client) =>
     client.Timeout = TimeSpan.FromSeconds(options.TimeoutSeconds);
 });
 
-// The farmer's home-page forecast: the same provider and settings, cached per district.
-builder.Services.AddMemoryCache();
+// The farmer's home-page forecast: the same provider and settings, cached per district
+// (in the IMemoryCache registered with the database above).
 builder.Services.AddHttpClient<IForecastService, ForecastService>((sp, client) =>
 {
     var options = sp.GetRequiredService<IOptions<WeatherOptions>>().Value;
@@ -243,6 +253,18 @@ var useForwardedHeaders = builder.Configuration.GetValue("ForwardedHeaders:Enabl
 builder.Services.Configure<ForwardedHeadersOptions>(RateLimitingSetup.ConfigureForwardedHeaders);
 builder.Services.AddAgriLinkRateLimiting(builder.Configuration);
 
+// ----- Response compression -----
+// JSON lists (marketplace, issue queues, chat, notifications) went out uncompressed. Brotli/gzip
+// at the fastest level: most of the size win for little CPU on the App Service F1 quota.
+builder.Services.AddResponseCompression(options =>
+{
+    options.EnableForHttps = true;
+    options.Providers.Add<BrotliCompressionProvider>();
+    options.Providers.Add<GzipCompressionProvider>();
+});
+builder.Services.Configure<BrotliCompressionProviderOptions>(o => o.Level = System.IO.Compression.CompressionLevel.Fastest);
+builder.Services.Configure<GzipCompressionProviderOptions>(o => o.Level = System.IO.Compression.CompressionLevel.Fastest);
+
 // ----- Controllers & Swagger -----
 builder.Services.AddControllers()
     .AddJsonOptions(options => options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
@@ -303,6 +325,13 @@ if (useForwardedHeaders)
 }
 
 app.UseExceptionHandler();
+
+// Reads only. The responses that hand out a token (login, password change) are all writes, and a
+// token next to text the caller sent is the mix compression side channels (BREACH) need; write
+// responses are small anyway. The big payloads — lists, queues, chat — are all GETs.
+app.UseWhen(
+    context => HttpMethods.IsGet(context.Request.Method),
+    branch => branch.UseResponseCompression());
 
 // Swagger is on in development, and on a host when Swagger__Enabled=true (handy for a demo).
 if (app.Environment.IsDevelopment() || app.Configuration.GetValue<bool>("Swagger:Enabled"))

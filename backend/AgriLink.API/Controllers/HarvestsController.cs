@@ -51,6 +51,7 @@ public class HarvestsController : ControllerBase
         [FromQuery] string? sort = null)
     {
         var query = _db.HarvestListings
+            .AsNoTracking()
             .Include(h => h.Crop).ThenInclude(c => c.Field).ThenInclude(f => f.Farm)
             // A deactivated farmer can't answer requests, so their listings leave the marketplace
             // until the account is reactivated.
