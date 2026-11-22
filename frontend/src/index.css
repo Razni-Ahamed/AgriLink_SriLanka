@@ -49,6 +49,9 @@
   /* Only technical text (usernames, model versions, agent traces) is monospace, so the system's
      own monospace face is used rather than downloading a web font for it. */
   --font-mono: ui-monospace, 'Cascadia Mono', Consolas, 'SFMono-Regular', Menlo, monospace;
+  /* The language switcher's "සිංහල" and "தமிழ்": tiny cut-down fonts (see fonts.css), so showing
+     them doesn't download the full Sinhala and Tamil fonts. */
+  --font-language-names: 'Language Names', var(--font-body);
 }
 
 /*

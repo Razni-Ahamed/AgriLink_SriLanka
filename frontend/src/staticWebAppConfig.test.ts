@@ -32,6 +32,12 @@ describe('staticwebapp.config.json', () => {
     expect(csp).not.toMatch(/script-src[^;]*'unsafe-inline'/)
   })
 
+  it('serves fonts from the site itself, not Google Fonts', () => {
+    expect(csp).toContain("font-src 'self';")
+    expect(csp).not.toContain('fonts.googleapis.com')
+    expect(read('../index.html')).not.toContain('fonts.googleapis.com')
+  })
+
   it('sends the other protective headers', () => {
     expect(config.globalHeaders['X-Content-Type-Options']).toBe('nosniff')
     expect(config.globalHeaders['X-Frame-Options']).toBe('DENY')
