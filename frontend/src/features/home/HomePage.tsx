@@ -17,7 +17,7 @@ import { useHarvests } from '@/features/marketplace/hooks/useHarvests'
 import { GlassLens } from '@/components/canopy/GlassLens'
 import { onPhotoButton } from '@/components/canopy/onPhoto'
 import { Odometer } from '@/components/canopy/Odometer'
-import { cropPhoto } from '@/lib/cropPhotos'
+import { cropThumb } from '@/lib/cropPhotos'
 import { spring } from '@/lib/motion'
 import { useUnits } from '@/lib/units'
 import { useCropLabel } from '@/lib/useCropLabel'
@@ -211,9 +211,10 @@ function PriceBoard() {
                 className="grid grid-cols-[2.75rem_minmax(0,1fr)_auto] items-center gap-3 rounded-xl px-1 py-2.5 transition-colors hover:bg-white/[0.06]"
               >
                 <img
-                  src={cropPhoto(harvest.cropType)}
+                  src={cropThumb(harvest.cropType)}
                   alt=""
                   aria-hidden="true"
+                  decoding="async"
                   className="size-11 rounded-xl object-cover"
                 />
                 <span className="min-w-0">
