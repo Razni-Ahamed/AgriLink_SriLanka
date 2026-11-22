@@ -44,18 +44,24 @@ public class SmsAlertsTests
     [InlineData(SmsAlertKind.NewPurchaseRequest)]
     [InlineData(SmsAlertKind.OrderConfirmed)]
     [InlineData(SmsAlertKind.OfficerReplied)]
+    [InlineData(SmsAlertKind.OfficerClosedIssue)]
     public void EveryAlertHasATextInEachLanguage(SmsAlertKind kind)
     {
-        var alert = new SmsAlert(kind, "Tomato", "20 kg");
+        var alert = new SmsAlert(kind, "Tomato", Kg(20));
+        // For the two marketplace alerts the subject is a crop, written in the reader's language;
+        // for the issue alerts it's the farmer's own title, quoted as written.
+        var isCrop = kind is SmsAlertKind.NewPurchaseRequest or SmsAlertKind.OrderConfirmed;
+
+        foreach (var language in SmsText.Languages)
+        {
+            var text = SmsTemplates.Render(alert, language);
+            Assert.StartsWith("AgriLink:", text);
+            Assert.Contains(isCrop ? SmsWords.Crop("Tomato", language) : "Tomato", text);
+        }
+
         var english = SmsTemplates.Render(alert, "en");
         var sinhala = SmsTemplates.Render(alert, "si");
         var tamil = SmsTemplates.Render(alert, "ta");
-
-        foreach (var text in new[] { english, sinhala, tamil })
-        {
-            Assert.StartsWith("AgriLink:", text);
-            Assert.Contains("Tomato", text);
-        }
 
         Assert.True(SmsText.IsGsm7(english));
         Assert.Contains(sinhala, c => c is >= '඀' and <= '෿');
@@ -65,14 +71,114 @@ public class SmsAlertsTests
     [Fact]
     public void UnknownLanguage_FallsBackToEnglish() =>
         Assert.Equal(
-            SmsTemplates.Render(new SmsAlert(SmsAlertKind.OrderConfirmed, "Rice", "5 kg"), "en"),
-            SmsTemplates.Render(new SmsAlert(SmsAlertKind.OrderConfirmed, "Rice", "5 kg"), "fr"));
+            SmsTemplates.Render(new SmsAlert(SmsAlertKind.OrderConfirmed, "Rice", Kg(5)), "en"),
+            SmsTemplates.Render(new SmsAlert(SmsAlertKind.OrderConfirmed, "Rice", Kg(5)), "fr"));
 
     [Fact]
     public void LongIssueTitles_AreClipped()
     {
         var text = SmsTemplates.Render(new SmsAlert(SmsAlertKind.OfficerReplied, new string('x', 200)), "en");
         Assert.True(text.Length < 160, $"Text was {text.Length} characters");
+        // Clipping must not add a Unicode "…", which would bill the English text at 70 characters a part.
+        Assert.True(SmsText.IsGsm7(text));
+        Assert.Contains("...", text);
+    }
+
+    [Theory]
+    [InlineData("Leaves `curling`")]
+    [InlineData("Spots [brown]")]
+    [InlineData("Pest {aphid}")]
+    [InlineData("A|B")]
+    [InlineData("50% ~ wilted")]
+    [InlineData("Back\\slash")]
+    [InlineData("Up^per")]
+    [InlineData("Tomato …")]
+    public void IsGsm7_SendsCharactersOutsidePlainGsm7AsUnicode(string text) =>
+        Assert.False(SmsText.IsGsm7(text));
+
+    [Fact]
+    public void IsGsm7_AcceptsOrdinaryEnglish() =>
+        Assert.True(SmsText.IsGsm7("AgriLink: New request for 20 kg of your Tomato (Rs 120/kg) - open @ 5pm! \"x\" #1 & 2?"));
+
+    [Fact]
+    public void SinhalaAndTamilTexts_UseTheirOwnCropAndUnitWords()
+    {
+        var alert = new SmsAlert(SmsAlertKind.NewPurchaseRequest, "Tomato", new SmsAmount(40, QuantityUnit.Bunch));
+
+        var english = SmsTemplates.Render(alert, "en");
+        var sinhala = SmsTemplates.Render(alert, "si");
+        var tamil = SmsTemplates.Render(alert, "ta");
+
+        Assert.Contains("40 bunches of your Tomato", english);
+        Assert.Contains("තක්කාලි", sinhala); // Sinhala for tomato
+        Assert.Contains("කැන 40", sinhala); // Sinhala for 40 bunches
+        foreach (var text in new[] { sinhala, tamil })
+        {
+            Assert.DoesNotContain("Tomato", text);
+            Assert.DoesNotContain("bunch", text);
+        }
+    }
+
+    [Fact]
+    public void SmsWords_HaveASinhalaAndTamilNameForEveryCatalogueCrop()
+    {
+        foreach (var crop in CropTypes.All)
+        {
+            Assert.NotEqual(crop, SmsWords.Crop(crop, "si"));
+            Assert.NotEqual(crop, SmsWords.Crop(crop, "ta"));
+            Assert.Equal(crop, SmsWords.Crop(crop, "en"));
+        }
+
+        foreach (var unit in Enum.GetValues<QuantityUnit>())
+        {
+            Assert.Contains("3", SmsWords.Amount(3, unit, "si"));
+            Assert.Contains("3", SmsWords.Amount(3, unit, "ta"));
+            Assert.Equal(QuantityUnits.Describe(3, unit), SmsWords.Amount(3, unit, "en"));
+        }
+    }
+
+    [Fact]
+    public void ClosedIssueText_DoesNotPromiseAdvice()
+    {
+        var text = SmsTemplates.Render(new SmsAlert(SmsAlertKind.OfficerClosedIssue, "Leaf spots"), "en");
+        Assert.Contains("without advice", text);
+        Assert.DoesNotContain("read the advice", text);
+    }
+
+    // ---------- Send limits ----------
+
+    [Fact]
+    public void Limiter_SendsARepeatOfTheSameAlertOnlyAfterTheCooldown()
+    {
+        var time = new ManualTime();
+        var limiter = new SmsSendLimiter(Options.Create(new SmsOptions { RepeatCooldownMinutes = 30 }), time);
+        var alert = new SmsAlert(SmsAlertKind.NewPurchaseRequest, "Tomato", Kg(5));
+
+        Assert.True(limiter.TryAcquire(10, alert));
+        Assert.False(limiter.TryAcquire(10, alert with { Amount = Kg(7) }));
+        Assert.True(limiter.TryAcquire(10, new SmsAlert(SmsAlertKind.NewPurchaseRequest, "Carrot", Kg(5))));
+        Assert.True(limiter.TryAcquire(11, alert));
+
+        time.Advance(TimeSpan.FromMinutes(31));
+        Assert.True(limiter.TryAcquire(10, alert));
+    }
+
+    [Fact]
+    public void Limiter_CapsTextsPerUserPerDay()
+    {
+        var time = new ManualTime();
+        var limiter = new SmsSendLimiter(Options.Create(new SmsOptions { MaxPerUserPerDay = 3, RepeatCooldownMinutes = 0 }), time);
+
+        for (var i = 0; i < 3; i++)
+        {
+            Assert.True(limiter.TryAcquire(10, new SmsAlert(SmsAlertKind.OfficerReplied, $"Issue {i}")));
+        }
+
+        Assert.False(limiter.TryAcquire(10, new SmsAlert(SmsAlertKind.OfficerReplied, "Issue 4")));
+        Assert.True(limiter.TryAcquire(11, new SmsAlert(SmsAlertKind.OfficerReplied, "Issue 4")));
+
+        time.Advance(TimeSpan.FromHours(24));
+        Assert.True(limiter.TryAcquire(10, new SmsAlert(SmsAlertKind.OfficerReplied, "Issue 4")));
     }
 
     // ---------- Queue ----------
@@ -81,7 +187,7 @@ public class SmsAlertsTests
     public void Queue_DoesNothingWhenSmsIsNotConfigured()
     {
         var queue = new SmsAlertQueue(Options.Create(new SmsOptions()), NullLogger<SmsAlertQueue>.Instance);
-        queue.Enqueue(1, new SmsAlert(SmsAlertKind.OrderConfirmed, "Rice", "5 kg"));
+        queue.Enqueue(1, new SmsAlert(SmsAlertKind.OrderConfirmed, "Rice", Kg(5)));
 
         Assert.False(queue.IsEnabled);
         Assert.False(queue.Reader.TryRead(out _));
@@ -93,8 +199,8 @@ public class SmsAlertsTests
         var options = new SmsOptions { Provider = "NotifyLk", NotifyLk = Configured.NotifyLk, QueueCapacity = 1 };
         var queue = new SmsAlertQueue(Options.Create(options), NullLogger<SmsAlertQueue>.Instance);
 
-        queue.Enqueue(1, new SmsAlert(SmsAlertKind.OrderConfirmed, "Rice", "5 kg"));
-        queue.Enqueue(2, new SmsAlert(SmsAlertKind.OrderConfirmed, "Rice", "5 kg"));
+        queue.Enqueue(1, new SmsAlert(SmsAlertKind.OrderConfirmed, "Rice", Kg(5)));
+        queue.Enqueue(2, new SmsAlert(SmsAlertKind.OrderConfirmed, "Rice", Kg(5)));
 
         Assert.True(queue.Reader.TryRead(out var first));
         Assert.Equal(1, first!.UserId);
@@ -105,7 +211,7 @@ public class SmsAlertsTests
     public void NotificationService_WithoutAQueue_IgnoresSms()
     {
         using var db = CreateDb();
-        new NotificationService(db).QueueSms(1, new SmsAlert(SmsAlertKind.OrderConfirmed, "Rice", "5 kg"));
+        new NotificationService(db).QueueSms(1, new SmsAlert(SmsAlertKind.OrderConfirmed, "Rice", Kg(5)));
     }
 
     // ---------- Dispatcher ----------
@@ -117,11 +223,11 @@ public class SmsAlertsTests
         await SeedFarmerAsync(provider, enabled: true, language: "si", phone: "0771234567");
 
         await CreateDispatcher(provider).SendOneAsync(
-            new QueuedSmsAlert(10, new SmsAlert(SmsAlertKind.NewPurchaseRequest, "Tomato", "20 kg")), CancellationToken.None);
+            new QueuedSmsAlert(10, new SmsAlert(SmsAlertKind.NewPurchaseRequest, "Tomato", Kg(20))), CancellationToken.None);
 
         var (number, text) = Assert.Single(sender.Sent);
         Assert.Equal("94771234567", number);
-        Assert.Equal(SmsTemplates.Render(new SmsAlert(SmsAlertKind.NewPurchaseRequest, "Tomato", "20 kg"), "si"), text);
+        Assert.Equal(SmsTemplates.Render(new SmsAlert(SmsAlertKind.NewPurchaseRequest, "Tomato", Kg(20)), "si"), text);
     }
 
     [Theory]
@@ -137,6 +243,40 @@ public class SmsAlertsTests
             new QueuedSmsAlert(10, new SmsAlert(SmsAlertKind.OfficerReplied, "Leaf spots")), CancellationToken.None);
 
         Assert.Empty(sender.Sent);
+    }
+
+    [Fact]
+    public async Task Dispatcher_TextsAFloodOfRequestsOnlyOnce()
+    {
+        var (provider, sender) = CreateServices();
+        await SeedFarmerAsync(provider, enabled: true, language: "en", phone: "0771234567");
+        var dispatcher = CreateDispatcher(provider);
+
+        for (var i = 1; i <= 20; i++)
+        {
+            await dispatcher.SendOneAsync(
+                new QueuedSmsAlert(10, new SmsAlert(SmsAlertKind.NewPurchaseRequest, "Tomato", Kg(i))), CancellationToken.None);
+        }
+
+        Assert.Single(sender.Sent);
+    }
+
+    [Fact]
+    public async Task Dispatcher_UsesTheAccountMobile_WhenTheProfilePhoneIsALandline()
+    {
+        var (provider, sender) = CreateServices();
+        using (var scope = provider.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AgriLinkDbContext>();
+            SeedFarmer(db, enabled: true, language: "en", phone: "0812345678");
+            (await db.Users.SingleAsync(u => u.Id == 10)).PhoneNumber = "0771234567";
+            await db.SaveChangesAsync();
+        }
+
+        await CreateDispatcher(provider).SendOneAsync(
+            new QueuedSmsAlert(10, new SmsAlert(SmsAlertKind.OfficerReplied, "Leaf spots")), CancellationToken.None);
+
+        Assert.Equal("94771234567", Assert.Single(sender.Sent).Number);
     }
 
     [Fact]
@@ -280,6 +420,17 @@ public class SmsAlertsTests
 
     // ---------- Helpers ----------
 
+    private static SmsAmount Kg(decimal quantity) => new(quantity, QuantityUnit.Kg);
+
+    private sealed class ManualTime : TimeProvider
+    {
+        private DateTimeOffset _now = new(2026, 11, 22, 8, 0, 0, TimeSpan.Zero);
+
+        public override DateTimeOffset GetUtcNow() => _now;
+
+        public void Advance(TimeSpan by) => _now += by;
+    }
+
     private static AgriLinkDbContext CreateDb() =>
         new(new DbContextOptionsBuilder<AgriLinkDbContext>().UseInMemoryDatabase(Guid.NewGuid().ToString()).Options);
 
@@ -319,6 +470,7 @@ public class SmsAlertsTests
     private static SmsAlertDispatcher CreateDispatcher(ServiceProvider provider) => new(
         new SmsAlertQueue(Options.Create(Configured), NullLogger<SmsAlertQueue>.Instance),
         provider.GetRequiredService<IServiceScopeFactory>(),
+        new SmsSendLimiter(Options.Create(Configured)),
         NullLogger<SmsAlertDispatcher>.Instance);
 
     private static SmsAlertsController CreateController(AgriLinkDbContext db, SmsOptions options) => new(

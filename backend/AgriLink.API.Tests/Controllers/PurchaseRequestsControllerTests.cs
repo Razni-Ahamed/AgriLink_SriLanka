@@ -295,7 +295,7 @@ public class PurchaseRequestsControllerTests
         Assert.Equal(10, userId);
         Assert.Equal(SmsAlertKind.NewPurchaseRequest, alert.Kind);
         Assert.Equal("Tomato", alert.Subject);
-        Assert.Contains("5", alert.Detail);
+        Assert.Equal(new SmsAmount(5, QuantityUnit.Kg), alert.Amount);
     }
 
     private sealed class RecordingSmsQueue : ISmsAlertQueue

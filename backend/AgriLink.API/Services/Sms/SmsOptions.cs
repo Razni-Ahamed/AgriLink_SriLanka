@@ -20,6 +20,19 @@ public class SmsOptions
 
     public int TimeoutSeconds { get; set; } = 10;
 
+    /// <summary>
+    /// The most texts one user gets in any 24 hours. Every text costs money, and any buyer can
+    /// make a farmer's phone buzz by sending purchase requests, so this caps what one account can
+    /// cost and how much one phone is disturbed. 0 or less means no daily cap.
+    /// </summary>
+    public int MaxPerUserPerDay { get; set; } = 10;
+
+    /// <summary>
+    /// A repeat of the same alert (same user, kind and crop or issue) within this many minutes
+    /// is not texted again; the in-app notification still arrives. 0 or less turns this off.
+    /// </summary>
+    public int RepeatCooldownMinutes { get; set; } = 30;
+
     /// <summary>True when a known provider is chosen and all of its settings are filled in.</summary>
     public bool IsEnabled =>
         string.Equals(Provider, NotifyLkProvider, StringComparison.OrdinalIgnoreCase) && NotifyLk.IsComplete;

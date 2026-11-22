@@ -12,12 +12,15 @@ public sealed class SmsAlertDispatcher : BackgroundService
 {
     private readonly SmsAlertQueue _queue;
     private readonly IServiceScopeFactory _scopes;
+    private readonly SmsSendLimiter _limiter;
     private readonly ILogger<SmsAlertDispatcher> _logger;
 
-    public SmsAlertDispatcher(SmsAlertQueue queue, IServiceScopeFactory scopes, ILogger<SmsAlertDispatcher> logger)
+    public SmsAlertDispatcher(
+        SmsAlertQueue queue, IServiceScopeFactory scopes, SmsSendLimiter limiter, ILogger<SmsAlertDispatcher> logger)
     {
         _queue = queue;
         _scopes = scopes;
+        _limiter = limiter;
         _logger = logger;
     }
 
@@ -55,6 +58,14 @@ public sealed class SmsAlertDispatcher : BackgroundService
                 return;
             }
 
+            if (!_limiter.TryAcquire(item.UserId, item.Alert))
+            {
+                _logger.LogInformation(
+                    "SMS {Kind} alert for user {UserId} skipped: daily limit reached or the same alert was sent recently",
+                    item.Alert.Kind, item.UserId);
+                return;
+            }
+
             var text = SmsTemplates.Render(item.Alert, recipient.Language);
             var sender = scope.ServiceProvider.GetRequiredService<ISmsSender>();
             var sent = await sender.SendAsync(recipient.InternationalNumber, text, cancellationToken);
@@ -79,8 +90,11 @@ public sealed record SmsRecipient(bool Enabled, string Language, string? Phone, 
 public static class SmsRecipients
 {
     /// <summary>
-    /// The user's SMS settings and the phone number alerts go to: a farmer's profile phone, a
-    /// buyer's business phone, otherwise the account's own phone (officers and admins).
+    /// The user's SMS settings and the phone number alerts go to: the first mobile number among a
+    /// farmer's profile phone, a buyer's business phone and the account's own phone, so a landline
+    /// on the profile doesn't hide a mobile on the account. <see cref="SmsRecipient.Phone"/> is
+    /// that mobile, or else the first number on file (shown to the user to explain why SMS can't
+    /// be turned on).
     /// </summary>
     public static async Task<SmsRecipient?> FindAsync(AgriLinkDbContext db, int userId, CancellationToken cancellationToken = default)
     {
@@ -101,8 +115,12 @@ public static class SmsRecipients
             return null;
         }
 
-        var phone = row.FarmerPhone ?? row.BuyerPhone ?? row.PhoneNumber;
+        var numbers = new[] { row.FarmerPhone, row.BuyerPhone, row.PhoneNumber }
+            .Where(n => !string.IsNullOrWhiteSpace(n))
+            .ToList();
+        var mobile = numbers.FirstOrDefault(n => SmsText.ToInternationalMobile(n) is not null);
+        var phone = mobile ?? numbers.FirstOrDefault();
         var language = SmsText.IsSupportedLanguage(row.SmsLanguage) ? row.SmsLanguage : SmsText.English;
-        return new SmsRecipient(row.SmsAlertsEnabled, language, phone, SmsText.ToInternationalMobile(phone));
+        return new SmsRecipient(row.SmsAlertsEnabled, language, phone, SmsText.ToInternationalMobile(mobile));
     }
 }

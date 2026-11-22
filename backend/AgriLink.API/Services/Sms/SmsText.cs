@@ -30,13 +30,25 @@ public static class SmsText
         return digits.Length == 10 && digits.StartsWith("07") ? "94" + digits[1..] : null;
     }
 
-    /// <summary>Plain ASCII fits the cheaper GSM-7 encoding; anything else goes as Unicode.</summary>
-    public static bool IsGsm7(string text) => text.All(c => c is >= ' ' and <= '~' or '\n');
+    // Printable ASCII that GSM-7 can't send as one ordinary character: the backtick isn't in
+    // GSM-7 at all, and the rest exist only as two-character escape sequences, which not every
+    // gateway counts or converts correctly. Text containing any of them goes as Unicode instead.
+    private const string NotPlainGsm7 = "`[]{}\\^~|";
 
-    /// <summary>Shortens user-written text (an issue title) so one alert stays a short message.</summary>
+    /// <summary>
+    /// True when the text fits the cheaper GSM-7 encoding (160 characters per part): printable
+    /// ASCII and new lines, minus the characters above. Anything else goes as Unicode (70 per part).
+    /// </summary>
+    public static bool IsGsm7(string text) =>
+        text.All(c => (c is >= ' ' and <= '~' or '\n') && !NotPlainGsm7.Contains(c));
+
+    /// <summary>
+    /// Shortens user-written text (an issue title) so one alert stays a short message. Ends with
+    /// three plain dots, not "…", which would turn an English text into a costlier Unicode one.
+    /// </summary>
     public static string Clip(string text, int max)
     {
         var trimmed = text.Trim();
-        return trimmed.Length <= max ? trimmed : trimmed[..(max - 1)].TrimEnd() + "…";
+        return trimmed.Length <= max ? trimmed : trimmed[..(max - 3)].TrimEnd() + "...";
     }
 }

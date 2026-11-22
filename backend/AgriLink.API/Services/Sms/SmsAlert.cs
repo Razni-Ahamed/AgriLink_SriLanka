@@ -1,19 +1,30 @@
+using AgriLink.API.Models;
+
 namespace AgriLink.API.Services.Sms;
 
 public enum SmsAlertKind
 {
-    /// <summary>To the farmer: a buyer asked for some of a listing. Subject = crop, Detail = amount.</summary>
+    /// <summary>To the farmer: a buyer asked for some of a listing. Subject = crop type, Amount = what they asked for.</summary>
     NewPurchaseRequest,
 
-    /// <summary>To the buyer: the farmer accepted, so the order is confirmed. Subject = crop, Detail = amount.</summary>
+    /// <summary>To the buyer: the farmer accepted, so the order is confirmed. Subject = crop type, Amount = the order's amount.</summary>
     OrderConfirmed,
 
-    /// <summary>To the farmer: an officer reviewed their crop issue. Subject = issue title.</summary>
+    /// <summary>To the farmer: an officer approved advice or wrote their own for a crop issue. Subject = issue title.</summary>
     OfficerReplied,
+
+    /// <summary>To the farmer: an officer closed their crop issue without giving advice. Subject = issue title.</summary>
+    OfficerClosedIssue,
 }
 
-/// <summary>What to tell the user. The words are chosen at send time, in the user's SMS language.</summary>
-public sealed record SmsAlert(SmsAlertKind Kind, string Subject, string? Detail = null);
+/// <summary>An amount of produce, written out in the recipient's language when the text is sent.</summary>
+public sealed record SmsAmount(decimal Quantity, QuantityUnit Unit);
+
+/// <summary>
+/// What to tell the user. The words are chosen at send time, in the user's SMS language, so the
+/// crop name and amount stay as data here rather than as English text.
+/// </summary>
+public sealed record SmsAlert(SmsAlertKind Kind, string Subject, SmsAmount? Amount = null);
 
 /// <summary>The alert texts in English, Sinhala and Tamil. Each starts with "AgriLink:" so people know who sent it.</summary>
 public static class SmsTemplates
@@ -22,8 +33,9 @@ public static class SmsTemplates
 
     public static string Render(SmsAlert alert, string? language)
     {
-        var subject = SmsText.Clip(alert.Subject, MaxSubjectLength);
-        var detail = alert.Detail ?? string.Empty;
+        var isCrop = alert.Kind is SmsAlertKind.NewPurchaseRequest or SmsAlertKind.OrderConfirmed;
+        var subject = SmsText.Clip(isCrop ? SmsWords.Crop(alert.Subject, language) : alert.Subject, MaxSubjectLength);
+        var detail = alert.Amount is { } amount ? SmsWords.Amount(amount.Quantity, amount.Unit, language) : string.Empty;
 
         return (alert.Kind, language) switch
         {
@@ -47,6 +59,13 @@ public static class SmsTemplates
                 $"AgriLink: \"{subject}\" குறித்து வேளாண் அலுவலர் பதிலளித்துள்ளார். ஆலோசனையைப் படிக்க AgriLink-ஐத் திறக்கவும்.",
             (SmsAlertKind.OfficerReplied, _) =>
                 $"AgriLink: An agricultural officer replied about \"{subject}\". Open AgriLink to read the advice.",
+
+            (SmsAlertKind.OfficerClosedIssue, SmsText.Sinhala) =>
+                $"AgriLink: කෘෂිකර්ම නිලධාරියෙක් \"{subject}\" සලකා බලා, උපදෙස් නොමැතිව එය වසා දැමීය. විස්තර සඳහා AgriLink විවෘත කරන්න.",
+            (SmsAlertKind.OfficerClosedIssue, SmsText.Tamil) =>
+                $"AgriLink: வேளாண் அலுவலர் \"{subject}\" ஐப் பரிசீலித்து, ஆலோசனை இல்லாமல் அதை முடித்துவைத்தார். விவரங்களுக்கு AgriLink-ஐத் திறக்கவும்.",
+            (SmsAlertKind.OfficerClosedIssue, _) =>
+                $"AgriLink: An agricultural officer reviewed \"{subject}\" and closed it without advice. Open AgriLink for details.",
 
             _ => throw new ArgumentOutOfRangeException(nameof(alert), alert.Kind, "Unknown SMS alert kind."),
         };

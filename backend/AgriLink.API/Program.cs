@@ -131,6 +131,7 @@ else
 {
     builder.Services.AddSingleton<ISmsSender, NullSmsSender>();
 }
+builder.Services.AddSingleton<SmsSendLimiter>();
 builder.Services.AddSingleton<SmsAlertQueue>();
 builder.Services.AddSingleton<ISmsAlertQueue>(sp => sp.GetRequiredService<SmsAlertQueue>());
 builder.Services.AddHostedService<SmsAlertDispatcher>();

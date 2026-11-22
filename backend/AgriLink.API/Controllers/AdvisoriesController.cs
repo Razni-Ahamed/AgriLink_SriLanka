@@ -201,7 +201,9 @@ public class AdvisoriesController : ControllerBase
             }
 
             await _notifications.NotifyAsync(recipientId, title, message);
-            _notifications.QueueSms(recipientId, new SmsAlert(SmsAlertKind.OfficerReplied, advisory.Issue.Title));
+            // A rejection without the officer's own treatment leaves the farmer no advice to read.
+            var smsKind = approve || treatment is not null ? SmsAlertKind.OfficerReplied : SmsAlertKind.OfficerClosedIssue;
+            _notifications.QueueSms(recipientId, new SmsAlert(smsKind, advisory.Issue.Title));
         }
 
         // ReviewedByUser was loaded before this advisory had a reviewer, so the id set just

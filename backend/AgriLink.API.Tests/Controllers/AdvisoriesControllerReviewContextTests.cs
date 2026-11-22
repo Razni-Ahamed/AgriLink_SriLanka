@@ -259,4 +259,21 @@ public class AdvisoriesControllerReviewContextTests
             n => n.QueueSms(FarmerUserId, It.Is<SmsAlert>(a => a.Kind == SmsAlertKind.OfficerReplied && a.Subject == advisory.Issue.Title)),
             Times.Once);
     }
+
+    [Fact]
+    public async Task Reject_WithoutTreatment_QueuesAClosedIssueSms_NotAnAdviceOne()
+    {
+        var (db, advisory) = SeedDraftAdvisoryWithTrace();
+        var notifications = new Mock<INotificationService>();
+        var controller = CreateController(db, OfficerUserId, "Officer", notifications);
+
+        await controller.Reject(advisory.AdvisoryId);
+
+        notifications.Verify(
+            n => n.QueueSms(FarmerUserId, It.Is<SmsAlert>(a => a.Kind == SmsAlertKind.OfficerClosedIssue)),
+            Times.Once);
+        notifications.Verify(
+            n => n.QueueSms(It.IsAny<int>(), It.Is<SmsAlert>(a => a.Kind == SmsAlertKind.OfficerReplied)),
+            Times.Never);
+    }
 }

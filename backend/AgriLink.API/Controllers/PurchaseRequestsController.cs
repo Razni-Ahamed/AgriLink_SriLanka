@@ -93,7 +93,12 @@ public class PurchaseRequestsController : ControllerBase
                 recipientId,
                 "New purchase request",
                 $"A buyer has requested {amount} of your {listing.Crop.CropType} listing.");
-            _notifications.QueueSms(recipientId, new SmsAlert(SmsAlertKind.NewPurchaseRequest, listing.Crop.CropType, amount));
+            _notifications.QueueSms(
+                recipientId,
+                new SmsAlert(
+                    SmsAlertKind.NewPurchaseRequest,
+                    listing.Crop.CropType,
+                    new SmsAmount(purchaseRequest.RequestedQuantity, listing.Unit)));
         }
 
         return StatusCode(StatusCodes.Status201Created, ToResponse(purchaseRequest));
@@ -388,7 +393,12 @@ public class PurchaseRequestsController : ControllerBase
                 : $"The farmer declined your request for {amount} of {crop}.");
         if (accepted)
         {
-            _notifications.QueueSms(recipientId, new SmsAlert(SmsAlertKind.OrderConfirmed, crop, amount));
+            _notifications.QueueSms(
+                recipientId,
+                new SmsAlert(
+                    SmsAlertKind.OrderConfirmed,
+                    crop,
+                    new SmsAmount(purchaseRequest.RequestedQuantity, purchaseRequest.Harvest.Unit)));
         }
     }
 
