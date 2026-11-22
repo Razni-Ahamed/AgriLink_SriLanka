@@ -66,6 +66,11 @@ public class AgriLinkDbContext : IdentityDbContext<ApplicationUser, IdentityRole
     {
         base.OnModelCreating(builder);
 
+        // Trigram indexes let the case-insensitive "contains" searches (lower(column) LIKE '%term%')
+        // use an index. EF can't describe indexes on lower(column), so the AddSearchIndexes
+        // migration creates them in SQL.
+        builder.HasPostgresExtension("pg_trgm");
+
         builder.Entity<ApplicationUser>(entity =>
         {
             entity.Property(u => u.RegistrationStatus).HasConversion<string>().HasMaxLength(20);
