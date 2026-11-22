@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom'
 import { Calendar, MapPin } from '@phosphor-icons/react'
 import { useTranslation } from 'react-i18next'
 import { rememberPhoto } from '@/components/canopy/sharedPhoto'
-import { cropPhoto } from '@/lib/cropPhotos'
+import { cropPhoto, cropPhotoSrcSet } from '@/lib/cropPhotos'
 import { useCropLabel } from '@/lib/useCropLabel'
 import { useStatusLabel } from '@/lib/useStatusLabel'
 import { useUnits } from '@/lib/units'
@@ -44,8 +44,11 @@ export function HarvestCard({ harvest }: { harvest: HarvestListingResponse }) {
         >
           <img
             src={cropPhoto(harvest.cropType)}
+            srcSet={cropPhotoSrcSet(harvest.cropType)}
+            sizes="(min-width: 1280px) 25vw, (min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
             alt=""
             loading="lazy"
+            decoding="async"
             className="size-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.06]"
           />
           <div
