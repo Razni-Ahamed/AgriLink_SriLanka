@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { SeasonVine } from '@/components/canopy/SeasonVine'
-import { cropPhoto } from '@/lib/cropPhotos'
+import { cropPhoto, cropPhotoSrcSet } from '@/lib/cropPhotos'
 import { seasonProgress } from '@/lib/season'
 import { useCropLabel } from '@/lib/useCropLabel'
 import { useStatusLabel } from '@/lib/useStatusLabel'
@@ -25,9 +25,12 @@ export function CropSeasonCard({ crop }: { crop: FarmerCropSummary }) {
     >
       <img
         src={cropPhoto(crop.cropType)}
+        srcSet={cropPhotoSrcSet(crop.cropType)}
+        sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
         alt=""
         aria-hidden="true"
         loading="lazy"
+        decoding="async"
         className="absolute inset-0 -z-20 size-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.05]"
       />
       <div
