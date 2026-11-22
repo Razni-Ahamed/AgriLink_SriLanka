@@ -1,3 +1,4 @@
+using AgriLink.API.Common;
 using AgriLink.API.Data;
 using AgriLink.API.DTOs.Orders;
 using AgriLink.API.Models;
@@ -30,11 +31,19 @@ public class OrdersController : ControllerBase
         _notifications = notifications;
     }
 
+    /// <summary>
+    /// The caller's orders, newest first. Paging is opt-in so older clients keep working: without
+    /// <paramref name="page"/> or <paramref name="pageSize"/> the response is every order as a plain
+    /// array, as before; with either one it is a <see cref="PagedResponse{T}"/> of just that page.
+    /// </summary>
     [HttpGet("mine")]
     [Authorize(Roles = "Buyer,Farmer")]
-    public async Task<ActionResult<List<OrderResponse>>> Mine()
+    public async Task<ActionResult<List<OrderResponse>>> Mine(
+        [FromQuery] int? page = null,
+        [FromQuery] int? pageSize = null,
+        CancellationToken cancellationToken = default)
     {
-        var query = WithDetails(_db.Orders);
+        var query = WithDetails(_db.Orders.AsNoTracking());
 
         if (User.IsInRole("Buyer"))
         {
@@ -55,7 +64,15 @@ public class OrdersController : ControllerBase
             query = query.Where(o => o.FarmerProfileId == farmerProfileId);
         }
 
-        var orders = await query.OrderByDescending(o => o.OrderDate).ToListAsync();
+        var ordered = query.OrderByDescending(o => o.OrderDate).ThenByDescending(o => o.OrderId);
+        if (page is not null || pageSize is not null)
+        {
+            var paged = await ordered.ToPagedResponseAsync(
+                page ?? 1, pageSize ?? PagingExtensions.DefaultPageSize, cancellationToken);
+            return Ok(paged.Map(ToResponse));
+        }
+
+        var orders = await ordered.ToListAsync(cancellationToken);
         return Ok(orders.Select(ToResponse));
     }
 
