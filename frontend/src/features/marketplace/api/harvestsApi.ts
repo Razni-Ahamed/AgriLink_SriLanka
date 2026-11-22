@@ -7,17 +7,37 @@ import type {
   UpdateHarvestListingRequest,
 } from '@/types/dto/harvests'
 import type { QuantityUnit } from '@/lib/units'
+import type { PagedResponse } from '@/types/dto/paging'
 
+function filterParams(filters: HarvestFilters) {
+  return {
+    cropType: filters.cropType || undefined,
+    // Comma-separated, as the API expects (axios would otherwise send cropTypes[]=…).
+    cropTypes: filters.cropTypes?.length ? filters.cropTypes.join(',') : undefined,
+    district: filters.district || undefined,
+    search: filters.search || undefined,
+    minPrice: filters.minPrice,
+    maxPrice: filters.maxPrice,
+    sort: filters.sort || undefined,
+  }
+}
+
+/** Every matching listing at once. Kept for callers that need the whole list; prefer getHarvestPage. */
 export async function getHarvests(filters: HarvestFilters = {}): Promise<HarvestListingResponse[]> {
   const { data } = await apiClient.get<HarvestListingResponse[]>('/api/harvests', {
-    params: {
-      cropType: filters.cropType || undefined,
-      district: filters.district || undefined,
-      search: filters.search || undefined,
-      minPrice: filters.minPrice,
-      maxPrice: filters.maxPrice,
-      sort: filters.sort || undefined,
-    },
+    params: filterParams(filters),
+  })
+  return data
+}
+
+/** One page of matching listings, with the total count — what the marketplace pages show. */
+export async function getHarvestPage(
+  filters: HarvestFilters = {},
+  page = 1,
+  pageSize = 24,
+): Promise<PagedResponse<HarvestListingResponse>> {
+  const { data } = await apiClient.get<PagedResponse<HarvestListingResponse>>('/api/harvests', {
+    params: { ...filterParams(filters), page, pageSize },
   })
   return data
 }

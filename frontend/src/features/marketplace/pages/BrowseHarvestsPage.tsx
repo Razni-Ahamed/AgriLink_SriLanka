@@ -1,27 +1,47 @@
-import { useMemo, useState } from 'react'
+import { useRef, useState } from 'react'
 import { AnimatePresence, LayoutGroup, motion } from 'motion/react'
 import { useTranslation } from 'react-i18next'
 import { BannerGlass, PhotoBanner } from '@/components/canopy/PhotoBanner'
 import { ChipGroup } from '@/components/ui/ChipGroup'
+import { Pagination } from '@/components/ui/Pagination'
 import { Skeleton } from '@/components/ui/Skeleton'
-import { cropCatalogEntry, type CropGroup } from '@/lib/cropCatalog'
+import { CROP_CATALOG, type CropGroup } from '@/lib/cropCatalog'
 import { spring } from '@/lib/motion'
 import { HarvestCard } from '../components/HarvestCard'
 import { HarvestFilterBar } from '../components/HarvestFilterBar'
-import { useHarvests } from '../hooks/useHarvests'
+import { useHarvestPage } from '../hooks/useHarvests'
 import type { HarvestFilters } from '@/types/dto/harvests'
 
 type GroupChoice = 'all' | CropGroup
 
 const GROUPS: GroupChoice[] = ['all', 'vegetables', 'fruit', 'cereals', 'roots', 'plantation']
 
+/** The crop types in a group, sent to the API so the group narrows every page, not just one. */
+function cropTypesIn(group: GroupChoice): string[] | undefined {
+  return group === 'all'
+    ? undefined
+    : CROP_CATALOG.filter((entry) => entry.group === group).map((entry) => entry.value)
+}
+
 export function BrowseHarvestsPage() {
   const { t } = useTranslation(['marketplace', 'common'])
   const [filters, setFilters] = useState<HarvestFilters>({ sort: 'newest' })
   const [group, setGroup] = useState<GroupChoice>('all')
-  // Search, price range and order are all applied by the API (GET /api/harvests); the crop group
-  // chips narrow what came back, instantly, on this page.
-  const { data: harvests, isLoading } = useHarvests(filters)
+  const listTop = useRef<HTMLDivElement>(null)
+
+  // Back to page 1 whenever the filters or crop group change, without an effect: the page
+  // belongs to the filters it was chosen under (the same pattern as the issue lists).
+  const filterKey = JSON.stringify([filters, group])
+  const [paging, setPaging] = useState({ key: filterKey, page: 1 })
+  const page = paging.key === filterKey ? paging.page : 1
+
+  // Search, crop group, price range and order are all applied by the API (GET /api/harvests),
+  // which sends one page of listings at a time instead of the whole marketplace.
+  const { data, isLoading, isFetching } = useHarvestPage(
+    { ...filters, cropTypes: cropTypesIn(group) },
+    page,
+  )
+  const visible = data?.items ?? []
   const isFiltered = Boolean(
     filters.search ||
     filters.cropType ||
@@ -31,13 +51,10 @@ export function BrowseHarvestsPage() {
     group !== 'all',
   )
 
-  const visible = useMemo(
-    () =>
-      (harvests ?? []).filter(
-        (harvest) => group === 'all' || cropCatalogEntry(harvest.cropType).group === group,
-      ),
-    [harvests, group],
-  )
+  function goToPage(next: number) {
+    setPaging({ key: filterKey, page: next })
+    listTop.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
 
   const groupOptions = GROUPS.map((value) => ({
     value,
@@ -64,7 +81,9 @@ export function BrowseHarvestsPage() {
         </BannerGlass>
       </PhotoBanner>
 
-      <HarvestFilterBar filters={filters} onChange={setFilters} />
+      <div ref={listTop} className="scroll-mt-24">
+        <HarvestFilterBar filters={filters} onChange={setFilters} />
+      </div>
 
       {isLoading && (
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -74,13 +93,13 @@ export function BrowseHarvestsPage() {
         </div>
       )}
 
-      {!isLoading && harvests && (
+      {!isLoading && data && (
         <p className="-mb-2 text-sm text-text-secondary tabular-nums">
-          {t('common:list.showing', { shown: visible.length, total: harvests.length })}
+          {t('common:list.showing', { shown: visible.length, total: data.totalCount })}
         </p>
       )}
 
-      {!isLoading && harvests && visible.length === 0 && (
+      {!isLoading && data && visible.length === 0 && (
         <p className="rounded-[22px] border border-dashed border-text-primary/15 p-8 text-center text-sm text-text-secondary">
           {isFiltered ? t('common:list.noMatches') : t('browse.empty')}
         </p>
@@ -108,6 +127,15 @@ export function BrowseHarvestsPage() {
             </AnimatePresence>
           </motion.ul>
         </LayoutGroup>
+      )}
+
+      {!isLoading && data && data.totalPages > 1 && (
+        <Pagination
+          page={data.page}
+          totalPages={data.totalPages}
+          onPageChange={goToPage}
+          disabled={isFetching}
+        />
       )}
     </div>
   )
