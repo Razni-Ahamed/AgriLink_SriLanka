@@ -64,7 +64,7 @@ This section describes how each component implements its business rules, then th
 
 The photo models were trained by the team (`ml/`, PyTorch and timm). Each is an **EfficientNet-B0** fine-tuned at 384 × 384 px for 12 epochs on an RTX 5090 laptop GPU.
 
-1. **Data.** PlantVillage (lab photos) and PlantDoc (field photos) for Tomato and Potato, and the Cassava Leaf Disease Classification dataset (field photos from Uganda). Duplicates were removed, and the data was split 80/10/10 by class with a fixed seed.
+1. **Data.** PlantVillage (lab photos) and PlantDoc (field photos) for Tomato and Potato, the Cassava Leaf Disease Classification dataset (field photos from Uganda), and Paddy Doctor (field photos) for Paddy. Duplicates were removed, and the data was split 80/10/10 by class with a fixed seed. Paddy was split by field plot instead, so its test photos come from fields the model never saw (PR #74).
 2. **Calibration and thresholds.** Confidence is calibrated with temperature scaling. An auto-release threshold is chosen **per class** as the lowest confidence at which the class's validation precision stays at or above 95 % at a Wilson lower bound. A class that cannot prove this gets no threshold, so its cases always go to an officer.
 3. **Export and parity.** The models are exported to ONNX. Each model's metadata records the preprocessing, classes, thresholds, metrics and the training commit. Backend tests check that C# preprocessing and inference match Python (the largest export difference is under 3 × 10⁻⁶). On 40 real photos per crop, the .NET predictions matched Python for Tomato 40/40 and Potato 40/40, with a largest probability difference under 10⁻⁶ (PR #49).
 4. **Serving.** `OnnxImageClassifier` loads the models once and classifies with a timeout. The classifier runs only for crops that have a model.
@@ -76,6 +76,7 @@ The photo models were trained by the team (`ml/`, PyTorch and timm). Each is an 
 | Tomato | 10 | 0.98 | 0.97 | Lab photos 0.997; **field photos (PlantDoc, 66 images) only 0.50**, so no class earned an auto-release threshold |
 | Potato | 3 | 0.97 | 0.97 | Lab photos 1.00; **field photos 0.70 (23 images)**; no auto-release thresholds |
 | Cassava | 5 | 0.87 | 0.77 | Field photos throughout; 2 of 5 classes earned a threshold |
+| Paddy | 10 | 0.50 | 0.40 | Field photos, test split by unseen field plot; no class earned an auto-release threshold |
 
 These results show that lab accuracy does not carry over to real field photos. This is why automatic release is **switched off** in production (`AutoReleaseEnabled = false`): every photo diagnosis goes to an officer with its escalation reasons.
 
@@ -113,4 +114,4 @@ These results show that lab accuracy does not carry over to real field photos. T
   - "units" wording on some web marketplace labels
   - identical crop names in pickers
   - the mobile keyboard can reappear after a picker closes
-- **Photo models** need Sri Lankan field photos, and Paddy has no model yet.
+- **Photo models** need Sri Lankan field photos. The Paddy model scores only 0.50 on field plots it has not seen, so, like the others, it sends every photo to an officer.

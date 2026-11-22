@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace AgriLink.API.Migrations
 {
     [DbContext(typeof(AgriLinkDbContext))]
-    [Migration("20261122093425_AddIssueClientReportId")]
-    partial class AddIssueClientReportId
+    [Migration("20261122091218_AddSmsAlertSettings")]
+    partial class AddSmsAlertSettings
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -265,6 +265,16 @@ namespace AgriLink.API.Migrations
 
                     b.Property<string>("SecurityStamp")
                         .HasColumnType("text");
+
+                    b.Property<bool>("SmsAlertsEnabled")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("SmsLanguage")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(5)
+                        .HasColumnType("character varying(5)")
+                        .HasDefaultValue("en");
 
                     b.Property<bool>("TwoFactorEnabled")
                         .HasColumnType("boolean");
@@ -598,9 +608,6 @@ namespace AgriLink.API.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("IssueId"));
 
-                    b.Property<Guid?>("ClientReportId")
-                        .HasColumnType("uuid");
-
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -637,10 +644,6 @@ namespace AgriLink.API.Migrations
                     b.HasIndex("CropId");
 
                     b.HasIndex("Status");
-
-                    b.HasIndex("FarmerProfileId", "ClientReportId")
-                        .IsUnique()
-                        .HasFilter("\"ClientReportId\" IS NOT NULL");
 
                     b.HasIndex("FarmerProfileId", "CreatedAt");
 

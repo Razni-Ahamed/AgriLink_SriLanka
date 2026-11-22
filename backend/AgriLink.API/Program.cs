@@ -3,6 +3,7 @@ using System.Text.Json.Serialization;
 using AgriLink.API.Data;
 using AgriLink.API.Models;
 using AgriLink.API.Services;
+using AgriLink.API.Services.Sms;
 using AgriLink.API.Services.Agents;
 using AgriLink.API.Services.Agents.ImageClassification;
 using AgriLink.API.Services.Agents.Llm;
@@ -114,6 +115,26 @@ builder.Services.AddAuthorization();
 builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
+
+// ----- SMS alerts (optional) -----
+// Off unless Sms:Provider is "NotifyLk" and its user id, API key and sender id are set.
+builder.Services.Configure<SmsOptions>(builder.Configuration.GetSection(SmsOptions.SectionName));
+var smsOptions = builder.Configuration.GetSection(SmsOptions.SectionName).Get<SmsOptions>() ?? new SmsOptions();
+if (smsOptions.IsEnabled)
+{
+    builder.Services.AddHttpClient<ISmsSender, NotifyLkSmsSender>(NotifyLkSmsSender.HttpClientName, client =>
+        client.Timeout = TimeSpan.FromSeconds(smsOptions.TimeoutSeconds));
+    // The API key travels in the query string, so keep HttpClient from logging request URLs.
+    builder.Logging.AddFilter($"System.Net.Http.HttpClient.{NotifyLkSmsSender.HttpClientName}", LogLevel.Warning);
+}
+else
+{
+    builder.Services.AddSingleton<ISmsSender, NullSmsSender>();
+}
+builder.Services.AddSingleton<SmsSendLimiter>();
+builder.Services.AddSingleton<SmsAlertQueue>();
+builder.Services.AddSingleton<ISmsAlertQueue>(sp => sp.GetRequiredService<SmsAlertQueue>());
+builder.Services.AddHostedService<SmsAlertDispatcher>();
 builder.Services.AddScoped<IAuditLogService, AuditLogService>();
 builder.Services.AddScoped<IAccountSessionValidator, AccountSessionValidator>();
 

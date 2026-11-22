@@ -84,7 +84,7 @@ When a farmer reports a problem, the backend runs it through a pipeline of small
 Farmer reports an issue (text + optional photo)
         │
         ▼
-Image Classification agent ── an ONNX model per crop (Tomato, Potato, Cassava)
+Image Classification agent ── an ONNX model per crop (Paddy, Tomato, Potato, Cassava)
         │                      identifies the disease from the photo, when one is supplied
         ▼
 Planner agent ────────────── decides which analyses the issue needs (Qwen LLM, checked by rules)
@@ -108,7 +108,7 @@ Advisory draft ──► Officer review (approve / edit / reject) ──► Farm
 - **The photo models** are trained in Python (`ml/`) and exported to **ONNX**.
   - They run *inside* the .NET API through ONNX Runtime.
   - Accuracy is 99–100 % on lab photos but only 50–70 % on field photos, so photo advice always goes to an officer.
-- **No photo model.** If a photo can't be classified (a crop without a model, such as Paddy, or an unreadable image), the issue continues through the text-based agents.
+- **No photo model.** If a photo can't be classified (a crop without a model, such as Chilli, or an unreadable image), the issue continues through the text-based agents.
 - **Every run is recorded** as a workflow with one step per agent: input, structured output, timings and status. Officers see this trace, and the audit log records every decision.
 - **Evaluation** uses rule-based golden cases for planning, delegation, tool use, validation, approval, prompt injection and failure recovery, plus a live language-model evaluation. See [`docs/agentic-ai-evaluation.md`](docs/agentic-ai-evaluation.md).
 

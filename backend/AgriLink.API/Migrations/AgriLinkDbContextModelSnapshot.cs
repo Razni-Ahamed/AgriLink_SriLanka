@@ -263,6 +263,16 @@ namespace AgriLink.API.Migrations
                     b.Property<string>("SecurityStamp")
                         .HasColumnType("text");
 
+                    b.Property<bool>("SmsAlertsEnabled")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("SmsLanguage")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(5)
+                        .HasColumnType("character varying(5)")
+                        .HasDefaultValue("en");
+
                     b.Property<bool>("TwoFactorEnabled")
                         .HasColumnType("boolean");
 

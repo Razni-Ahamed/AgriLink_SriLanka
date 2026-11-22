@@ -31,9 +31,11 @@ if ($LASTEXITCODE -ne 0) { throw 'zip failed' }
 
 # Database work at deploy time, only when the API is set not to do it at start-up.
 # Out-String and foreach (not a pipeline) so Windows PowerShell 5.1 parses the JSON array correctly.
+# No @() around ConvertFrom-Json: in 5.1 it returns the whole array as one object, so @() would make
+# a one-item list holding every setting and the name/value checks below would see all of them at once.
 $settingsJson = az webapp config appsettings list --resource-group $ResourceGroup --name $AppName -o json | Out-String
 if ($LASTEXITCODE -ne 0) { throw 'reading the App Service settings failed' }
-$settings = @(ConvertFrom-Json $settingsJson)
+$settings = ConvertFrom-Json $settingsJson
 $migrateOnStartup = $null
 foreach ($setting in $settings) {
     if ($setting.name -eq 'Database__MigrateOnStartup') { $migrateOnStartup = $setting.value }

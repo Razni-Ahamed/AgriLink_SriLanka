@@ -40,7 +40,7 @@ AgriLink connects the three groups involved in one system that works in **Englis
 | Four roles with self-registration and approval; officer accounts created by admins | Online payment. Orders record the agreed price, and payment happens between the parties |
 | Farms, fields, crops and crop status; crop issues with photos | Delivery logistics and transport booking |
 | Agentic AI advisory with officer approval, trace and audit | Push notifications through Firebase. The app polls for notifications while it is open |
-| Photo disease diagnosis for Tomato, Potato and Cassava (ONNX) | Photo models for Paddy and other crops, and training on Sri Lankan field photos |
+| Photo disease diagnosis for Paddy, Tomato, Potato and Cassava (ONNX) | Photo models for other crops, and training on Sri Lankan field photos |
 | Harvest marketplace, purchase requests, orders | iOS build (the Flutter code is portable, but only Android was built and tested) |
 | Notifications, officer and admin dashboards, audit log | Integration with official Department of Agriculture systems |
 | English, Sinhala and Tamil; light and dark themes | Offline mode for the mobile app |

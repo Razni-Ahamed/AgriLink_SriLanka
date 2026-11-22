@@ -4,6 +4,7 @@ using AgriLink.API.Data;
 using AgriLink.API.DTOs.Advisories;
 using AgriLink.API.Models;
 using AgriLink.API.Services;
+using AgriLink.API.Services.Sms;
 using AgriLink.API.Services.Agents;
 using AgriLink.API.Tests.TestSupport;
 using Microsoft.AspNetCore.Http;
@@ -243,5 +244,36 @@ public class AdvisoriesControllerReviewContextTests
         notifications.Verify(
             n => n.NotifyAsync(FarmerUserId, It.Is<string>(title => title.Contains("rejected")), It.IsAny<string>()),
             Times.Once);
+    }
+
+    [Fact]
+    public async Task Approve_AlsoQueuesAnOfficerRepliedSmsForTheFarmer()
+    {
+        var (db, advisory) = SeedDraftAdvisoryWithTrace();
+        var notifications = new Mock<INotificationService>();
+        var controller = CreateController(db, OfficerUserId, "Officer", notifications);
+
+        await controller.Approve(advisory.AdvisoryId, new ReviewAdvisoryRequest());
+
+        notifications.Verify(
+            n => n.QueueSms(FarmerUserId, It.Is<SmsAlert>(a => a.Kind == SmsAlertKind.OfficerReplied && a.Subject == advisory.Issue.Title)),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task Reject_WithoutTreatment_QueuesAClosedIssueSms_NotAnAdviceOne()
+    {
+        var (db, advisory) = SeedDraftAdvisoryWithTrace();
+        var notifications = new Mock<INotificationService>();
+        var controller = CreateController(db, OfficerUserId, "Officer", notifications);
+
+        await controller.Reject(advisory.AdvisoryId);
+
+        notifications.Verify(
+            n => n.QueueSms(FarmerUserId, It.Is<SmsAlert>(a => a.Kind == SmsAlertKind.OfficerClosedIssue)),
+            Times.Once);
+        notifications.Verify(
+            n => n.QueueSms(It.IsAny<int>(), It.Is<SmsAlert>(a => a.Kind == SmsAlertKind.OfficerReplied)),
+            Times.Never);
     }
 }
