@@ -29,25 +29,47 @@ public interface IImageClassifier
 }
 
 /// <summary>
-/// Runs the per-crop ONNX models exported by <c>agrilink_ml.train</c>. Models are loaded once at
-/// startup from <c>&lt;ModelsDirectory&gt;/&lt;crop&gt;/model.onnx</c> + <c>model.json</c>; a crop whose files
-/// are missing or invalid is logged and skipped, so its photos simply go through the text agents.
+/// Runs the per-crop ONNX models exported by <c>agrilink_ml.train</c>, read from
+/// <c>&lt;ModelsDirectory&gt;/&lt;crop&gt;/model.onnx</c> + <c>model.json</c>; a crop whose files are missing
+/// or invalid is logged and skipped, so its photos simply go through the text agents.
+/// <para>
+/// The models load once, on first use (thread-safe), not in the constructor: loading every model
+/// used to sit in front of the API's first request after a cold start. <see cref="ImageClassifierWarmup"/>
+/// calls <see cref="EnsureLoaded"/> in the background right after start-up, so a farmer's first
+/// upload normally finds them ready and a bad model still shows up in the start-up log.
+/// </para>
 /// </summary>
 public sealed class OnnxImageClassifier : IImageClassifier, IDisposable
 {
-    private readonly Dictionary<string, LoadedModel> _models = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Lazy<Dictionary<string, LoadedModel>> _models;
     private readonly TimeSpan _timeout;
+    private bool _disposed;
 
     private sealed record LoadedModel(ModelMetadata Metadata, InferenceSession Session);
 
     public OnnxImageClassifier(string modelsDirectory, int intraOpThreads, TimeSpan timeout, ILogger<OnnxImageClassifier> logger)
     {
         _timeout = timeout;
+        _models = new Lazy<Dictionary<string, LoadedModel>>(
+            () => LoadModels(modelsDirectory, intraOpThreads, logger),
+            LazyThreadSafetyMode.ExecutionAndPublication);
+    }
+
+    /// <summary>Loads the models now if they are not loaded yet. Safe to call from any thread.</summary>
+    public void EnsureLoaded()
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        _ = _models.Value;
+    }
+
+    private static Dictionary<string, LoadedModel> LoadModels(string modelsDirectory, int intraOpThreads, ILogger logger)
+    {
+        var models = new Dictionary<string, LoadedModel>(StringComparer.OrdinalIgnoreCase);
 
         if (!Directory.Exists(modelsDirectory))
         {
             logger.LogWarning("No image classification models found: {Directory} does not exist. Photos will use the text-only agents.", modelsDirectory);
-            return;
+            return models;
         }
 
         foreach (var cropDirectory in Directory.EnumerateDirectories(modelsDirectory))
@@ -76,13 +98,13 @@ public sealed class OnnxImageClassifier : IImageClassifier, IDisposable
                     throw new InvalidDataException("model.json input/output names do not match the ONNX model.");
                 }
 
-                if (!_models.TryAdd(metadata.Crop, new LoadedModel(metadata, session)))
+                if (!models.TryAdd(metadata.Crop, new LoadedModel(metadata, session)))
                 {
                     throw new InvalidDataException($"A model for crop '{metadata.Crop}' is already loaded.");
                 }
 
                 logger.LogInformation("Loaded image classification model {ModelVersion} for {Crop}", metadata.ModelVersion, metadata.Crop);
-                session = null; // owned by _models now
+                session = null; // owned by models now
             }
             catch (Exception ex) when (ex is InvalidDataException or System.Text.Json.JsonException or OnnxRuntimeException)
             {
@@ -93,13 +115,20 @@ public sealed class OnnxImageClassifier : IImageClassifier, IDisposable
                 session?.Dispose();
             }
         }
+
+        return models;
     }
 
-    public bool SupportsCrop(string cropType) => _models.ContainsKey(cropType.Trim());
+    public bool SupportsCrop(string cropType)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        return _models.Value.ContainsKey(cropType.Trim());
+    }
 
     public async Task<ImageFindings> ClassifyAsync(string cropType, byte[] image, CancellationToken cancellationToken)
     {
-        if (!_models.TryGetValue(cropType.Trim(), out var model))
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        if (!_models.Value.TryGetValue(cropType.Trim(), out var model))
         {
             throw new NotSupportedException($"No image classification model is loaded for '{cropType}'.");
         }
@@ -148,10 +177,21 @@ public sealed class OnnxImageClassifier : IImageClassifier, IDisposable
 
     public void Dispose()
     {
-        foreach (var model in _models.Values)
+        if (_disposed)
+        {
+            return;
+        }
+
+        _disposed = true;
+        if (!_models.IsValueCreated)
+        {
+            return;
+        }
+
+        foreach (var model in _models.Value.Values)
         {
             model.Session.Dispose();
         }
-        _models.Clear();
+        _models.Value.Clear();
     }
 }
