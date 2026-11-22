@@ -32,7 +32,7 @@ Everything runs on no-cost services (Azure for Students and free tiers), as the 
 1. Work happens on a feature branch per member or task, and reaches `main` through a pull request merged with a merge commit.
 2. GitHub Actions runs Backend CI, Frontend CI and Flutter CI on the pull request and again on `main`.
 3. Deployment is a deliberate manual step, run from `main` by the team member who manages the Azure subscription:
-   - **API:** `.\deploy\publish-backend.ps1 -ResourceGroup agrilink-rg -AppName agrilink-api-sl`. It runs `dotnet publish` for Linux, includes the ONNX models from `ml/models` (the script stops if they are missing), zips the output and zip-deploys it. Azure reports `RuntimeSuccessful` when the new version starts, and the API applies pending migrations at start-up.
+   - **API:** `.\deploy\publish-backend.ps1 -ResourceGroup agrilink-rg -AppName agrilink-api-sl`. It runs `dotnet publish` for Linux, includes the ONNX models from `ml/models` (the script stops if they are missing), zips the output and zip-deploys it. Azure reports `RuntimeSuccessful` when the new version starts, and the API applies pending migrations at start-up. With `Database__MigrateOnStartup=false` the script applies them (`--migrate`) before uploading instead, which keeps them out of cold starts ([cold-starts.md](cold-starts.md)).
    - **Web:** `npm ci`, then `npm run build` with `VITE_API_BASE_URL=https://agrilink-api-sl.azurewebsites.net`, then `npx @azure/static-web-apps-cli deploy ./dist --env production` with the deployment token read from Azure at deploy time.
    - **Mobile:** `flutter build apk --release`, signed with the release key kept outside the repository.
 4. Before a deployment with a migration, the production database is backed up with `pg_dump`. The final deployment's backup is `production-before-final-deploy-2026-09-29.dump`.
@@ -46,7 +46,7 @@ Everything runs on no-cost services (Azure for Students and free tiers), as the 
 
 ## 10.4 Database deployment and initialisation
 
-On start-up the API applies every pending EF Core migration (`Database.MigrateAsync`), seeds the four roles, and creates the administrator from `AdminSeed__*` if that account does not exist yet. A new environment needs only an empty PostgreSQL database and the settings above. The demonstration accounts and farm data were created through the API, so they follow every business rule.
+On start-up the API applies every pending EF Core migration (`Database.MigrateAsync`), seeds the four roles, and creates the administrator from `AdminSeed__*` if that account does not exist yet. Setting `Database__MigrateOnStartup=false` moves this work to deploy time (`dotnet AgriLink.API.dll --migrate`, run by the publish script); see [cold-starts.md](cold-starts.md). A new environment needs only an empty PostgreSQL database and the settings above. The demonstration accounts and farm data were created through the API, so they follow every business rule.
 
 ## 10.5 Starting the Agentic AI language model
 
@@ -80,6 +80,6 @@ Requirements: LM Studio 0.4+, the model (about 17 GB), an NVIDIA GPU with at lea
 ## 10.7 Availability and known constraints
 
 - The team keeps all services running until at least 21 October 2026.
-- The F1 plan has no always-on, so expect a cold start of up to about 40 s after idle periods, and it has a daily CPU quota.
+- The F1 plan has no always-on, so expect a cold start of up to about 40 s after idle periods, and it has a daily CPU quota. [cold-starts.md](cold-starts.md) explains what the API does to shorten it and the hosting options (keep-warm ping, Always On).
 - The language-model Planner is available only while the team laptop runs the tunnel, which it will during the demonstration. At other times the rules plan, and every advisory records which planner was used.
 - If a free service has an outage near the evaluation, the team will tell the evaluator and provide evidence of the outage, as the specification asks.
