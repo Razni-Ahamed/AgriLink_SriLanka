@@ -17,6 +17,11 @@ using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 
+// "--migrate" runs the deployment's database work (StartupDatabaseTasks) and exits without serving.
+// It is removed before configuration reads the arguments, which expects "--key value" pairs.
+var migrateOnly = args.Contains(StartupDatabaseTasks.MigrateOnlyArgument, StringComparer.OrdinalIgnoreCase);
+args = args.Where(a => !string.Equals(a, StartupDatabaseTasks.MigrateOnlyArgument, StringComparison.OrdinalIgnoreCase)).ToArray();
+
 var builder = WebApplication.CreateBuilder(args);
 
 const string FrontendCorsPolicy = "FrontendCorsPolicy";
@@ -118,6 +123,7 @@ builder.Services.AddSingleton<IImageClassifier>(sp =>
         TimeSpan.FromSeconds(options.TimeoutSeconds),
         sp.GetRequiredService<ILogger<OnnxImageClassifier>>());
 });
+builder.Services.AddHostedService<ImageClassifierWarmup>();
 
 builder.Services.AddScoped<IPlannerAgent, PlannerAgent>();
 builder.Services.AddScoped<ICropAnalysisAgent, CropAnalysisAgent>();
@@ -267,28 +273,29 @@ builder.Services.AddSwaggerGen(options =>
 
 var app = builder.Build();
 
-// ----- Apply migrations, then seed roles and the bootstrap admin on startup -----
-using (var scope = app.Services.CreateScope())
+// ----- Migrations and seeding -----
+// Migrations, the username backfill and role/admin seeding (StartupDatabaseTasks) used to run on
+// every start, in front of the first request after a cold start. Database:MigrateOnStartup (default
+// true) keeps that for new environments and local development; a host that sets it to false runs
+// the same work at deploy time with "--migrate" instead (see docs/deployment/cold-starts.md).
+if (migrateOnly)
 {
-    await scope.ServiceProvider.GetRequiredService<AgriLinkDbContext>().Database.MigrateAsync();
-
-    var loggerFactory = scope.ServiceProvider.GetRequiredService<ILoggerFactory>();
-    await UsernameBackfill.RunAsync(
-        scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>(),
-        loggerFactory.CreateLogger("UsernameBackfill"));
-
-    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole<int>>>();
-    await RoleSeeder.SeedAsync(roleManager);
-
-    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
-    var adminSeed = scope.ServiceProvider.GetRequiredService<IOptions<AdminSeedOptions>>().Value;
-    var seedLogger = loggerFactory.CreateLogger("AdminSeeder");
-    await AdminSeeder.SeedAsync(userManager, adminSeed, seedLogger);
+    await StartupDatabaseTasks.RunAsync(app.Services);
+    app.Logger.LogInformation("Database migrations and seeding finished (--migrate); exiting.");
+    return;
 }
 
-// Load the photo models now rather than on the first farmer's upload, so a missing or invalid
-// model shows up in the startup log.
-app.Services.GetRequiredService<IImageClassifier>();
+if (app.Configuration.GetValue(StartupDatabaseTasks.MigrateOnStartupKey, true))
+{
+    await StartupDatabaseTasks.RunAsync(app.Services);
+}
+else
+{
+    app.Logger.LogInformation("Skipping migrations and seeding at start-up ({Key} is false); run the API with --migrate at deploy time.", StartupDatabaseTasks.MigrateOnStartupKey);
+}
+
+// The photo models load in the background once the API is listening (ImageClassifierWarmup), so
+// they no longer delay the first request after a cold start.
 
 var llmOptions = app.Services.GetRequiredService<IOptions<LlmOptions>>().Value;
 app.Logger.LogInformation(
@@ -325,5 +332,12 @@ app.MapControllers();
 
 // Public liveness/readiness probe for the host and evaluators: 200 "Healthy" or 503 "Unhealthy".
 app.MapHealthChecks("/health");
+
+// Liveness only: answers without touching the database. Point keep-warm pings here, so they keep
+// the App Service instance loaded without also keeping the (separately billed) database awake.
+app.MapHealthChecks("/health/live", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
+{
+    Predicate = _ => false,
+});
 
 app.Run();

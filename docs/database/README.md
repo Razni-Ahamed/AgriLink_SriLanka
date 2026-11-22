@@ -6,7 +6,7 @@
 
 ## 4.1 Approach
 
-The database is **PostgreSQL**, accessed through **EF Core 8 with the Npgsql provider**, code first. The C# entities in `Models/` and the fluent configuration in `AgriLinkDbContext.OnModelCreating` define the schema. It evolved through **14 migrations**, all applied to production (§10.6). The API applies pending migrations at start-up, and an integration test fails if the model has a change without a migration.
+The database is **PostgreSQL**, accessed through **EF Core 8 with the Npgsql provider**, code first. The C# entities in `Models/` and the fluent configuration in `AgriLinkDbContext.OnModelCreating` define the schema. It evolved through **14 migrations**, all applied to production (§10.6). The API applies pending migrations at start-up (or at deploy time with `--migrate` when `Database__MigrateOnStartup=false`), and an integration test fails if the model has a change without a migration.
 
 **Migrations in order**
 
@@ -89,7 +89,7 @@ What is **not** stored: hidden model reasoning (thinking is switched off), promp
 
 ## 4.8 Seed data
 
-- **At start-up:** the four roles (`RoleSeeder`), and the administrator from configuration (`AdminSeeder`). `UsernameBackfill` gives older accounts a username.
+- **At start-up** (or at deploy time with `--migrate`, see [cold starts](../deployment/cold-starts.md)): the four roles (`RoleSeeder`), and the administrator from configuration (`AdminSeeder`). `UsernameBackfill` gives older accounts a username.
 - **Reference data in code:** the 25 districts of Sri Lanka and their coordinates, crop types, the crop and disease knowledge bases. These are fixed lists validated on input, so the database cannot hold an unknown district or crop.
 - **Demonstration data (production):** 12 farmers in six districts with 12 farms, 24 fields, 24 crops and 12 harvest listings; 6 officers (one per district) in the Agriculture department; 10 buyers. They were created through the API, so every business rule applied.
 

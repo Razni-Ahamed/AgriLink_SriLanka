@@ -29,7 +29,9 @@ az webapp config appsettings set -g agrilink-rg -n <api-name> --settings `
   "Swagger__Enabled=true"
 ```
 
-Migrations run automatically on startup.
+Migrations run automatically on startup. To keep them out of cold starts, set
+`Database__MigrateOnStartup=false` and let the publish script run them at deploy time: see
+[cold-starts.md](cold-starts.md).
 
 ## Deploy / redeploy the API
 
@@ -64,6 +66,7 @@ az webapp config appsettings set -g agrilink-rg -n <api-name> --settings "Cors__
 ## Notes
 
 - F1 has no Always On: the API sleeps when idle and the first request after that is slow. Open it a few
-  minutes before a demo.
+  minutes before a demo. [cold-starts.md](cold-starts.md) covers keep-warm pings on `/health/live` and
+  the paid Always On option.
 - F1 allows 60 CPU-minutes/day; heavy photo classification during a demo is fine, load testing is not.
 - Never commit `appsettings.Development.json`; the publish excludes it.
