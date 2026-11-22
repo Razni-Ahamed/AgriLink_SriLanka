@@ -1,11 +1,18 @@
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import { CropCardPhoto } from '@/components/canopy/CropCardPhoto'
 import { SeasonVine } from '@/components/canopy/SeasonVine'
-import { cropPhoto, cropPhotoSrcSet } from '@/lib/cropPhotos'
 import { seasonProgress } from '@/lib/season'
 import { useCropLabel } from '@/lib/useCropLabel'
 import { useStatusLabel } from '@/lib/useStatusLabel'
 import type { FarmerCropSummary } from '@/types/dto/crops'
+
+/**
+ * The card's width in FarmsListPage's grid (1, 2, then 3 columns inside the 1280 px page), less the
+ * page's padding and the grid's gaps. Measured in a browser; keep it in step with that grid.
+ */
+const PHOTO_SIZES =
+  '(min-width: 1280px) 397px, (min-width: 1024px) calc((100vw - 88px) / 3), calc((100vw - 68px) / 2)'
 
 /**
  * A growing crop as its own photo, with the season on a glass panel over the bottom: a vine that
@@ -23,14 +30,10 @@ export function CropSeasonCard({ crop }: { crop: FarmerCropSummary }) {
       to={`/farms/${crop.farmId}/fields/${crop.fieldId}/crops/${crop.cropId}`}
       className="group relative isolate flex min-h-[230px] flex-col justify-between overflow-hidden rounded-[28px] bg-brand-ink p-3 text-white shadow-lg outline-none transition-transform duration-300 ease-[cubic-bezier(0.22,1.2,0.36,1)] hover:-translate-y-1 focus-visible:ring-2 focus-visible:ring-brand-forest/60"
     >
-      <img
-        src={cropPhoto(crop.cropType)}
-        srcSet={cropPhotoSrcSet(crop.cropType)}
-        sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
-        alt=""
-        aria-hidden="true"
-        loading="lazy"
-        decoding="async"
+      <CropCardPhoto
+        cropType={crop.cropType}
+        phoneSize="calc(100vw - 32px)"
+        sizes={PHOTO_SIZES}
         className="absolute inset-0 -z-20 size-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.05]"
       />
       <div

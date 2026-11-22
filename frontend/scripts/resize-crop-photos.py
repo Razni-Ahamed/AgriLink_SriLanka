@@ -1,4 +1,4 @@
-"""Make the 480 px (cards) and 192 px (thumbnails) copies of the 800 x 600 crop photos.
+"""Make the 640 and 480 px (cards) and 192 px (thumbnails) copies of the 800 x 600 crop photos.
 
 Run from frontend/ after adding or replacing a photo in src/assets/crops/:
     python3 scripts/resize-crop-photos.py
@@ -10,7 +10,7 @@ from pathlib import Path
 from PIL import Image
 
 CROPS = Path(__file__).resolve().parent.parent / "src" / "assets" / "crops"
-WIDTHS = {480: 74, 192: 72}  # width -> WebP quality
+WIDTHS = {640: 74, 480: 74, 192: 72}  # width -> WebP quality
 
 for width, quality in WIDTHS.items():
     out_dir = CROPS / str(width)
