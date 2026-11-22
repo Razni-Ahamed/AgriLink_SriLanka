@@ -419,7 +419,12 @@ public class IssuesController : ControllerBase
     }
 
     /// <summary>Issues whose title, description, crop, variety, district or reporter contain the term.</summary>
-    private static IQueryable<CropIssue> Search(IQueryable<CropIssue> query, string? search)
+    /// <remarks>
+    /// One OR across columns of several joined tables can't use any index, so for terms long
+    /// enough to use the trigram indexes (see the AddSearchIndexes migration) each table is matched
+    /// on its own and the ids are unioned. The issues that match are the same either way.
+    /// </remarks>
+    private IQueryable<CropIssue> Search(IQueryable<CropIssue> query, string? search)
     {
         if (string.IsNullOrWhiteSpace(search))
         {
@@ -427,12 +432,29 @@ public class IssuesController : ControllerBase
         }
 
         var term = search.Trim().ToLower();
-        return query.Where(i => i.Title.ToLower().Contains(term)
-            || i.Description.ToLower().Contains(term)
-            || i.Crop.CropType.ToLower().Contains(term)
-            || i.Crop.Variety.ToLower().Contains(term)
-            || i.Crop.Field.Farm.District.ToLower().Contains(term)
-            || i.FarmerProfile.User.FullName.ToLower().Contains(term));
+        if (term.Length < SearchTerms.MinIndexedLength)
+        {
+            return query.Where(i => i.Title.ToLower().Contains(term)
+                || i.Description.ToLower().Contains(term)
+                || i.Crop.CropType.ToLower().Contains(term)
+                || i.Crop.Variety.ToLower().Contains(term)
+                || i.Crop.Field.Farm.District.ToLower().Contains(term)
+                || i.FarmerProfile.User.FullName.ToLower().Contains(term));
+        }
+
+        var matchingIds = _db.CropIssues
+            .Where(i => i.Title.ToLower().Contains(term) || i.Description.ToLower().Contains(term))
+            .Select(i => i.IssueId)
+            .Union(_db.CropIssues
+                .Where(i => i.Crop.CropType.ToLower().Contains(term) || i.Crop.Variety.ToLower().Contains(term))
+                .Select(i => i.IssueId))
+            .Union(_db.CropIssues
+                .Where(i => i.Crop.Field.Farm.District.ToLower().Contains(term))
+                .Select(i => i.IssueId))
+            .Union(_db.CropIssues
+                .Where(i => i.FarmerProfile.User.FullName.ToLower().Contains(term))
+                .Select(i => i.IssueId));
+        return query.Where(i => matchingIds.Contains(i.IssueId));
     }
 
     /// <summary>newest (the default), oldest or severity; null for anything else.</summary>
