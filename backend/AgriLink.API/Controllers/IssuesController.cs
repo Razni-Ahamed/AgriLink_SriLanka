@@ -208,11 +208,16 @@ public class IssuesController : ControllerBase
         }
 
         var query = _db.CropIssues
+            // Read-only lists: no change tracking, and the two collections (advice, photos) load
+            // in their own queries instead of multiplying every row of the joined result.
+            .AsNoTracking()
+            .AsSplitQuery()
             .Include(i => i.Advisories)
             .Include(i => i.Images)
             .Include(i => i.Crop).ThenInclude(c => c.Field).ThenInclude(f => f.Farm)
             .Where(i => i.FarmerProfileId == farmerProfileId)
-            .OrderByDescending(i => i.CreatedAt);
+            .OrderByDescending(i => i.CreatedAt)
+            .ThenByDescending(i => i.IssueId);
 
         var paged = await query.ToPagedResponseAsync(page, pageSize, cancellationToken);
         return Ok(paged.Map(i => ToResponse(i, includeReporter: false)));
@@ -233,6 +238,10 @@ public class IssuesController : ControllerBase
         CancellationToken cancellationToken = default)
     {
         var query = _db.CropIssues
+            // Read-only lists: no change tracking, and the two collections (advice, photos) load
+            // in their own queries instead of multiplying every row of the joined result.
+            .AsNoTracking()
+            .AsSplitQuery()
             .Include(i => i.Advisories)
             .Include(i => i.Images)
             .Include(i => i.Crop).ThenInclude(c => c.Field).ThenInclude(f => f.Farm)
@@ -263,6 +272,7 @@ public class IssuesController : ControllerBase
                     .Select(a => a.Status)
                     .FirstOrDefault() == AdvisoryStatus.Preliminary ? 1 : 0)
                 .ThenBy(i => i.CreatedAt)
+                .ThenBy(i => i.IssueId)
             : Sort(query, sort);
         if (ordered is null)
         {
@@ -345,6 +355,10 @@ public class IssuesController : ControllerBase
         var userId = _currentUser.GetUserId(User);
 
         var query = _db.CropIssues
+            // Read-only lists: no change tracking, and the two collections (advice, photos) load
+            // in their own queries instead of multiplying every row of the joined result.
+            .AsNoTracking()
+            .AsSplitQuery()
             .Include(i => i.Advisories)
             .Include(i => i.Images)
             .Include(i => i.Crop).ThenInclude(c => c.Field).ThenInclude(f => f.Farm)
@@ -358,7 +372,8 @@ public class IssuesController : ControllerBase
         var ordered = query
             .OrderByDescending(i => i.Advisories
                 .Where(a => a.ReviewedByFK == userId)
-                .Max(a => (DateTime?)a.ReviewedAt));
+                .Max(a => (DateTime?)a.ReviewedAt))
+            .ThenByDescending(i => i.IssueId);
 
         var paged = await ordered.ToPagedResponseAsync(page, pageSize, cancellationToken);
         return Ok(paged.Map(i => ToResponse(i, includeReporter: true)));
@@ -379,6 +394,10 @@ public class IssuesController : ControllerBase
         CancellationToken cancellationToken = default)
     {
         IQueryable<CropIssue> query = _db.CropIssues
+            // Read-only lists: no change tracking, and the two collections (advice, photos) load
+            // in their own queries instead of multiplying every row of the joined result.
+            .AsNoTracking()
+            .AsSplitQuery()
             .Include(i => i.Advisories)
             .Include(i => i.Images)
             .Include(i => i.Crop).ThenInclude(c => c.Field).ThenInclude(f => f.Farm)
@@ -400,7 +419,12 @@ public class IssuesController : ControllerBase
     }
 
     /// <summary>Issues whose title, description, crop, variety, district or reporter contain the term.</summary>
-    private static IQueryable<CropIssue> Search(IQueryable<CropIssue> query, string? search)
+    /// <remarks>
+    /// One OR across columns of several joined tables can't use any index, so for terms long
+    /// enough to use the trigram indexes (see the AddSearchIndexes migration) each table is matched
+    /// on its own and the ids are unioned. The issues that match are the same either way.
+    /// </remarks>
+    private IQueryable<CropIssue> Search(IQueryable<CropIssue> query, string? search)
     {
         if (string.IsNullOrWhiteSpace(search))
         {
@@ -408,24 +432,42 @@ public class IssuesController : ControllerBase
         }
 
         var term = search.Trim().ToLower();
-        return query.Where(i => i.Title.ToLower().Contains(term)
-            || i.Description.ToLower().Contains(term)
-            || i.Crop.CropType.ToLower().Contains(term)
-            || i.Crop.Variety.ToLower().Contains(term)
-            || i.Crop.Field.Farm.District.ToLower().Contains(term)
-            || i.FarmerProfile.User.FullName.ToLower().Contains(term));
+        if (term.Length < SearchTerms.MinIndexedLength)
+        {
+            return query.Where(i => i.Title.ToLower().Contains(term)
+                || i.Description.ToLower().Contains(term)
+                || i.Crop.CropType.ToLower().Contains(term)
+                || i.Crop.Variety.ToLower().Contains(term)
+                || i.Crop.Field.Farm.District.ToLower().Contains(term)
+                || i.FarmerProfile.User.FullName.ToLower().Contains(term));
+        }
+
+        var matchingIds = _db.CropIssues
+            .Where(i => i.Title.ToLower().Contains(term) || i.Description.ToLower().Contains(term))
+            .Select(i => i.IssueId)
+            .Union(_db.CropIssues
+                .Where(i => i.Crop.CropType.ToLower().Contains(term) || i.Crop.Variety.ToLower().Contains(term))
+                .Select(i => i.IssueId))
+            .Union(_db.CropIssues
+                .Where(i => i.Crop.Field.Farm.District.ToLower().Contains(term))
+                .Select(i => i.IssueId))
+            .Union(_db.CropIssues
+                .Where(i => i.FarmerProfile.User.FullName.ToLower().Contains(term))
+                .Select(i => i.IssueId));
+        return query.Where(i => matchingIds.Contains(i.IssueId));
     }
 
     /// <summary>newest (the default), oldest or severity; null for anything else.</summary>
     private static IOrderedQueryable<CropIssue>? Sort(IQueryable<CropIssue> query, string? sort) =>
         (sort ?? "newest").ToLowerInvariant() switch
         {
-            "newest" => query.OrderByDescending(i => i.CreatedAt),
-            "oldest" => query.OrderBy(i => i.CreatedAt),
+            "newest" => query.OrderByDescending(i => i.CreatedAt).ThenByDescending(i => i.IssueId),
+            "oldest" => query.OrderBy(i => i.CreatedAt).ThenBy(i => i.IssueId),
             // Severity is stored as text, so rank it explicitly rather than alphabetically.
             "severity" => query
                 .OrderByDescending(i => i.Severity == IssueSeverity.High ? 3 : i.Severity == IssueSeverity.Medium ? 2 : 1)
-                .ThenBy(i => i.CreatedAt),
+                .ThenBy(i => i.CreatedAt)
+                .ThenBy(i => i.IssueId),
             _ => null,
         };
 

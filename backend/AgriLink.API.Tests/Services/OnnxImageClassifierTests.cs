@@ -128,4 +128,46 @@ public sealed class OnnxImageClassifierTests : IDisposable
 
         Assert.False(classifier.SupportsCrop("TestCrop"));
     }
+
+    [Fact]
+    public void Models_LoadOnFirstUse_NotInTheConstructor()
+    {
+        // Constructing the classifier must not read the folder: that cost used to sit in front of the
+        // API's first request after a cold start. Models added after construction are still found.
+        var root = Path.Combine(Path.GetTempPath(), "agrilink-models-tests", Guid.NewGuid().ToString("N"));
+        _tempDirectories.Add(root);
+
+        using var classifier = Create(root);
+        var target = Path.Combine(root, "testcrop");
+        Directory.CreateDirectory(target);
+        foreach (var file in Directory.EnumerateFiles(Path.Combine(FixtureModels, "testcrop")))
+        {
+            File.Copy(file, Path.Combine(target, Path.GetFileName(file)));
+        }
+
+        Assert.True(classifier.SupportsCrop("TestCrop"));
+    }
+
+    [Fact]
+    public async Task EnsureLoaded_CalledConcurrently_LoadsOnceAndClassifies()
+    {
+        using var classifier = Create(FixtureModels);
+
+        await Task.WhenAll(Enumerable.Range(0, 8).Select(_ => Task.Run(classifier.EnsureLoaded)));
+        var findings = await classifier.ClassifyAsync("TestCrop", SolidPng(SKColors.Red), CancellationToken.None);
+
+        Assert.Equal("red_disease", findings.Top.Key);
+    }
+
+    [Fact]
+    public void Dispose_BeforeTheModelsLoad_DoesNotLoadThem_AndLaterUseThrows()
+    {
+        var classifier = Create(FixtureModels);
+
+        classifier.Dispose();
+        classifier.Dispose();
+
+        Assert.Throws<ObjectDisposedException>(classifier.EnsureLoaded);
+        Assert.Throws<ObjectDisposedException>(() => classifier.SupportsCrop("TestCrop"));
+    }
 }

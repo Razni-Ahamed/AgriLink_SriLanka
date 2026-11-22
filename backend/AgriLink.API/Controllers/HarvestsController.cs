@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using AgriLink.API.Common;
 using AgriLink.API.Data;
 using AgriLink.API.DTOs.Harvests;
 using AgriLink.API.Models;
@@ -40,6 +41,15 @@ public class HarvestsController : ControllerBase
     /// free-text search (crop, variety, collection point or district) and a price range, in the
     /// order <paramref name="sort"/> asks for: newest (default), priceAsc, priceDesc, quantityDesc
     /// (most available first) or freshest (most recently harvested first).
+    /// <para>
+    /// <paramref name="cropTypes"/> is a comma-separated list (one crop group on the browse page);
+    /// a listing matches if its crop is any of them.
+    /// </para>
+    /// <para>
+    /// Paging is opt-in so older clients keep working: without <paramref name="page"/> or
+    /// <paramref name="pageSize"/> the response is the whole list as a plain array, exactly as
+    /// before. With either one it is a <see cref="PagedResponse{T}"/> holding just that page.
+    /// </para>
     /// </summary>
     [HttpGet]
     public async Task<ActionResult<List<HarvestListingResponse>>> GetAll(
@@ -48,9 +58,15 @@ public class HarvestsController : ControllerBase
         [FromQuery, StringLength(100)] string? search = null,
         [FromQuery, Range(0, HarvestLimits.MaxPricePerKg)] decimal? minPrice = null,
         [FromQuery, Range(0, HarvestLimits.MaxPricePerKg)] decimal? maxPrice = null,
-        [FromQuery] string? sort = null)
+        [FromQuery] string? sort = null,
+        [FromQuery, StringLength(2000)] string? cropTypes = null,
+        [FromQuery] int? page = null,
+        [FromQuery] int? pageSize = null,
+        CancellationToken cancellationToken = default)
     {
         var query = _db.HarvestListings
+            // Read-only: nothing here is saved, so skip change tracking.
+            .AsNoTracking()
             .Include(h => h.Crop).ThenInclude(c => c.Field).ThenInclude(f => f.Farm)
             // A deactivated farmer can't answer requests, so their listings leave the marketplace
             // until the account is reactivated.
@@ -62,6 +78,19 @@ public class HarvestsController : ControllerBase
             query = query.Where(h => h.Crop.CropType.ToLower() == cropType.ToLower());
         }
 
+        if (!string.IsNullOrWhiteSpace(cropTypes))
+        {
+            var anyOf = cropTypes
+                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Select(c => c.ToLower())
+                .Distinct()
+                .ToList();
+            if (anyOf.Count > 0)
+            {
+                query = query.Where(h => anyOf.Contains(h.Crop.CropType.ToLower()));
+            }
+        }
+
         if (!string.IsNullOrWhiteSpace(district))
         {
             query = query.Where(h => h.Crop.Field.Farm.District.ToLower() == district.ToLower());
@@ -70,10 +99,30 @@ public class HarvestsController : ControllerBase
         if (!string.IsNullOrWhiteSpace(search))
         {
             var term = search.Trim().ToLower();
-            query = query.Where(h => h.Crop.CropType.ToLower().Contains(term)
-                || h.Crop.Variety.ToLower().Contains(term)
-                || h.Location.ToLower().Contains(term)
-                || h.Crop.Field.Farm.District.ToLower().Contains(term));
+            if (term.Length < SearchTerms.MinIndexedLength)
+            {
+                query = query.Where(h => h.Crop.CropType.ToLower().Contains(term)
+                    || h.Crop.Variety.ToLower().Contains(term)
+                    || h.Location.ToLower().Contains(term)
+                    || h.Crop.Field.Farm.District.ToLower().Contains(term));
+            }
+            else
+            {
+                // One OR across columns of four joined tables can't use any index, so PostgreSQL
+                // would scan every listing, crop and farm. Matching each table on its own and
+                // taking the union lets each branch use its trigram index (see the
+                // AddSearchIndexes migration); the listings that match are the same.
+                var matchingIds = _db.HarvestListings
+                    .Where(h => h.Crop.CropType.ToLower().Contains(term) || h.Crop.Variety.ToLower().Contains(term))
+                    .Select(h => h.HarvestId)
+                    .Union(_db.HarvestListings
+                        .Where(h => h.Location.ToLower().Contains(term))
+                        .Select(h => h.HarvestId))
+                    .Union(_db.HarvestListings
+                        .Where(h => h.Crop.Field.Farm.District.ToLower().Contains(term))
+                        .Select(h => h.HarvestId));
+                query = query.Where(h => matchingIds.Contains(h.HarvestId));
+            }
         }
 
         if (minPrice is decimal min)
@@ -86,7 +135,7 @@ public class HarvestsController : ControllerBase
             query = query.Where(h => h.PricePerUnit <= max);
         }
 
-        IQueryable<HarvestListing>? ordered = (sort ?? "newest").ToLowerInvariant() switch
+        IOrderedQueryable<HarvestListing>? ordered = (sort ?? "newest").ToLowerInvariant() switch
         {
             "newest" => query.OrderByDescending(h => h.CreatedAt),
             "priceasc" => query.OrderBy(h => h.PricePerUnit).ThenByDescending(h => h.CreatedAt),
@@ -100,7 +149,17 @@ public class HarvestsController : ControllerBase
             return BadRequest(new { message = "sort must be newest, priceAsc, priceDesc, quantityDesc or freshest." });
         }
 
-        var listings = await ordered.ToListAsync();
+        // Listings created in the same instant would otherwise swap places between page requests.
+        ordered = ordered.ThenByDescending(h => h.HarvestId);
+
+        if (page is not null || pageSize is not null)
+        {
+            var paged = await ordered.ToPagedResponseAsync(
+                page ?? 1, pageSize ?? PagingExtensions.DefaultPageSize, cancellationToken);
+            return Ok(paged.Map(ToResponse));
+        }
+
+        var listings = await ordered.ToListAsync(cancellationToken);
         return Ok(listings.Select(ToResponse));
     }
 

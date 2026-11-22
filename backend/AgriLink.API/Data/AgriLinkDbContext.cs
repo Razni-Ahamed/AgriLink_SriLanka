@@ -66,6 +66,11 @@ public class AgriLinkDbContext : IdentityDbContext<ApplicationUser, IdentityRole
     {
         base.OnModelCreating(builder);
 
+        // Trigram indexes let the case-insensitive "contains" searches (lower(column) LIKE '%term%')
+        // use an index. EF can't describe indexes on lower(column), so the AddSearchIndexes
+        // migration creates them in SQL.
+        builder.HasPostgresExtension("pg_trgm");
+
         builder.Entity<ApplicationUser>(entity =>
         {
             entity.Property(u => u.RegistrationStatus).HasConversion<string>().HasMaxLength(20);
@@ -183,6 +188,9 @@ public class AgriLinkDbContext : IdentityDbContext<ApplicationUser, IdentityRole
             entity.Property(i => i.Severity).HasConversion<string>().HasMaxLength(20);
             entity.Property(i => i.Status).HasConversion<string>().HasMaxLength(20);
             entity.HasIndex(i => i.Status);
+            // The issue lists filter by status or by farmer and sort by report time, newest first.
+            entity.HasIndex(i => new { i.Status, i.CreatedAt });
+            entity.HasIndex(i => new { i.FarmerProfileId, i.CreatedAt });
             entity.HasOne(i => i.Crop)
                 .WithMany()
                 .HasForeignKey(i => i.CropId)
@@ -260,6 +268,8 @@ public class AgriLinkDbContext : IdentityDbContext<ApplicationUser, IdentityRole
             entity.Property(h => h.Status).HasConversion<string>().HasMaxLength(20);
             entity.Property(h => h.Unit).HasConversion<string>().HasMaxLength(10);
             entity.HasIndex(h => h.Status);
+            // The public marketplace lists Active listings newest first.
+            entity.HasIndex(h => new { h.Status, h.CreatedAt });
             entity.HasOne(h => h.FarmerProfile)
                 .WithMany()
                 .HasForeignKey(h => h.FarmerProfileId)
@@ -317,7 +327,9 @@ public class AgriLinkDbContext : IdentityDbContext<ApplicationUser, IdentityRole
         {
             entity.Property(n => n.Title).HasMaxLength(150).IsRequired();
             entity.Property(n => n.Message).IsRequired();
-            entity.HasIndex(n => n.UserId);
+            // The bell polls a user's newest notifications every 30 s; this also serves the
+            // UserId foreign key.
+            entity.HasIndex(n => new { n.UserId, n.CreatedAt });
             entity.HasOne(n => n.User)
                 .WithMany()
                 .HasForeignKey(n => n.UserId)

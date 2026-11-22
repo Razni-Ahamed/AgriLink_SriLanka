@@ -40,7 +40,7 @@ export function LanguageSwitcher({ variant = 'full', className }: LanguageSwitch
           onClick={() => setLanguage(code)}
           aria-pressed={language === code}
           className={cn(
-            'rounded-lg px-2.5 py-1 text-xs font-medium transition-colors',
+            'rounded-lg px-2.5 py-1 font-language-names text-xs font-medium transition-colors',
             language === code
               ? 'bg-brand-forest text-bg-surface'
               : 'text-text-secondary hover:bg-brand-forest/10 hover:text-brand-forest',

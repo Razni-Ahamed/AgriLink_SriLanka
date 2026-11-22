@@ -1,11 +1,16 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import * as ordersApi from '../api/ordersApi'
 
 const ordersKey = ['orders'] as const
 const orderKey = (orderId: number) => ['orders', 'detail', orderId] as const
 
-export function useOrders() {
-  return useQuery({ queryKey: ordersKey, queryFn: ordersApi.getMyOrders })
+/** One page of the caller's orders; under ['orders'], so completing or cancelling refreshes it. */
+export function useOrdersPage(page: number) {
+  return useQuery({
+    queryKey: ['orders', 'mine', page] as const,
+    queryFn: () => ordersApi.getMyOrdersPage(page),
+    placeholderData: keepPreviousData,
+  })
 }
 
 export function useOrder(orderId: number) {

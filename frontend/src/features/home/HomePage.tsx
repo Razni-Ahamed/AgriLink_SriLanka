@@ -13,11 +13,11 @@ import { Skeleton } from '@/components/ui/Skeleton'
 import { LanguageCycleButton, ThemeCycleButton } from '@/components/ui/PreferenceCycleButtons'
 import { StaggerList } from '@/components/ui/motion/StaggerList'
 import { HarvestCard } from '@/features/marketplace/components/HarvestCard'
-import { useHarvests } from '@/features/marketplace/hooks/useHarvests'
+import { useLatestHarvests } from '@/features/marketplace/hooks/useHarvests'
 import { GlassLens } from '@/components/canopy/GlassLens'
 import { onPhotoButton } from '@/components/canopy/onPhoto'
 import { Odometer } from '@/components/canopy/Odometer'
-import { cropPhoto } from '@/lib/cropPhotos'
+import { cropThumb } from '@/lib/cropPhotos'
 import { spring } from '@/lib/motion'
 import { useUnits } from '@/lib/units'
 import { useCropLabel } from '@/lib/useCropLabel'
@@ -25,6 +25,12 @@ import { cn } from '@/lib/utils'
 import { PHOTOS, type HomePhoto } from './homePhotos'
 
 const PREVIEW_COUNT = 6
+/**
+ * The listing photos' width in the preview grid (2, then 3 columns inside the 1280 px section, whose
+ * padding grows to 32 px), less the gaps and each card's 6 px padding and border.
+ */
+const HOME_GRID_PHOTO_SIZES =
+  '(min-width: 1280px) 381px, (min-width: 1024px) calc((100vw - 96px) / 3 - 14px), calc((100vw - 64px) / 2 - 14px)'
 
 /**
  * The public landing page at `/` for visitors who aren't signed in. It stands outside AppLayout
@@ -175,7 +181,7 @@ function PriceBoard() {
   const districtLabel = useDistrictLabel()
   const cropLabel = useCropLabel()
   const units = useUnits()
-  const { data: harvests, isLoading } = useHarvests({ sort: 'newest' })
+  const { data: harvests, isLoading } = useLatestHarvests()
   const rows = (harvests ?? []).filter((harvest) => harvest.status === 'Active').slice(0, 5)
 
   return (
@@ -211,14 +217,17 @@ function PriceBoard() {
                 className="grid grid-cols-[2.75rem_minmax(0,1fr)_auto] items-center gap-3 rounded-xl px-1 py-2.5 transition-colors hover:bg-white/[0.06]"
               >
                 <img
-                  src={cropPhoto(harvest.cropType)}
+                  src={cropThumb(harvest.cropType)}
                   alt=""
                   aria-hidden="true"
+                  decoding="async"
                   className="size-11 rounded-xl object-cover"
                 />
                 <span className="min-w-0">
                   <b className="block truncate font-semibold">{cropLabel(harvest.cropType)}</b>
-                  <span className="block truncate text-xs text-white/65">{districtLabel(harvest.district)}</span>
+                  <span className="block truncate text-xs text-white/65">
+                    {districtLabel(harvest.district)}
+                  </span>
                 </span>
                 <span className="text-right">
                   <span className="font-display text-xl font-bold">
@@ -497,8 +506,9 @@ function StorySection() {
 
 function MarketplacePreview() {
   const { t } = useTranslation('home')
-  // GET /api/harvests is public and returns Active listings newest first.
-  const { data: harvests, isLoading, isError } = useHarvests()
+  // GET /api/harvests is public and returns Active listings newest first. Same query as the price
+  // board above, so the home page fetches the listings once, and only the few it shows.
+  const { data: harvests, isLoading, isError } = useLatestHarvests()
   const preview = harvests?.slice(0, PREVIEW_COUNT)
 
   return (
@@ -532,7 +542,7 @@ function MarketplacePreview() {
         <StaggerList className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {preview.map((harvest) => (
             <StaggerList.Item key={harvest.harvestId}>
-              <HarvestCard harvest={harvest} />
+              <HarvestCard harvest={harvest} photoSizes={HOME_GRID_PHOTO_SIZES} />
             </StaggerList.Item>
           ))}
         </StaggerList>

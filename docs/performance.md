@@ -72,7 +72,7 @@ A cold start was also observed. The first request after an idle period (the Swag
 
 - **Paging.** Lists that grow (issues, review queues, notifications, audit log, change requests) are paged in the database. The mobile app uses one reusable `PagedListController` with infinite scroll and pull-to-refresh.
 - **Smaller photos.** The mobile app resizes photos to 1600 px on the long side and re-encodes them as JPEG before upload. The API also caps uploads at 5 MB and re-encodes them, which keeps both upload time and classification time predictable.
-- **In-process inference.** The ONNX models run inside the API, with no call to a separate model service. They are loaded once at start-up, so the first farmer's upload does not pay the loading cost, and a missing model shows up in the start-up log.
+- **In-process inference.** The ONNX models run inside the API, with no call to a separate model service. They load once, in the background right after start-up, so neither the first request after a cold start nor the first farmer's upload waits for them, and a missing model still shows up in the start-up log.
 - **Timeouts sized to the work.**
   - The mobile API client waits up to 30 s to connect, 45 s for a normal answer and 60 s to send.
   - Issue submission, which runs the agents, waits up to 120 s.
@@ -89,6 +89,6 @@ A cold start was also observed. The first request after an idle period (the Swag
   - The health check opens a new database connection each time, which explains its 1.7 s.
 - **Recommendations for production use:**
   1. Put the API and database in the same region (for example Neon in AWS ap-southeast-1 with Azure Southeast Asia).
-  2. Use a Basic (B1) plan with always-on to remove cold starts.
+  2. Use a Basic (B1) plan with always-on to remove cold starts, or keep F1 warm with a free ping on `/health/live`. Migrations and model loading no longer have to sit in the cold start: see [deployment/cold-starts.md](deployment/cold-starts.md).
   3. Add response caching for the public marketplace.
   4. ~~Add ASP.NET Core rate limiting to protect the shared resources.~~ Done: see `Services/RateLimiting/` (sign-in 20 a minute per address, reports and photos 10 per 10 minutes per account, chat 30 a minute, 300 requests a minute overall).

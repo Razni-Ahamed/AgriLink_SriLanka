@@ -12,11 +12,17 @@ using AgriLink.API.Services.RateLimiting;
 using AgriLink.API.Services.Weather;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+
+// "--migrate" runs the deployment's database work (StartupDatabaseTasks) and exits without serving.
+// It is removed before configuration reads the arguments, which expects "--key value" pairs.
+var migrateOnly = args.Contains(StartupDatabaseTasks.MigrateOnlyArgument, StringComparer.OrdinalIgnoreCase);
+args = args.Where(a => !string.Equals(a, StartupDatabaseTasks.MigrateOnlyArgument, StringComparison.OrdinalIgnoreCase)).ToArray();
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -26,7 +32,14 @@ const string FrontendCorsPolicy = "FrontendCorsPolicy";
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? throw new InvalidOperationException("ConnectionStrings:DefaultConnection is not configured.");
 
-builder.Services.AddDbContext<AgriLinkDbContext>(options => options.UseNpgsql(connectionString));
+// The per-request account check (see OnTokenValidated below) reads through AccountStateCache;
+// the interceptor evicts a user's cached state whenever their row is saved.
+builder.Services.AddMemoryCache();
+builder.Services.AddSingleton<AccountStateCache>();
+builder.Services.AddSingleton<AccountStateInvalidationInterceptor>();
+builder.Services.AddDbContext<AgriLinkDbContext>((sp, options) => options
+    .UseNpgsql(connectionString)
+    .AddInterceptors(sp.GetRequiredService<AccountStateInvalidationInterceptor>()));
 
 // ----- Identity -----
 builder.Services.AddIdentityCore<ApplicationUser>(options =>
@@ -77,6 +90,8 @@ builder.Services.AddAuthentication(options =>
         // A token outlives the account state it was issued for (8 hours), so deactivating a user
         // only took effect at their next login. Re-check the account — and, since a password
         // change rotates SecurityStamp, the token's own "stamp" claim — on every request instead.
+        // The account's state is cached for a few seconds (AccountStateCache) and evicted the
+        // moment the user row is saved, so this stays as strict without a query per request.
         options.Events = new JwtBearerEvents
         {
             OnTokenValidated = async context =>
@@ -138,6 +153,7 @@ builder.Services.AddSingleton<IImageClassifier>(sp =>
         TimeSpan.FromSeconds(options.TimeoutSeconds),
         sp.GetRequiredService<ILogger<OnnxImageClassifier>>());
 });
+builder.Services.AddHostedService<ImageClassifierWarmup>();
 
 builder.Services.AddScoped<IPlannerAgent, PlannerAgent>();
 builder.Services.AddScoped<ICropAnalysisAgent, CropAnalysisAgent>();
@@ -150,8 +166,8 @@ builder.Services.AddHttpClient<IWeatherAgent, WeatherAgent>((sp, client) =>
     client.Timeout = TimeSpan.FromSeconds(options.TimeoutSeconds);
 });
 
-// The farmer's home-page forecast: the same provider and settings, cached per district.
-builder.Services.AddMemoryCache();
+// The farmer's home-page forecast: the same provider and settings, cached per district
+// (in the IMemoryCache registered with the database above).
 builder.Services.AddHttpClient<IForecastService, ForecastService>((sp, client) =>
 {
     var options = sp.GetRequiredService<IOptions<WeatherOptions>>().Value;
@@ -263,6 +279,18 @@ var useForwardedHeaders = builder.Configuration.GetValue("ForwardedHeaders:Enabl
 builder.Services.Configure<ForwardedHeadersOptions>(RateLimitingSetup.ConfigureForwardedHeaders);
 builder.Services.AddAgriLinkRateLimiting(builder.Configuration);
 
+// ----- Response compression -----
+// JSON lists (marketplace, issue queues, chat, notifications) went out uncompressed. Brotli/gzip
+// at the fastest level: most of the size win for little CPU on the App Service F1 quota.
+builder.Services.AddResponseCompression(options =>
+{
+    options.EnableForHttps = true;
+    options.Providers.Add<BrotliCompressionProvider>();
+    options.Providers.Add<GzipCompressionProvider>();
+});
+builder.Services.Configure<BrotliCompressionProviderOptions>(o => o.Level = System.IO.Compression.CompressionLevel.Fastest);
+builder.Services.Configure<GzipCompressionProviderOptions>(o => o.Level = System.IO.Compression.CompressionLevel.Fastest);
+
 // ----- Controllers & Swagger -----
 builder.Services.AddControllers()
     .AddJsonOptions(options => options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
@@ -287,28 +315,29 @@ builder.Services.AddSwaggerGen(options =>
 
 var app = builder.Build();
 
-// ----- Apply migrations, then seed roles and the bootstrap admin on startup -----
-using (var scope = app.Services.CreateScope())
+// ----- Migrations and seeding -----
+// Migrations, the username backfill and role/admin seeding (StartupDatabaseTasks) used to run on
+// every start, in front of the first request after a cold start. Database:MigrateOnStartup (default
+// true) keeps that for new environments and local development; a host that sets it to false runs
+// the same work at deploy time with "--migrate" instead (see docs/deployment/cold-starts.md).
+if (migrateOnly)
 {
-    await scope.ServiceProvider.GetRequiredService<AgriLinkDbContext>().Database.MigrateAsync();
-
-    var loggerFactory = scope.ServiceProvider.GetRequiredService<ILoggerFactory>();
-    await UsernameBackfill.RunAsync(
-        scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>(),
-        loggerFactory.CreateLogger("UsernameBackfill"));
-
-    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole<int>>>();
-    await RoleSeeder.SeedAsync(roleManager);
-
-    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
-    var adminSeed = scope.ServiceProvider.GetRequiredService<IOptions<AdminSeedOptions>>().Value;
-    var seedLogger = loggerFactory.CreateLogger("AdminSeeder");
-    await AdminSeeder.SeedAsync(userManager, adminSeed, seedLogger);
+    await StartupDatabaseTasks.RunAsync(app.Services);
+    app.Logger.LogInformation("Database migrations and seeding finished (--migrate); exiting.");
+    return;
 }
 
-// Load the photo models now rather than on the first farmer's upload, so a missing or invalid
-// model shows up in the startup log.
-app.Services.GetRequiredService<IImageClassifier>();
+if (app.Configuration.GetValue(StartupDatabaseTasks.MigrateOnStartupKey, true))
+{
+    await StartupDatabaseTasks.RunAsync(app.Services);
+}
+else
+{
+    app.Logger.LogInformation("Skipping migrations and seeding at start-up ({Key} is false); run the API with --migrate at deploy time.", StartupDatabaseTasks.MigrateOnStartupKey);
+}
+
+// The photo models load in the background once the API is listening (ImageClassifierWarmup), so
+// they no longer delay the first request after a cold start.
 
 var llmOptions = app.Services.GetRequiredService<IOptions<LlmOptions>>().Value;
 app.Logger.LogInformation(
@@ -323,6 +352,13 @@ if (useForwardedHeaders)
 }
 
 app.UseExceptionHandler();
+
+// Reads only. The responses that hand out a token (login, password change) are all writes, and a
+// token next to text the caller sent is the mix compression side channels (BREACH) need; write
+// responses are small anyway. The big payloads — lists, queues, chat — are all GETs.
+app.UseWhen(
+    context => HttpMethods.IsGet(context.Request.Method),
+    branch => branch.UseResponseCompression());
 
 // Swagger is on in development, and on a host when Swagger__Enabled=true (handy for a demo).
 if (app.Environment.IsDevelopment() || app.Configuration.GetValue<bool>("Swagger:Enabled"))
@@ -345,5 +381,12 @@ app.MapControllers();
 
 // Public liveness/readiness probe for the host and evaluators: 200 "Healthy" or 503 "Unhealthy".
 app.MapHealthChecks("/health");
+
+// Liveness only: answers without touching the database. Point keep-warm pings here, so they keep
+// the App Service instance loaded without also keeping the (separately billed) database awake.
+app.MapHealthChecks("/health/live", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
+{
+    Predicate = _ => false,
+});
 
 app.Run();
