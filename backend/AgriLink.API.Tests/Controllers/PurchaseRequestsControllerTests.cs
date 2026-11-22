@@ -3,6 +3,7 @@ using AgriLink.API.Data;
 using AgriLink.API.DTOs.PurchaseRequests;
 using AgriLink.API.Models;
 using AgriLink.API.Services;
+using AgriLink.API.Services.Sms;
 using AgriLink.API.Tests.TestSupport;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -68,11 +69,12 @@ public class PurchaseRequestsControllerTests
         return request;
     }
 
-    private static PurchaseRequestsController CreateController(AgriLinkDbContext db, int actingUserId, string role = "Farmer") => new(
+    private static PurchaseRequestsController CreateController(
+        AgriLinkDbContext db, int actingUserId, string role = "Farmer", ISmsAlertQueue? sms = null) => new(
         db,
         new CurrentUserService(db),
         new AuditLogService(db),
-        new NotificationService(db))
+        new NotificationService(db, sms))
     {
         ControllerContext = new ControllerContext
         {
@@ -245,6 +247,62 @@ public class PurchaseRequestsControllerTests
         await CreateController(db, actingUserId: 10).Respond(request.RequestId, new RespondPurchaseRequestRequest { Action = "accept" });
 
         Assert.Contains(await db.Notifications.ToListAsync(), n => n.UserId == 20 && n.Title == "Purchase request accepted");
+    }
+
+    [Fact]
+    public async Task Respond_Accept_QueuesAnOrderConfirmedSmsForTheBuyer()
+    {
+        using var db = CreateDb();
+        var request = SeedPendingRequest(db, farmerUserId: 10, buyerUserId: 20);
+        var sms = new RecordingSmsQueue();
+
+        await CreateController(db, actingUserId: 10, sms: sms)
+            .Respond(request.RequestId, new RespondPurchaseRequestRequest { Action = "accept" });
+
+        var (userId, alert) = Assert.Single(sms.Queued);
+        Assert.Equal(20, userId);
+        Assert.Equal(SmsAlertKind.OrderConfirmed, alert.Kind);
+        Assert.Equal("Tomato", alert.Subject);
+    }
+
+    [Fact]
+    public async Task Respond_Decline_SendsNoSms()
+    {
+        using var db = CreateDb();
+        var request = SeedPendingRequest(db, farmerUserId: 10, buyerUserId: 20);
+        var sms = new RecordingSmsQueue();
+
+        await CreateController(db, actingUserId: 10, sms: sms)
+            .Respond(request.RequestId, new RespondPurchaseRequestRequest { Action = "decline" });
+
+        Assert.Empty(sms.Queued);
+    }
+
+    [Fact]
+    public async Task Create_QueuesANewRequestSmsForTheFarmer()
+    {
+        using var db = CreateDb();
+        var earlier = SeedPendingRequest(db, farmerUserId: 10, buyerUserId: 20);
+        earlier.Status = PurchaseRequestStatus.Declined;
+        await db.SaveChangesAsync();
+        var sms = new RecordingSmsQueue();
+
+        var result = await CreateController(db, actingUserId: 20, role: "Buyer", sms: sms)
+            .Create(new CreatePurchaseRequestRequest { HarvestId = 1, RequestedQuantity = 5 });
+
+        Assert.IsType<ObjectResult>(result.Result);
+        var (userId, alert) = Assert.Single(sms.Queued);
+        Assert.Equal(10, userId);
+        Assert.Equal(SmsAlertKind.NewPurchaseRequest, alert.Kind);
+        Assert.Equal("Tomato", alert.Subject);
+        Assert.Contains("5", alert.Detail);
+    }
+
+    private sealed class RecordingSmsQueue : ISmsAlertQueue
+    {
+        public List<(int UserId, SmsAlert Alert)> Queued { get; } = new();
+
+        public void Enqueue(int userId, SmsAlert alert) => Queued.Add((userId, alert));
     }
 
     [Fact]

@@ -2,6 +2,7 @@ using AgriLink.API.Data;
 using AgriLink.API.DTOs.PurchaseRequests;
 using AgriLink.API.Models;
 using AgriLink.API.Services;
+using AgriLink.API.Services.Sms;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -87,10 +88,12 @@ public class PurchaseRequestsController : ControllerBase
             .FirstOrDefaultAsync();
         if (farmerUserId is int recipientId)
         {
+            var amount = QuantityUnits.Describe(purchaseRequest.RequestedQuantity, listing.Unit);
             await _notifications.NotifyAsync(
                 recipientId,
                 "New purchase request",
-                $"A buyer has requested {QuantityUnits.Describe(purchaseRequest.RequestedQuantity, listing.Unit)} of your {listing.Crop.CropType} listing.");
+                $"A buyer has requested {amount} of your {listing.Crop.CropType} listing.");
+            _notifications.QueueSms(recipientId, new SmsAlert(SmsAlertKind.NewPurchaseRequest, listing.Crop.CropType, amount));
         }
 
         return StatusCode(StatusCodes.Status201Created, ToResponse(purchaseRequest));
@@ -383,6 +386,10 @@ public class PurchaseRequestsController : ControllerBase
             accepted
                 ? $"The farmer accepted your request for {amount} of {crop}. An order has been created."
                 : $"The farmer declined your request for {amount} of {crop}.");
+        if (accepted)
+        {
+            _notifications.QueueSms(recipientId, new SmsAlert(SmsAlertKind.OrderConfirmed, crop, amount));
+        }
     }
 
     private static PurchaseRequestResponse ToResponse(PurchaseRequest request) => new()

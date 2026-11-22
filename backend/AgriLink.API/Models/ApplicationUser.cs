@@ -32,6 +32,15 @@ public class ApplicationUser : IdentityUser<int>, IHasUpdatedAt
     /// </summary>
     public DateTime? UsernameChangedAt { get; set; }
 
+    /// <summary>
+    /// Whether the user also gets key alerts (new purchase request, order confirmed, officer reply)
+    /// by SMS. Off until the user turns it on, since every message costs money to send.
+    /// </summary>
+    public bool SmsAlertsEnabled { get; set; }
+
+    /// <summary>"en", "si" or "ta": the language SMS alerts are written in.</summary>
+    public string SmsLanguage { get; set; } = "en";
+
     public FarmerProfile? FarmerProfile { get; set; }
     public BuyerProfile? BuyerProfile { get; set; }
     public OfficerProfile? OfficerProfile { get; set; }

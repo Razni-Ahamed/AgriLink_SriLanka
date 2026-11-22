@@ -4,6 +4,7 @@ using AgriLink.API.DTOs.Advisories;
 using AgriLink.API.DTOs.Issues;
 using AgriLink.API.Models;
 using AgriLink.API.Services;
+using AgriLink.API.Services.Sms;
 using AgriLink.API.Services.Agents;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -200,6 +201,7 @@ public class AdvisoriesController : ControllerBase
             }
 
             await _notifications.NotifyAsync(recipientId, title, message);
+            _notifications.QueueSms(recipientId, new SmsAlert(SmsAlertKind.OfficerReplied, advisory.Issue.Title));
         }
 
         // ReviewedByUser was loaded before this advisory had a reviewer, so the id set just
