@@ -64,5 +64,8 @@
     "workbox-routing": "^7.4.1",
     "workbox-strategies": "^7.4.1",
     "workbox-window": "^7.4.1"
+  },
+  "overrides": {
+    "@trickfilm400/rollup-plugin-off-main-thread": "3.0.0-pre1"
   }
 }

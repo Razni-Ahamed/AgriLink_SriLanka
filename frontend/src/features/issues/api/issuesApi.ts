@@ -21,6 +21,7 @@ export async function createIssue({
   form.append('title', fields.title)
   form.append('description', fields.description)
   form.append('severity', fields.severity)
+  if (fields.clientReportId) form.append('clientReportId', fields.clientReportId)
   form.append('photo', photo, photo.name)
   const { data } = await apiClient.post<CropIssueResponse>('/api/issues/with-photo', form)
   return data

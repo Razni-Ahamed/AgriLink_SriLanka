@@ -14,9 +14,9 @@ export const pwaOptions: Partial<VitePWAOptions> = {
   injectManifest: {
     // The app's code only. Photos and fonts are cached as they are first shown (see sw.ts), so
     // installing doesn't download every crop photo or the Sinhala and Tamil fonts for everyone.
+    // Every code chunk, the admin dashboard's included: a page left out would be fetched from the
+    // network by an older version still running in an open tab, after a deploy had removed it.
     globPatterns: ['**/*.{js,css,html}', 'favicon.svg', 'pwa-192.png'],
-    // The admin dashboard's charts (about 100 KB) are for one office user on a good connection.
-    globIgnores: ['**/AdminDashboardPage-*.js'],
   },
   includeAssets: ['favicon.svg', 'favicon-32.png', 'apple-touch-icon.png'],
   // Browsers fetch the large install icons while online, when installing; no need to keep them.

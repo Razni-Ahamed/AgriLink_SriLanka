@@ -1,4 +1,5 @@
 import { isAxiosError } from 'axios'
+import { tokenUserId, useAuthStore } from '@/auth/authStore'
 import type { CreateCropIssueRequest } from '@/types/dto/issues'
 
 /**
@@ -135,23 +136,36 @@ export function isConnectionFailure(error: unknown): boolean {
   return isAxiosError(error) && !error.response && error.code !== 'ERR_CANCELED'
 }
 
-let sending: Promise<SendResult> | null = null
+/** The farmer whose session is signed in right now, or null. */
+function currentOwnerId(): string | null {
+  const token = useAuthStore.getState().token
+  return token ? tokenUserId(token) : null
+}
+
+// One run per farmer at a time. Keyed by owner so a run for someone else never answers for this one.
+const sending = new Map<string, Promise<SendResult>>()
 
 /**
  * Sends this farmer's waiting reports, oldest first, and stops at the first one that can't go
  * (the rest would fail the same way). Only one send runs at a time, across tabs too where the
  * browser has Web Locks, so no report is sent twice.
+ *
+ * Every request goes out with whoever is signed in at that moment, so the run stops as soon as
+ * that is no longer the report's author (someone else signed in on the same phone): their
+ * reports wait for them rather than being sent, and refused, under another account.
  */
 export function sendQueuedIssueReports(
   ownerId: string,
   send: (request: CreateCropIssueRequest) => Promise<unknown>,
 ): Promise<SendResult> {
-  if (sending) return sending
+  const running = sending.get(ownerId)
+  if (running) return running
 
   const run = async (): Promise<SendResult> => {
     const reports = await getQueuedIssueReports(ownerId)
     const result: SendResult = { sent: 0, rejected: 0, remaining: reports.length }
     for (const report of reports) {
+      if (currentOwnerId() !== ownerId) break
       try {
         await send(toCreateRequest(report))
         result.sent += 1
@@ -166,8 +180,9 @@ export function sendQueuedIssueReports(
   }
 
   const locks = typeof navigator !== 'undefined' ? navigator.locks : undefined
-  sending = (locks ? locks.request(LOCK_NAME, run) : run()).finally(() => {
-    sending = null
+  const started = (locks ? locks.request(LOCK_NAME, run) : run()).finally(() => {
+    sending.delete(ownerId)
   })
-  return sending
+  sending.set(ownerId, started)
+  return started
 }

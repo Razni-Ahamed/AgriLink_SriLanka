@@ -32,9 +32,12 @@ describe('installable app settings', () => {
     expect(pwaOptions.injectRegister).toBe(false)
   })
 
-  it('precaches the app code only: no photos or fonts up front, no admin charts', () => {
+  it('precaches every code chunk but no photos or fonts up front', () => {
     const patterns = pwaOptions.injectManifest?.globPatterns ?? []
     expect(patterns.join(' ')).not.toMatch(/webp|jpg|woff/)
-    expect(pwaOptions.injectManifest?.globIgnores).toContain('**/AdminDashboardPage-*.js')
+    expect(patterns).toContain('**/*.{js,css,html}')
+    // A chunk left out (the admin dashboard was) would be fetched from the network by an older
+    // version still open in a tab, after the deploy that replaced it removed the file.
+    expect(pwaOptions.injectManifest?.globIgnores ?? []).toEqual([])
   })
 })

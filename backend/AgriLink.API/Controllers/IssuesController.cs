@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 
 namespace AgriLink.API.Controllers;
 
@@ -88,6 +89,14 @@ public class IssuesController : ControllerBase
             return Forbid();
         }
 
+        // A retry of a report that already went through (its answer was lost on a weak signal):
+        // hand back that issue rather than file it, and run the analysis, a second time.
+        if (request.ClientReportId is Guid retriedId
+            && await FindByClientReportIdAsync(farmerProfileId.Value, retriedId) is { } alreadyFiled)
+        {
+            return Ok(ToResponse(alreadyFiled));
+        }
+
         ProcessedPhoto? processedPhoto = null;
         if (photo is not null)
         {
@@ -116,6 +125,7 @@ public class IssuesController : ControllerBase
         {
             CropId = request.CropId,
             FarmerProfileId = farmerProfileId.Value,
+            ClientReportId = request.ClientReportId,
             Title = request.Title,
             Description = request.Description,
             Severity = request.Severity,
@@ -162,6 +172,18 @@ public class IssuesController : ControllerBase
             _db.CropIssues.Add(issue);
             await _db.SaveChangesAsync();
         }
+        catch (DbUpdateException ex) when (request.ClientReportId is Guid racedId
+            && ex.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation })
+        {
+            // The same report arrived twice at once and the other copy was saved first.
+            if (storageKey is not null)
+            {
+                await DeleteOrphanedPhotoAsync(storageKey);
+            }
+
+            var saved = await FindByClientReportIdAsync(farmerProfileId.Value, racedId);
+            return saved is null ? Conflict() : Ok(ToResponse(saved));
+        }
         catch (Exception) when (storageKey is not null)
         {
             // The photo is already stored but no issue will reference it — remove it rather than
@@ -172,6 +194,15 @@ public class IssuesController : ControllerBase
 
         return StatusCode(StatusCodes.Status201Created, ToResponse(issue));
     }
+
+    private Task<CropIssue?> FindByClientReportIdAsync(int farmerProfileId, Guid clientReportId) =>
+        _db.CropIssues
+            .AsNoTracking()
+            .AsSplitQuery()
+            .Include(i => i.Advisories)
+            .Include(i => i.Images)
+            .Include(i => i.Crop).ThenInclude(c => c.Field).ThenInclude(f => f.Farm)
+            .FirstOrDefaultAsync(i => i.FarmerProfileId == farmerProfileId && i.ClientReportId == clientReportId);
 
     private static async Task<byte[]> ReadAllBytesAsync(IFormFile file, CancellationToken cancellationToken)
     {

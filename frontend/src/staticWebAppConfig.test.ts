@@ -28,8 +28,12 @@ describe('staticwebapp.config.json', () => {
   })
 
   it('lets the site reach the API and its photo hosts, and nothing else', () => {
-    expect(csp).toContain("connect-src 'self' https://agrilink-api-sl.azurewebsites.net;")
-    expect(csp).toContain('https://res.cloudinary.com')
+    // Cloudinary is in connect-src too: the service worker fetches profile photos from it, and a
+    // worker's fetches are checked against connect-src, not img-src.
+    expect(csp).toContain(
+      "connect-src 'self' https://agrilink-api-sl.azurewebsites.net https://res.cloudinary.com;",
+    )
+    expect(csp).toMatch(/img-src[^;]*https:\/\/res\.cloudinary\.com/)
     expect(csp).toContain("frame-ancestors 'none'")
     expect(csp).not.toContain("'unsafe-eval'")
     expect(csp).not.toMatch(/script-src[^;]*'unsafe-inline'/)

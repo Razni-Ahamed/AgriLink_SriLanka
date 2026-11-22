@@ -55,13 +55,20 @@ registerRoute(
 )
 
 // Listing photos and avatars on Cloudinary: shown from the cache at once, refreshed behind.
+// An <img> asks without CORS, and Chrome counts each such opaque answer as about 7 MB of storage,
+// so the worker fetches the photo with CORS instead (Cloudinary allows any origin) and keeps only
+// real 200 answers. The site's CSP lists res.cloudinary.com in connect-src for this fetch.
 registerRoute(
   ({ url, request }) =>
     url.origin === 'https://res.cloudinary.com' && request.destination === 'image',
   new StaleWhileRevalidate({
     cacheName: 'agrilink-photos-v1',
     plugins: [
-      new CacheableResponsePlugin({ statuses: [0, 200] }),
+      {
+        requestWillFetch: async ({ request }) =>
+          new Request(request.url, { mode: 'cors', credentials: 'omit' }),
+      },
+      new CacheableResponsePlugin({ statuses: [200] }),
       new ExpirationPlugin({ maxEntries: 60, maxAgeSeconds: 30 * DAY, purgeOnQuotaError: true }),
     ],
   }),

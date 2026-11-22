@@ -21,6 +21,18 @@ import { isConnectionFailure, queueIssueReport } from '../lib/issueOutbox'
 import { reportErrorKey } from '../lib/reportErrorKey'
 import type { CreateCropIssueRequest } from '@/types/dto/issues'
 
+/** A random id for one report. crypto.randomUUID needs a secure context, which the site always is. */
+function newClientReportId(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID()
+  }
+  const bytes = crypto.getRandomValues(new Uint8Array(16))
+  bytes[6] = (bytes[6] & 0x0f) | 0x40
+  bytes[8] = (bytes[8] & 0x3f) | 0x80
+  const hex = Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('')
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`
+}
+
 interface Sending {
   photoUrl: string
   /** An object URL made for the farmer's own photo, to release afterwards. */
@@ -140,7 +152,10 @@ export function NewIssuePage() {
             <IssueForm
               cropId={selectedCropId}
               isSubmitting={createIssue.isPending}
-              onSubmit={(values) => {
+              onSubmit={(formValues) => {
+                // One id for this report, however many times it is sent: if the answer to the
+                // first try is lost, the retry from the outbox gets the same issue back.
+                const values = { ...formValues, clientReportId: newClientReportId() }
                 const ownPhoto = Boolean(values.photo)
                 // No signal: don't make the farmer wait on a request that can't go. The report is
                 // kept and sent when the connection returns (IssueOutboxSync).

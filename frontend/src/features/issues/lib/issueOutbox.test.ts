@@ -1,6 +1,7 @@
 import 'fake-indexeddb/auto'
 import { AxiosError, AxiosHeaders } from 'axios'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { useAuthStore } from '@/auth/authStore'
 import type { CreateCropIssueRequest } from '@/types/dto/issues'
 import {
   getQueuedIssueReports,
@@ -29,9 +30,22 @@ function httpError(status: number) {
 }
 const connectionError = () => new AxiosError('Network Error', AxiosError.ERR_NETWORK)
 
+/** Signs `owner` in: the outbox only sends a report with its own author's session. */
+function signInAs(owner: string | null) {
+  const encode = (value: object) =>
+    btoa(JSON.stringify(value)).replace(/=+$/, '').replace(/\+/g, '-').replace(/\//g, '_')
+  const token = owner
+    ? `${encode({ alg: 'none' })}.${encode({ sub: owner, exp: 4102444800 })}.sig`
+    : null
+  useAuthStore.setState({ token })
+}
+
+beforeEach(() => signInAs('farmer-1'))
+
 afterEach(async () => {
   // Empty both farmers' queues between tests.
   for (const owner of ['farmer-1', 'farmer-2']) {
+    signInAs(owner)
     await sendQueuedIssueReports(owner, async () => undefined)
   }
 })
@@ -132,5 +146,46 @@ describe('isConnectionFailure', () => {
     expect(isConnectionFailure(httpError(500))).toBe(false)
     expect(isConnectionFailure(new AxiosError('canceled', AxiosError.ERR_CANCELED))).toBe(false)
     expect(isConnectionFailure(new Error('other'))).toBe(false)
+  })
+
+  it('stops when someone else signs in, and keeps the rest for their author', async () => {
+    await queueIssueReport('farmer-1', report('First'))
+    await queueIssueReport('farmer-1', report('Second'))
+    await queueIssueReport('farmer-1', report('Third'))
+    const send = vi.fn().mockImplementation(async () => {
+      // Farmer 2 signs in on the same phone while the first report is going out.
+      signInAs('farmer-2')
+    })
+
+    const result = await sendQueuedIssueReports('farmer-1', send)
+
+    expect(send).toHaveBeenCalledTimes(1)
+    expect(result).toEqual({ sent: 1, rejected: 0, remaining: 2 })
+    expect((await getQueuedIssueReports('farmer-1')).map((queued) => queued.fields.title)).toEqual([
+      'Second',
+      'Third',
+    ])
+  })
+
+  it('sends nothing while nobody, or someone else, is signed in', async () => {
+    await queueIssueReport('farmer-1', report('Waiting'))
+    const send = vi.fn().mockResolvedValue({})
+
+    signInAs(null)
+    await sendQueuedIssueReports('farmer-1', send)
+    signInAs('farmer-2')
+    await sendQueuedIssueReports('farmer-1', send)
+
+    expect(send).not.toHaveBeenCalled()
+    expect(await getQueuedIssueReports('farmer-1')).toHaveLength(1)
+  })
+
+  it('keeps the report id, so a retry is recognised by the server', async () => {
+    await queueIssueReport('farmer-1', { ...report('With id'), clientReportId: 'abc-123' })
+    const send = vi.fn().mockResolvedValue({})
+
+    await sendQueuedIssueReports('farmer-1', send)
+
+    expect(send).toHaveBeenCalledWith(expect.objectContaining({ clientReportId: 'abc-123' }))
   })
 })
