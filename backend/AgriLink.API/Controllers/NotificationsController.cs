@@ -34,8 +34,10 @@ public class NotificationsController : ControllerBase
         var userId = _currentUser.GetUserId(User);
 
         var query = _db.Notifications
+            .AsNoTracking()
             .Where(n => n.UserId == userId)
-            .OrderByDescending(n => n.CreatedAt);
+            .OrderByDescending(n => n.CreatedAt)
+            .ThenByDescending(n => n.NotificationId);
 
         var paged = await query.ToPagedResponseAsync(page, pageSize, cancellationToken);
         return Ok(paged.Map(ToResponse));
