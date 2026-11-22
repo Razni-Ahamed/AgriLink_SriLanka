@@ -629,9 +629,11 @@ namespace AgriLink.API.Migrations
 
                     b.HasIndex("CropId");
 
-                    b.HasIndex("FarmerProfileId");
-
                     b.HasIndex("Status");
+
+                    b.HasIndex("FarmerProfileId", "CreatedAt");
+
+                    b.HasIndex("Status", "CreatedAt");
 
                     b.ToTable("CropIssues");
                 });
@@ -832,6 +834,8 @@ namespace AgriLink.API.Migrations
 
                     b.HasIndex("Status");
 
+                    b.HasIndex("Status", "CreatedAt");
+
                     b.ToTable("HarvestListings");
                 });
 
@@ -903,7 +907,7 @@ namespace AgriLink.API.Migrations
 
                     b.HasKey("NotificationId");
 
-                    b.HasIndex("UserId");
+                    b.HasIndex("UserId", "CreatedAt");
 
                     b.ToTable("Notifications");
                 });
