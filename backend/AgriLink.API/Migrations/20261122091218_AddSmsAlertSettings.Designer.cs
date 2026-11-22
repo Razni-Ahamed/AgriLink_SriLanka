@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace AgriLink.API.Migrations
 {
     [DbContext(typeof(AgriLinkDbContext))]
-    [Migration("20261122090706_AddSmsAlertSettings")]
+    [Migration("20261122091218_AddSmsAlertSettings")]
     partial class AddSmsAlertSettings
     {
         /// <inheritdoc />
@@ -23,6 +23,7 @@ namespace AgriLink.API.Migrations
                 .HasAnnotation("ProductVersion", "8.0.10")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
+            NpgsqlModelBuilderExtensions.HasPostgresExtension(modelBuilder, "pg_trgm");
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
             modelBuilder.Entity("AgriLink.API.Models.AIAdvisory", b =>
@@ -642,9 +643,11 @@ namespace AgriLink.API.Migrations
 
                     b.HasIndex("CropId");
 
-                    b.HasIndex("FarmerProfileId");
-
                     b.HasIndex("Status");
+
+                    b.HasIndex("FarmerProfileId", "CreatedAt");
+
+                    b.HasIndex("Status", "CreatedAt");
 
                     b.ToTable("CropIssues");
                 });
@@ -845,6 +848,8 @@ namespace AgriLink.API.Migrations
 
                     b.HasIndex("Status");
 
+                    b.HasIndex("Status", "CreatedAt");
+
                     b.ToTable("HarvestListings");
                 });
 
@@ -916,7 +921,7 @@ namespace AgriLink.API.Migrations
 
                     b.HasKey("NotificationId");
 
-                    b.HasIndex("UserId");
+                    b.HasIndex("UserId", "CreatedAt");
 
                     b.ToTable("Notifications");
                 });
