@@ -6,6 +6,9 @@ import { describe, expect, it } from 'vitest'
 
 const read = (path: string) => readFileSync(fileURLToPath(new URL(path, import.meta.url)), 'utf8')
 const config = JSON.parse(read('../public/staticwebapp.config.json')) as {
+  navigationFallback: { exclude: string[] }
+  routes: { route: string; headers?: Record<string, string> }[]
+  mimeTypes?: Record<string, string>
   globalHeaders: Record<string, string>
 }
 const csp = config.globalHeaders['Content-Security-Policy']
@@ -42,5 +45,17 @@ describe('staticwebapp.config.json', () => {
     expect(config.globalHeaders['X-Content-Type-Options']).toBe('nosniff')
     expect(config.globalHeaders['X-Frame-Options']).toBe('DENY')
     expect(config.globalHeaders['Referrer-Policy']).toBe('strict-origin-when-cross-origin')
+  })
+
+  it('keeps hashed files cached for a year and lets browsers check for a new service worker', () => {
+    const headers = (route: string) => config.routes.find((entry) => entry.route === route)?.headers
+    expect(headers('/assets/*')?.['Cache-Control']).toBe('public, max-age=31536000, immutable')
+    expect(headers('/sw.js')?.['Cache-Control']).toBe('no-cache')
+    expect(headers('/manifest.webmanifest')?.['Cache-Control']).toBe('no-cache')
+  })
+
+  it('serves the web app manifest as itself, not as index.html', () => {
+    expect(config.mimeTypes?.['.webmanifest']).toBe('application/manifest+json')
+    expect(config.navigationFallback.exclude.join(' ')).toContain('webmanifest')
   })
 })

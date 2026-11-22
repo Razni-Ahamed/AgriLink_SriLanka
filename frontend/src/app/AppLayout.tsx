@@ -18,6 +18,8 @@ import { LanguageCycleButton, ThemeCycleButton } from '@/components/ui/Preferenc
 import { ToastViewport } from '@/components/ui/Toast'
 import { NotificationBell } from '@/features/orders/components/NotificationBell'
 import { MessagesButton } from '@/features/messages/components/MessagesButton'
+import { IssueOutboxSync } from '@/features/issues/components/IssueOutboxSync'
+import { OfflineBanner } from '@/pwa/OfflineBanner'
 import { ProfileDialog, type ProfileTab } from '@/features/account/components/ProfileDialog'
 import { PROFILE_PATH, PROFILE_SECURITY_PATH } from '@/features/account/routes'
 import { pageRoutes } from './pageRoutes'
@@ -113,6 +115,10 @@ export function AppLayout() {
           </div>
         </header>
       </div>
+
+      <OfflineBanner />
+      {/* Sends crop issue reports a farmer made with no signal, once it returns. */}
+      {role === 'Farmer' && <IssueOutboxSync />}
 
       {/* Phones and tablets have no hover and no room in the header, so the same tabs sit
           in a bar along the bottom of the screen, like a mobile app's: a floating glass pill,

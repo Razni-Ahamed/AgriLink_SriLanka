@@ -16,7 +16,10 @@ import { useMyCrops } from '@/features/farms/hooks/useCrops'
 import { IssueForm } from '../components/IssueForm'
 import { ReportProgress } from '../components/ReportProgress'
 import { useCreateIssue } from '../hooks/useIssues'
+import { useOutboxOwner } from '../hooks/useIssueOutbox'
+import { isConnectionFailure, queueIssueReport } from '../lib/issueOutbox'
 import { reportErrorKey } from '../lib/reportErrorKey'
+import type { CreateCropIssueRequest } from '@/types/dto/issues'
 
 interface Sending {
   photoUrl: string
@@ -38,6 +41,20 @@ export function NewIssuePage() {
   const addToast = useUiStore((state) => state.addToast)
   const createIssue = useCreateIssue()
   const [sending, setSending] = useState<Sending | null>(null)
+  const outboxOwner = useOutboxOwner()
+
+  /** Keeps the report on the phone to send when the signal returns. False if it couldn't be kept. */
+  async function saveForLater(values: CreateCropIssueRequest): Promise<boolean> {
+    if (!outboxOwner) return false
+    try {
+      await queueIssueReport(outboxOwner, values)
+    } catch {
+      return false
+    }
+    addToast({ type: 'info', message: t('issues:new.queued') })
+    navigate('/issues/mine')
+    return true
+  }
 
   const { data: crops, isLoading: isLoadingCrops } = useMyCrops()
 
@@ -125,6 +142,14 @@ export function NewIssuePage() {
               isSubmitting={createIssue.isPending}
               onSubmit={(values) => {
                 const ownPhoto = Boolean(values.photo)
+                // No signal: don't make the farmer wait on a request that can't go. The report is
+                // kept and sent when the connection returns (IssueOutboxSync).
+                if (!navigator.onLine) {
+                  void saveForLater(values).then((saved) => {
+                    if (!saved) addToast({ type: 'error', message: t('issues:new.reportError') })
+                  })
+                  return
+                }
                 setSending({
                   photoUrl: values.photo
                     ? URL.createObjectURL(values.photo)
@@ -140,10 +165,14 @@ export function NewIssuePage() {
                   },
                   onError: (error) => {
                     setSending(null)
-                    addToast({
-                      type: 'error',
-                      message: t(reportErrorKey(error, ownPhoto)),
-                    })
+                    const showError = () =>
+                      addToast({ type: 'error', message: t(reportErrorKey(error, ownPhoto)) })
+                    // The signal dropped on the way: keep the report rather than lose it.
+                    if (isConnectionFailure(error)) {
+                      void saveForLater(values).then((saved) => saved || showError())
+                    } else {
+                      showError()
+                    }
                   },
                 })
               }}
