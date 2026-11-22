@@ -58,8 +58,9 @@ describe('HomeRoute', () => {
 
   it('shows a visitor the landing page with the latest harvests', async () => {
     useAuthStore.setState({ token: null, role: null, isHydrated: true })
+    const items = Array.from({ length: 6 }, (_, i) => harvest(i + 1, i === 0 ? 'Tomato' : 'Paddy'))
     const get = vi.spyOn(apiClient, 'get').mockResolvedValue({
-      data: Array.from({ length: 8 }, (_, i) => harvest(i + 1, i === 0 ? 'Tomato' : 'Paddy')),
+      data: { items, page: 1, pageSize: 6, totalCount: 8, totalPages: 2 },
     })
 
     renderAt('/')
@@ -72,7 +73,10 @@ describe('HomeRoute', () => {
     expect(await screen.findByRole('heading', { name: 'Tomato' })).toBeInTheDocument()
     // Only a preview: the full list is one click away on the marketplace page.
     expect(screen.getAllByRole('heading', { level: 3, name: /Tomato|Paddy/ })).toHaveLength(6)
-    expect(get).toHaveBeenCalledWith('/api/harvests', expect.anything())
+    // One small paged request feeds both the price board and the preview.
+    const harvestCalls = get.mock.calls.filter(([url]) => url === '/api/harvests')
+    expect(harvestCalls).toHaveLength(1)
+    expect(harvestCalls[0][1]).toMatchObject({ params: { page: 1, pageSize: 6, sort: 'newest' } })
     expect(screen.getByRole('link', { name: 'Register as a buyer' })).toHaveAttribute(
       'href',
       '/register?role=Buyer',

@@ -13,11 +13,11 @@ import { Skeleton } from '@/components/ui/Skeleton'
 import { LanguageCycleButton, ThemeCycleButton } from '@/components/ui/PreferenceCycleButtons'
 import { StaggerList } from '@/components/ui/motion/StaggerList'
 import { HarvestCard } from '@/features/marketplace/components/HarvestCard'
-import { useHarvests } from '@/features/marketplace/hooks/useHarvests'
+import { useLatestHarvests } from '@/features/marketplace/hooks/useHarvests'
 import { GlassLens } from '@/components/canopy/GlassLens'
 import { onPhotoButton } from '@/components/canopy/onPhoto'
 import { Odometer } from '@/components/canopy/Odometer'
-import { cropPhoto } from '@/lib/cropPhotos'
+import { cropThumb } from '@/lib/cropPhotos'
 import { spring } from '@/lib/motion'
 import { useUnits } from '@/lib/units'
 import { useCropLabel } from '@/lib/useCropLabel'
@@ -175,7 +175,7 @@ function PriceBoard() {
   const districtLabel = useDistrictLabel()
   const cropLabel = useCropLabel()
   const units = useUnits()
-  const { data: harvests, isLoading } = useHarvests({ sort: 'newest' })
+  const { data: harvests, isLoading } = useLatestHarvests()
   const rows = (harvests ?? []).filter((harvest) => harvest.status === 'Active').slice(0, 5)
 
   return (
@@ -211,9 +211,10 @@ function PriceBoard() {
                 className="grid grid-cols-[2.75rem_minmax(0,1fr)_auto] items-center gap-3 rounded-xl px-1 py-2.5 transition-colors hover:bg-white/[0.06]"
               >
                 <img
-                  src={cropPhoto(harvest.cropType)}
+                  src={cropThumb(harvest.cropType)}
                   alt=""
                   aria-hidden="true"
+                  decoding="async"
                   className="size-11 rounded-xl object-cover"
                 />
                 <span className="min-w-0">
@@ -497,8 +498,9 @@ function StorySection() {
 
 function MarketplacePreview() {
   const { t } = useTranslation('home')
-  // GET /api/harvests is public and returns Active listings newest first.
-  const { data: harvests, isLoading, isError } = useHarvests()
+  // GET /api/harvests is public and returns Active listings newest first. Same query as the price
+  // board above, so the home page fetches the listings once, and only the few it shows.
+  const { data: harvests, isLoading, isError } = useLatestHarvests()
   const preview = harvests?.slice(0, PREVIEW_COUNT)
 
   return (
