@@ -16,4 +16,10 @@ public class CreateCropIssueRequest
 
     [Required]
     public IssueSeverity Severity { get; set; } = IssueSeverity.Medium;
+
+    /// <summary>
+    /// Optional id the app makes for this report, so sending it twice files it once (see
+    /// CropIssue.ClientReportId).
+    /// </summary>
+    public Guid? ClientReportId { get; set; }
 }

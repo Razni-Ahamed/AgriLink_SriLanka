@@ -357,6 +357,15 @@
     "Trincomalee": "Trincomalee",
     "Vavuniya": "Vavuniya"
   },
+  "offline": {
+    "banner": "You're offline. Showing what was saved on this device."
+  },
+  "pwa": {
+    "updateReady": "A new version of AgriLink is ready.",
+    "reload": "Reload",
+    "later": "Later",
+    "offlineReady": "AgriLink is saved on this device and will open even without a signal."
+  },
   "smsAlerts": {
     "label": "SMS alerts",
     "hint": "Get a text at {{phone}} for new purchase requests, confirmed orders and officer replies.",

@@ -16,7 +16,22 @@ import { useMyCrops } from '@/features/farms/hooks/useCrops'
 import { IssueForm } from '../components/IssueForm'
 import { ReportProgress } from '../components/ReportProgress'
 import { useCreateIssue } from '../hooks/useIssues'
+import { useOutboxOwner } from '../hooks/useIssueOutbox'
+import { isConnectionFailure, queueIssueReport } from '../lib/issueOutbox'
 import { reportErrorKey } from '../lib/reportErrorKey'
+import type { CreateCropIssueRequest } from '@/types/dto/issues'
+
+/** A random id for one report. crypto.randomUUID needs a secure context, which the site always is. */
+function newClientReportId(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID()
+  }
+  const bytes = crypto.getRandomValues(new Uint8Array(16))
+  bytes[6] = (bytes[6] & 0x0f) | 0x40
+  bytes[8] = (bytes[8] & 0x3f) | 0x80
+  const hex = Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('')
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`
+}
 
 interface Sending {
   photoUrl: string
@@ -38,6 +53,20 @@ export function NewIssuePage() {
   const addToast = useUiStore((state) => state.addToast)
   const createIssue = useCreateIssue()
   const [sending, setSending] = useState<Sending | null>(null)
+  const outboxOwner = useOutboxOwner()
+
+  /** Keeps the report on the phone to send when the signal returns. False if it couldn't be kept. */
+  async function saveForLater(values: CreateCropIssueRequest): Promise<boolean> {
+    if (!outboxOwner) return false
+    try {
+      await queueIssueReport(outboxOwner, values)
+    } catch {
+      return false
+    }
+    addToast({ type: 'info', message: t('issues:new.queued') })
+    navigate('/issues/mine')
+    return true
+  }
 
   const { data: crops, isLoading: isLoadingCrops } = useMyCrops()
 
@@ -123,8 +152,19 @@ export function NewIssuePage() {
             <IssueForm
               cropId={selectedCropId}
               isSubmitting={createIssue.isPending}
-              onSubmit={(values) => {
+              onSubmit={(formValues) => {
+                // One id for this report, however many times it is sent: if the answer to the
+                // first try is lost, the retry from the outbox gets the same issue back.
+                const values = { ...formValues, clientReportId: newClientReportId() }
                 const ownPhoto = Boolean(values.photo)
+                // No signal: don't make the farmer wait on a request that can't go. The report is
+                // kept and sent when the connection returns (IssueOutboxSync).
+                if (!navigator.onLine) {
+                  void saveForLater(values).then((saved) => {
+                    if (!saved) addToast({ type: 'error', message: t('issues:new.reportError') })
+                  })
+                  return
+                }
                 setSending({
                   photoUrl: values.photo
                     ? URL.createObjectURL(values.photo)
@@ -140,10 +180,14 @@ export function NewIssuePage() {
                   },
                   onError: (error) => {
                     setSending(null)
-                    addToast({
-                      type: 'error',
-                      message: t(reportErrorKey(error, ownPhoto)),
-                    })
+                    const showError = () =>
+                      addToast({ type: 'error', message: t(reportErrorKey(error, ownPhoto)) })
+                    // The signal dropped on the way: keep the report rather than lose it.
+                    if (isConnectionFailure(error)) {
+                      void saveForLater(values).then((saved) => saved || showError())
+                    } else {
+                      showError()
+                    }
                   },
                 })
               }}

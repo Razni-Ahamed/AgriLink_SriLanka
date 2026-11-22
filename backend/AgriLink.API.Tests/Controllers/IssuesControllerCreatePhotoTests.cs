@@ -232,4 +232,44 @@ public class IssuesControllerCreatePhotoTests
         Assert.IsType<ForbidResult>(result.Result);
         _storage.VerifyNoOtherCalls();
     }
+
+    [Fact]
+    public async Task Create_RetriedWithTheSameClientReportId_ReturnsTheFirstIssue_WithoutFilingAgain()
+    {
+        var db = SeedFarmerWithCrop();
+        var clientReportId = Guid.NewGuid();
+        var first = Request(PngPhoto());
+        first.ClientReportId = clientReportId;
+        var retry = Request(PngPhoto());
+        retry.ClientReportId = clientReportId;
+
+        var created = await CreateController(db).CreateWithPhoto(first);
+        var again = await CreateController(db).CreateWithPhoto(retry);
+
+        Assert.Equal(StatusCodes.Status201Created, Assert.IsType<ObjectResult>(created.Result).StatusCode);
+        var firstIssue = Assert.IsType<CropIssueResponse>(Assert.IsType<ObjectResult>(created.Result).Value);
+        var returned = Assert.IsType<CropIssueResponse>(Assert.IsType<OkObjectResult>(again.Result).Value);
+        Assert.Equal(firstIssue.IssueId, returned.IssueId);
+        Assert.Single(db.CropIssues);
+        // The retry neither stores its photo nor runs the analysis again.
+        _storage.Verify(s => s.SaveAsync(It.IsAny<byte[]>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Once);
+        _orchestrator.Verify(o => o.RunPipelineAsync(
+            It.IsAny<CropIssue>(), It.IsAny<Crop>(), It.IsAny<IReadOnlyList<CropActivity>>(),
+            It.IsAny<byte[]?>(), It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task Create_TwoReportsWithDifferentClientReportIds_AreBothFiled()
+    {
+        var db = SeedFarmerWithCrop();
+        var first = Request(photo: null);
+        first.ClientReportId = Guid.NewGuid();
+        var second = Request(photo: null);
+        second.ClientReportId = Guid.NewGuid();
+
+        await CreateController(db).Create(first);
+        await CreateController(db).Create(second);
+
+        Assert.Equal(2, db.CropIssues.Count());
+    }
 }

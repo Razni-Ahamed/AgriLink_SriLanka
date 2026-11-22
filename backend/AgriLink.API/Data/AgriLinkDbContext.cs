@@ -191,6 +191,10 @@ public class AgriLinkDbContext : IdentityDbContext<ApplicationUser, IdentityRole
             // The issue lists filter by status or by farmer and sort by report time, newest first.
             entity.HasIndex(i => new { i.Status, i.CreatedAt });
             entity.HasIndex(i => new { i.FarmerProfileId, i.CreatedAt });
+            // One issue per report the app sends, however many times it is retried.
+            entity.HasIndex(i => new { i.FarmerProfileId, i.ClientReportId })
+                .IsUnique()
+                .HasFilter("\"ClientReportId\" IS NOT NULL");
             entity.HasOne(i => i.Crop)
                 .WithMany()
                 .HasForeignKey(i => i.CropId)

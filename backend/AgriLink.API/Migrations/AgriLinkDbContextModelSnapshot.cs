@@ -605,6 +605,9 @@ namespace AgriLink.API.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("IssueId"));
 
+                    b.Property<Guid?>("ClientReportId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -641,6 +644,10 @@ namespace AgriLink.API.Migrations
                     b.HasIndex("CropId");
 
                     b.HasIndex("Status");
+
+                    b.HasIndex("FarmerProfileId", "ClientReportId")
+                        .IsUnique()
+                        .HasFilter("\"ClientReportId\" IS NOT NULL");
 
                     b.HasIndex("FarmerProfileId", "CreatedAt");
 

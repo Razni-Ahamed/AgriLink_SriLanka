@@ -12,6 +12,14 @@ public class CropIssue : IHasUpdatedAt
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? UpdatedAt { get; set; }
 
+    /// <summary>
+    /// An id the farmer's app gives the report when it is made. A report sent again (the signal
+    /// dropped before the answer arrived, so the app kept it to retry) carries the same id, and the
+    /// API returns the issue it already created instead of filing a second one. Null for clients
+    /// that don't send one.
+    /// </summary>
+    public Guid? ClientReportId { get; set; }
+
     public Crop Crop { get; set; } = null!;
     public FarmerProfile FarmerProfile { get; set; } = null!;
     public ICollection<AIAdvisory> Advisories { get; set; } = new List<AIAdvisory>();

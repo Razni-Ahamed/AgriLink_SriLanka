@@ -9,6 +9,7 @@ import { hydrateLanguage } from '@/lib/useLanguageStore'
 import { hydrateMotion, hydrateTheme, useUiStore } from '@/lib/useUiStore'
 import { useGlassHighlight } from '@/lib/useGlassHighlight'
 import { router } from '@/app/routes'
+import { UpdatePrompt } from '@/pwa/UpdatePrompt'
 
 function App() {
   const hydrate = useAuthStore((state) => state.hydrate)
@@ -28,6 +29,7 @@ function App() {
           motion/react still honours the device's own reduced-motion setting. */}
       <MotionConfig reducedMotion={motion === 'off' ? 'always' : 'user'}>
         <RouterProvider router={router} />
+        <UpdatePrompt />
       </MotionConfig>
     </QueryClientProvider>
   )

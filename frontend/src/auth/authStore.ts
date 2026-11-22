@@ -1,6 +1,7 @@
 import { isAxiosError } from 'axios'
 import { create } from 'zustand'
 import type { Role } from '@/types/common'
+import { clearSavedApiData } from '@/pwa/offlineData'
 import { getCurrentUser, type UserProfileResponse } from './api'
 
 const STORAGE_KEY = 'agrilink.auth'
@@ -25,17 +26,32 @@ function readStoredSession(): StoredSession | null {
  * request came back 401 and bounced them to the login page instead of the landing page.
  */
 export function isTokenExpired(token: string, now = Date.now()): boolean {
+  const exp = readTokenClaims(token)?.exp
+  return typeof exp !== 'number' || exp * 1000 <= now
+}
+
+/** The signed-in user's id (the token's `sub`), or null when the token can't be read. Used to keep
+ *  one person's offline data apart from another's on a shared phone; never for access decisions. */
+export function tokenUserId(token: string): string | null {
+  const sub = readTokenClaims(token)?.sub
+  return typeof sub === 'string' && sub ? sub : null
+}
+
+function readTokenClaims(token: string): Record<string, unknown> | null {
   try {
     const payload = token.split('.')[1]
     const json = atob(payload.replace(/-/g, '+').replace(/_/g, '/'))
-    const { exp } = JSON.parse(json) as { exp?: unknown }
-    return typeof exp !== 'number' || exp * 1000 <= now
+    const claims: unknown = JSON.parse(json)
+    return claims && typeof claims === 'object' ? (claims as Record<string, unknown>) : null
   } catch {
-    return true
+    return null
   }
 }
 
 function writeStoredSession(session: StoredSession | null): void {
+  // Every sign-in and sign-out passes here. Listings and orders saved for offline viewing belong
+  // to the session that loaded them, so they go whenever a session starts or ends.
+  void clearSavedApiData()
   if (session) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(session))
   } else {

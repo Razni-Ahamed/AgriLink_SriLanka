@@ -20,6 +20,8 @@ export interface CreateCropIssueRequest {
   severity: IssueSeverity
   /** Optional photo of the problem, already prepared for upload (see preparePhotoForUpload). */
   photo?: File
+  /** Made once per report on the phone. A retry sends the same id, so the API files it only once. */
+  clientReportId?: string
 }
 
 export interface CropIssueResponse {

@@ -1,7 +1,7 @@
 import { CropThumb } from '@/components/canopy/CropThumb'
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Camera, Plus, FirstAidKit } from '@phosphor-icons/react'
+import { Camera, CloudArrowUp, Plus, FirstAidKit } from '@phosphor-icons/react'
 import { useTranslation } from 'react-i18next'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
@@ -15,6 +15,7 @@ import { useStatusLabel } from '@/lib/useStatusLabel'
 import { StartChatButton } from '@/features/messages/components/StartChatButton'
 import { SeverityBadge } from '../components/SeverityBadge'
 import { useMyIssues } from '../hooks/useIssues'
+import { useQueuedIssueCount } from '../hooks/useIssueOutbox'
 import type { CropIssueResponse, IssueStatus } from '@/types/dto/issues'
 import { PhotoBanner } from '@/components/canopy/PhotoBanner'
 
@@ -93,6 +94,7 @@ export function MyIssuesPage() {
   const [page, setPage] = useState(1)
   const { data, isLoading, isFetching } = useMyIssues(page)
   const issues = data?.items
+  const queuedCount = useQueuedIssueCount()
 
   return (
     <div className="flex flex-col gap-6">
@@ -114,6 +116,15 @@ export function MyIssuesPage() {
           )
         }
       />
+
+      {queuedCount > 0 && (
+        <Card className="flex items-center gap-3" role="status">
+          <IconBadge tone="terracotta">
+            <CloudArrowUp size={20} weight="duotone" />
+          </IconBadge>
+          <p className="text-sm text-text-primary">{t('outbox.waiting', { count: queuedCount })}</p>
+        </Card>
+      )}
 
       {isLoading && (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">

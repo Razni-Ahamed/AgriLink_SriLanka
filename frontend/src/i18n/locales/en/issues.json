@@ -26,7 +26,8 @@
       "advice": "Writing advice for an officer to check",
       "note": "This usually takes about half a minute. The steps are a guide to what is happening.",
       "done": "Report sent"
-    }
+    },
+    "queued": "No signal. Your report is saved and will be sent when you're back online."
   },
   "form": {
     "title": "Title",
@@ -172,5 +173,13 @@
     "noReviews": "No reviews yet",
     "basedOn_one": "Based on 1 review",
     "basedOn_other": "Based on {{count}} reviews"
+  },
+  "outbox": {
+    "waiting_one": "1 report is waiting to be sent. It will go automatically when you're back online.",
+    "waiting_other": "{{count}} reports are waiting to be sent. They will go automatically when you're back online.",
+    "sent_one": "Your saved report was sent.",
+    "sent_other": "{{count}} saved reports were sent.",
+    "rejected_one": "A saved report couldn't be sent and was removed. Please report it again.",
+    "rejected_other": "{{count}} saved reports couldn't be sent and were removed. Please report them again."
   }
 }
