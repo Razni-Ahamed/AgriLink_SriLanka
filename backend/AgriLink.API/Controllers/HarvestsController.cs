@@ -99,10 +99,30 @@ public class HarvestsController : ControllerBase
         if (!string.IsNullOrWhiteSpace(search))
         {
             var term = search.Trim().ToLower();
-            query = query.Where(h => h.Crop.CropType.ToLower().Contains(term)
-                || h.Crop.Variety.ToLower().Contains(term)
-                || h.Location.ToLower().Contains(term)
-                || h.Crop.Field.Farm.District.ToLower().Contains(term));
+            if (term.Length < SearchTerms.MinIndexedLength)
+            {
+                query = query.Where(h => h.Crop.CropType.ToLower().Contains(term)
+                    || h.Crop.Variety.ToLower().Contains(term)
+                    || h.Location.ToLower().Contains(term)
+                    || h.Crop.Field.Farm.District.ToLower().Contains(term));
+            }
+            else
+            {
+                // One OR across columns of four joined tables can't use any index, so PostgreSQL
+                // would scan every listing, crop and farm. Matching each table on its own and
+                // taking the union lets each branch use its trigram index (see the
+                // AddSearchIndexes migration); the listings that match are the same.
+                var matchingIds = _db.HarvestListings
+                    .Where(h => h.Crop.CropType.ToLower().Contains(term) || h.Crop.Variety.ToLower().Contains(term))
+                    .Select(h => h.HarvestId)
+                    .Union(_db.HarvestListings
+                        .Where(h => h.Location.ToLower().Contains(term))
+                        .Select(h => h.HarvestId))
+                    .Union(_db.HarvestListings
+                        .Where(h => h.Crop.Field.Farm.District.ToLower().Contains(term))
+                        .Select(h => h.HarvestId));
+                query = query.Where(h => matchingIds.Contains(h.HarvestId));
+            }
         }
 
         if (minPrice is decimal min)
