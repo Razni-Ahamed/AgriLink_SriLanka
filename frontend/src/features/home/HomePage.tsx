@@ -25,6 +25,12 @@ import { cn } from '@/lib/utils'
 import { PHOTOS, type HomePhoto } from './homePhotos'
 
 const PREVIEW_COUNT = 6
+/**
+ * The listing photos' width in the preview grid (2, then 3 columns inside the 1280 px section, whose
+ * padding grows to 32 px), less the gaps and each card's 6 px padding and border.
+ */
+const HOME_GRID_PHOTO_SIZES =
+  '(min-width: 1280px) 381px, (min-width: 1024px) calc((100vw - 96px) / 3 - 14px), calc((100vw - 64px) / 2 - 14px)'
 
 /**
  * The public landing page at `/` for visitors who aren't signed in. It stands outside AppLayout
@@ -219,7 +225,9 @@ function PriceBoard() {
                 />
                 <span className="min-w-0">
                   <b className="block truncate font-semibold">{cropLabel(harvest.cropType)}</b>
-                  <span className="block truncate text-xs text-white/65">{districtLabel(harvest.district)}</span>
+                  <span className="block truncate text-xs text-white/65">
+                    {districtLabel(harvest.district)}
+                  </span>
                 </span>
                 <span className="text-right">
                   <span className="font-display text-xl font-bold">
@@ -534,7 +542,7 @@ function MarketplacePreview() {
         <StaggerList className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {preview.map((harvest) => (
             <StaggerList.Item key={harvest.harvestId}>
-              <HarvestCard harvest={harvest} />
+              <HarvestCard harvest={harvest} photoSizes={HOME_GRID_PHOTO_SIZES} />
             </StaggerList.Item>
           ))}
         </StaggerList>

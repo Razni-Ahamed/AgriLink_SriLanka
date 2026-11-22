@@ -6,11 +6,13 @@
  * All are free to use under the Unsplash licence, which requires no credit; the photographer and
  * the original are kept here as a record, the way homePhotos.ts does for the landing page.
  *
- * Each photo comes in three widths, all WebP and only downloaded when a page shows them:
+ * Each photo comes in four widths, all WebP and only downloaded when a page shows them:
  * - 800 × 600 (`crops/*.webp`, about 100 KB): page banners and a listing's big photo.
- * - 480 × 360 (`crops/480/`, about 25 KB): cards, picked by the browser through `srcSet`.
+ * - 640 × 480 (`crops/640/`, about 40 KB) and 480 × 360 (`crops/480/`, about 25 KB): cards,
+ *   picked by the browser through `srcSet`. The 640 px copy is what phones at 2× and 3× take for
+ *   a full-width card, instead of the 800 px one.
  * - 192 × 144 (`crops/192/`, about 6 KB): the small rounded thumbnails in lists (44–48 px).
- * The smaller two are resized copies of the 800 px file (`scripts/resize-crop-photos.py`); run it
+ * The smaller three are resized copies of the 800 px file (`scripts/resize-crop-photos.py`); run it
  * again after adding or replacing a photo.
  */
 const large = import.meta.glob<string>('@/assets/crops/*.webp', {
@@ -18,7 +20,12 @@ const large = import.meta.glob<string>('@/assets/crops/*.webp', {
   import: 'default',
   query: '?url',
 })
-const medium = import.meta.glob<string>('@/assets/crops/480/*.webp', {
+const w640Files = import.meta.glob<string>('@/assets/crops/640/*.webp', {
+  eager: true,
+  import: 'default',
+  query: '?url',
+})
+const w480Files = import.meta.glob<string>('@/assets/crops/480/*.webp', {
   eager: true,
   import: 'default',
   query: '?url',
@@ -35,7 +42,8 @@ const bySlugOf = (files: Record<string, string>) =>
     Object.entries(files).map(([path, url]) => [path.split('/').pop()!.replace('.webp', ''), url]),
   )
 const bySlug = bySlugOf(large)
-const mediumBySlug = bySlugOf(medium)
+const w640BySlug = bySlugOf(w640Files)
+const w480BySlug = bySlugOf(w480Files)
 const smallBySlug = bySlugOf(small)
 
 export interface PhotoCredit {
@@ -123,13 +131,27 @@ export function cropThumb(cropType: string): string {
 }
 
 /**
- * `srcSet` for a card-sized photo: the browser takes the 480 px copy where it's enough and the
- * 800 px one on wide or high-density screens. Pair with `cropPhoto` as `src` and a `sizes`.
+ * `srcSet` for a card-sized photo: the browser takes the smallest copy that covers the card at the
+ * screen's density. Pair with `cropPhoto` as `src` and a `sizes` that matches the card's real
+ * width; `CropCardPhoto` does both.
  */
 export function cropPhotoSrcSet(cropType: string): string {
-  const medium = pick(mediumBySlug, cropType)
+  const w480 = pick(w480BySlug, cropType)
+  const w640 = pick(w640BySlug, cropType)
   const full = cropPhoto(cropType)
-  return medium ? `${medium} 480w, ${full} 800w` : ''
+  return w480 && w640 ? `${w480} 480w, ${w640} 640w, ${full} 800w` : ''
+}
+
+/**
+ * `srcSet` for a card on a phone: the same without the 800 px copy. A full-width card on a 2× or 3×
+ * phone asks for 650–1,200 px, so with the 800 px copy on offer every phone took it (about 100 KB a
+ * card). Without it a phone takes the 640 px copy (about 40 KB), still about twice the card's width
+ * on screen, where a photo looks as sharp as at 3×.
+ */
+export function cropPhotoPhoneSrcSet(cropType: string): string {
+  const w480 = pick(w480BySlug, cropType)
+  const w640 = pick(w640BySlug, cropType)
+  return w480 && w640 ? `${w480} 480w, ${w640} 640w` : ''
 }
 
 function pick(files: Map<string, string>, cropType: string): string {

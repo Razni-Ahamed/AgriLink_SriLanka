@@ -3,8 +3,8 @@ import { useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { Calendar, MapPin } from '@phosphor-icons/react'
 import { useTranslation } from 'react-i18next'
+import { CropCardPhoto } from '@/components/canopy/CropCardPhoto'
 import { rememberPhoto } from '@/components/canopy/sharedPhoto'
-import { cropPhoto, cropPhotoSrcSet } from '@/lib/cropPhotos'
 import { useCropLabel } from '@/lib/useCropLabel'
 import { useStatusLabel } from '@/lib/useStatusLabel'
 import { useUnits } from '@/lib/units'
@@ -19,11 +19,29 @@ const statusTone = {
 } as const
 
 /**
+ * The photo's width in the marketplace grid (1, 2, 3, then 4 columns inside the 1280 px page): the
+ * page's padding, the grid's gaps and the card's own 6 px padding and border come off. Measured in a
+ * browser; keep it in step with BrowseHarvestsPage's grid.
+ */
+export const MARKETPLACE_GRID_PHOTO_SIZES =
+  '(min-width: 1280px) 279px, (min-width: 1024px) calc((100vw - 88px) / 3 - 14px), calc((100vw - 68px) / 2 - 14px)'
+
+/** The photo's width on a phone, where the grid is one card wide. */
+const PHONE_PHOTO_SIZE = 'calc(100vw - 46px)'
+
+/**
  * One marketplace listing. A photo of the crop leads, then the crop's name and the price per unit
  * as the largest text; where and when come last, in small print. Hovering lifts the card and
  * slowly zooms the photo; opening it grows the photo into the listing page.
  */
-export function HarvestCard({ harvest }: { harvest: HarvestListingResponse }) {
+export function HarvestCard({
+  harvest,
+  photoSizes = MARKETPLACE_GRID_PHOTO_SIZES,
+}: {
+  harvest: HarvestListingResponse
+  /** `sizes` for the photo from 640 px wide up, for a grid other than the marketplace's. */
+  photoSizes?: string
+}) {
   const { t } = useTranslation()
   const districtLabel = useDistrictLabel()
   const statusLabel = useStatusLabel()
@@ -42,13 +60,10 @@ export function HarvestCard({ harvest }: { harvest: HarvestListingResponse }) {
           ref={photoRef}
           className="relative h-44 overflow-hidden rounded-[20px] bg-brand-forest/10"
         >
-          <img
-            src={cropPhoto(harvest.cropType)}
-            srcSet={cropPhotoSrcSet(harvest.cropType)}
-            sizes="(min-width: 1280px) 25vw, (min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
-            alt=""
-            loading="lazy"
-            decoding="async"
+          <CropCardPhoto
+            cropType={harvest.cropType}
+            phoneSize={PHONE_PHOTO_SIZE}
+            sizes={photoSizes}
             className="size-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.06]"
           />
           <div
