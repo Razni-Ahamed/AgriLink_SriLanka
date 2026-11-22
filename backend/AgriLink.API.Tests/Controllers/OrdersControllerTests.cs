@@ -1,3 +1,4 @@
+using AgriLink.API.Common;
 using AgriLink.API.Controllers;
 using AgriLink.API.Data;
 using AgriLink.API.DTOs.Orders;
@@ -265,5 +266,19 @@ public class OrdersControllerTests
         var response = Assert.Single(Assert.IsType<OkObjectResult>(result.Result).Value as IEnumerable<OrderResponse> ?? Array.Empty<OrderResponse>());
         Assert.Equal("Buyer One", response.BuyerName);
         Assert.Equal("Tomato", response.CropType);
+    }
+
+    [Fact]
+    public async Task Mine_WithPage_ReturnsAPagedResponse()
+    {
+        using var db = CreateDb();
+        SeedConfirmedOrder(db);
+
+        var result = await CreateController(db, FarmerUserId, "Farmer").Mine(page: 1, pageSize: 10);
+
+        var paged = Assert.IsType<PagedResponse<OrderResponse>>(Assert.IsType<OkObjectResult>(result.Result).Value);
+        Assert.Single(paged.Items);
+        Assert.Equal(1, paged.TotalCount);
+        Assert.Equal(1, paged.TotalPages);
     }
 }
