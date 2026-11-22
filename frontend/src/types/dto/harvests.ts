@@ -63,6 +63,8 @@ export type HarvestSort = 'newest' | 'priceAsc' | 'priceDesc' | 'quantityDesc' |
 
 export interface HarvestFilters {
   cropType?: string
+  /** Any of these crops (one crop group). Combines with cropType when both are set. */
+  cropTypes?: string[]
   district?: string
   /** Matches the crop, variety, collection point or district. */
   search?: string

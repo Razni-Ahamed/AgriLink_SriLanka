@@ -1,3 +1,4 @@
+using AgriLink.API.Common;
 using AgriLink.API.Controllers;
 using AgriLink.API.Data;
 using AgriLink.API.DTOs.Harvests;
@@ -99,5 +100,53 @@ public class HarvestsControllerSearchSortTests
         using var db = Seed();
 
         Assert.IsType<BadRequestObjectResult>((await Controller(db).GetAll(null, null, sort: "cheapest")).Result);
+    }
+
+    [Fact]
+    public async Task GetAll_CropTypes_MatchesAnyOfTheListedCrops()
+    {
+        using var db = Seed();
+
+        Assert.Equal(new[] { 4, 3, 1 }, Ids(await Controller(db).GetAll(null, null, cropTypes: "tomato, Cassava,")));
+        Assert.Equal(new[] { 3, 1 }, Ids(await Controller(db).GetAll(null, null, cropTypes: "Tomato,Paddy", minPrice: 100)));
+    }
+
+    [Fact]
+    public async Task GetAll_WithoutPageParameters_StillReturnsThePlainList()
+    {
+        using var db = Seed();
+
+        var result = await Controller(db).GetAll(null, null);
+
+        Assert.IsAssignableFrom<IEnumerable<HarvestListingResponse>>(Assert.IsType<OkObjectResult>(result.Result).Value);
+    }
+
+    [Fact]
+    public async Task GetAll_WithPage_ReturnsThatPageAndTheTotal()
+    {
+        using var db = Seed();
+
+        var first = Assert.IsType<PagedResponse<HarvestListingResponse>>(
+            Assert.IsType<OkObjectResult>((await Controller(db).GetAll(null, null, page: 1, pageSize: 3)).Result).Value);
+        var second = Assert.IsType<PagedResponse<HarvestListingResponse>>(
+            Assert.IsType<OkObjectResult>((await Controller(db).GetAll(null, null, page: 2, pageSize: 3)).Result).Value);
+
+        Assert.Equal(new[] { 4, 3, 2 }, first.Items.Select(h => h.HarvestId));
+        Assert.Equal(new[] { 1 }, second.Items.Select(h => h.HarvestId));
+        Assert.Equal(4, first.TotalCount);
+        Assert.Equal(2, first.TotalPages);
+    }
+
+    [Fact]
+    public async Task GetAll_PageSizeAlone_StartsAtTheFirstPageAndIsClamped()
+    {
+        using var db = Seed();
+
+        var paged = Assert.IsType<PagedResponse<HarvestListingResponse>>(
+            Assert.IsType<OkObjectResult>((await Controller(db).GetAll(null, null, sort: "priceAsc", pageSize: 1000)).Result).Value);
+
+        Assert.Equal(1, paged.Page);
+        Assert.Equal(PagingExtensions.MaxPageSize, paged.PageSize);
+        Assert.Equal(new[] { 4, 2, 1, 3 }, paged.Items.Select(h => h.HarvestId));
     }
 }

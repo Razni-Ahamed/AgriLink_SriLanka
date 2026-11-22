@@ -4,19 +4,39 @@
  * buyers see.
  *
  * All are free to use under the Unsplash licence, which requires no credit; the photographer and
- * the original are kept here as a record, the way homePhotos.ts does for the landing page. 800 ×
- * 600 WebP, about 100 KB each, and only downloaded when a page shows them.
+ * the original are kept here as a record, the way homePhotos.ts does for the landing page.
+ *
+ * Each photo comes in three widths, all WebP and only downloaded when a page shows them:
+ * - 800 × 600 (`crops/*.webp`, about 100 KB): page banners and a listing's big photo.
+ * - 480 × 360 (`crops/480/`, about 25 KB): cards, picked by the browser through `srcSet`.
+ * - 192 × 144 (`crops/192/`, about 6 KB): the small rounded thumbnails in lists (44–48 px).
+ * The smaller two are resized copies of the 800 px file (`scripts/resize-crop-photos.py`); run it
+ * again after adding or replacing a photo.
  */
-const files = import.meta.glob<string>('@/assets/crops/*.webp', {
+const large = import.meta.glob<string>('@/assets/crops/*.webp', {
+  eager: true,
+  import: 'default',
+  query: '?url',
+})
+const medium = import.meta.glob<string>('@/assets/crops/480/*.webp', {
+  eager: true,
+  import: 'default',
+  query: '?url',
+})
+const small = import.meta.glob<string>('@/assets/crops/192/*.webp', {
   eager: true,
   import: 'default',
   query: '?url',
 })
 
 /** File name (without .webp) → URL, e.g. `green-gram` → `/assets/green-gram-a1b2.webp`. */
-const bySlug = new Map(
-  Object.entries(files).map(([path, url]) => [path.split('/').pop()!.replace('.webp', ''), url]),
-)
+const bySlugOf = (files: Record<string, string>) =>
+  new Map(
+    Object.entries(files).map(([path, url]) => [path.split('/').pop()!.replace('.webp', ''), url]),
+  )
+const bySlug = bySlugOf(large)
+const mediumBySlug = bySlugOf(medium)
+const smallBySlug = bySlugOf(small)
 
 export interface PhotoCredit {
   photographer: string
@@ -94,5 +114,24 @@ export function cropPhotoSlug(cropType: string): string {
  * the server added ahead of the UI, or "Other").
  */
 export function cropPhoto(cropType: string): string {
-  return bySlug.get(cropPhotoSlug(cropType)) ?? bySlug.get('other') ?? ''
+  return pick(bySlug, cropType)
+}
+
+/** The small (192 px wide) photo, for thumbnails shown at about 48 px. */
+export function cropThumb(cropType: string): string {
+  return pick(smallBySlug, cropType) || cropPhoto(cropType)
+}
+
+/**
+ * `srcSet` for a card-sized photo: the browser takes the 480 px copy where it's enough and the
+ * 800 px one on wide or high-density screens. Pair with `cropPhoto` as `src` and a `sizes`.
+ */
+export function cropPhotoSrcSet(cropType: string): string {
+  const medium = pick(mediumBySlug, cropType)
+  const full = cropPhoto(cropType)
+  return medium ? `${medium} 480w, ${full} 800w` : ''
+}
+
+function pick(files: Map<string, string>, cropType: string): string {
+  return files.get(cropPhotoSlug(cropType)) ?? files.get('other') ?? ''
 }

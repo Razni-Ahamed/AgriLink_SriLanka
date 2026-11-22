@@ -1,14 +1,18 @@
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useAuthStore } from '@/auth/authStore'
+import { Pagination } from '@/components/ui/Pagination'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { StaggerList } from '@/components/ui/motion/StaggerList'
 import { OrderCard } from '../components/OrderCard'
-import { useOrders } from '../hooks/useOrders'
+import { useOrdersPage } from '../hooks/useOrders'
 import { PhotoBanner } from '@/components/canopy/PhotoBanner'
 
 export function MyOrdersPage() {
   const { t } = useTranslation('orders')
-  const { data: orders, isLoading } = useOrders()
+  const [page, setPage] = useState(1)
+  const { data, isLoading, isFetching } = useOrdersPage(page)
+  const orders = data?.items
   const role = useAuthStore((state) => state.role)
 
   return (
@@ -35,6 +39,18 @@ export function MyOrdersPage() {
             </StaggerList.Item>
           ))}
         </StaggerList>
+      )}
+
+      {!isLoading && data && data.totalPages > 1 && (
+        <Pagination
+          page={data.page}
+          totalPages={data.totalPages}
+          onPageChange={(next) => {
+            setPage(next)
+            window.scrollTo({ top: 0, behavior: 'smooth' })
+          }}
+          disabled={isFetching}
+        />
       )}
     </div>
   )

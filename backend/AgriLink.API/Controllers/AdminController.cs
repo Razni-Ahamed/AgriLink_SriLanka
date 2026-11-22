@@ -172,42 +172,44 @@ public class AdminController : ControllerBase
     public ActionResult<List<string>> GetRoles() => Ok(RoleSeeder.Roles.ToList());
 
     [HttpGet("users")]
-    public async Task<ActionResult<List<AdminUserSummary>>> GetUsers()
+    public async Task<ActionResult<List<AdminUserSummary>>> GetUsers(CancellationToken cancellationToken = default)
     {
-        var users = await _db.Users.OrderBy(u => u.CreatedAt).ToListAsync();
+        var users = await _db.Users.AsNoTracking().OrderBy(u => u.CreatedAt).ToListAsync(cancellationToken);
 
-        // A handful of small dictionary reads beat an N+1 profile lookup per user; a
-        // course-project dataset never gets large enough for this shape to matter either way.
-        var farmerDistricts = await _db.FarmerProfiles.ToDictionaryAsync(f => f.UserId, f => f.District);
-        var officerDistricts = await _db.OfficerProfiles.ToDictionaryAsync(o => o.UserId, o => o.District);
-        var buyerDistricts = await _db.BuyerProfiles.ToDictionaryAsync(b => b.UserId, b => b.District);
-        var officerDepartments = await _db.OfficerProfiles
-            .Include(o => o.Department)
-            .ToDictionaryAsync(o => o.UserId, o => o.Department.Name);
+        // Every user's role in one query. This used to call UserManager.GetRolesAsync once per
+        // user, one database round-trip each, so the page got slower with every account added.
+        var userRoles = await _db.UserRoles
+            .Join(_db.Roles, ur => ur.RoleId, r => r.Id, (ur, r) => new { ur.UserId, r.Name })
+            .ToListAsync(cancellationToken);
+        var roleByUser = userRoles
+            .GroupBy(ur => ur.UserId)
+            .ToDictionary(g => g.Key, g => g.First().Name ?? string.Empty);
 
-        var summaries = new List<AdminUserSummary>();
-        foreach (var user in users)
+        // Only the columns the list shows, one small read per profile table.
+        var farmerDistricts = await _db.FarmerProfiles.AsNoTracking()
+            .ToDictionaryAsync(f => f.UserId, f => f.District, cancellationToken);
+        var buyerDistricts = await _db.BuyerProfiles.AsNoTracking()
+            .ToDictionaryAsync(b => b.UserId, b => b.District, cancellationToken);
+        var officers = await _db.OfficerProfiles.AsNoTracking()
+            .Select(o => new { o.UserId, o.District, Department = o.Department.Name })
+            .ToDictionaryAsync(o => o.UserId, cancellationToken);
+
+        var summaries = users.Select(user => new AdminUserSummary
         {
-            var roles = await _userManager.GetRolesAsync(user);
-            var district = farmerDistricts.GetValueOrDefault(user.Id)
-                ?? officerDistricts.GetValueOrDefault(user.Id)
-                ?? buyerDistricts.GetValueOrDefault(user.Id);
-
-            summaries.Add(new AdminUserSummary
-            {
-                UserId = user.Id,
-                FullName = user.FullName,
-                Email = user.Email ?? string.Empty,
-                Username = user.UserName ?? string.Empty,
-                ProfilePhotoUrl = user.ProfilePhotoUrl,
-                Role = roles.FirstOrDefault() ?? string.Empty,
-                District = district,
-                Department = officerDepartments.GetValueOrDefault(user.Id),
-                IsActive = user.IsActive,
-                RegistrationStatus = user.RegistrationStatus.ToString(),
-                CreatedAt = user.CreatedAt,
-            });
-        }
+            UserId = user.Id,
+            FullName = user.FullName,
+            Email = user.Email ?? string.Empty,
+            Username = user.UserName ?? string.Empty,
+            ProfilePhotoUrl = user.ProfilePhotoUrl,
+            Role = roleByUser.GetValueOrDefault(user.Id) ?? string.Empty,
+            District = farmerDistricts.GetValueOrDefault(user.Id)
+                ?? officers.GetValueOrDefault(user.Id)?.District
+                ?? buyerDistricts.GetValueOrDefault(user.Id),
+            Department = officers.GetValueOrDefault(user.Id)?.Department,
+            IsActive = user.IsActive,
+            RegistrationStatus = user.RegistrationStatus.ToString(),
+            CreatedAt = user.CreatedAt,
+        }).ToList();
 
         return Ok(summaries);
     }

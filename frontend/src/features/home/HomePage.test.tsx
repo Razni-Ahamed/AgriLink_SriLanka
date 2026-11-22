@@ -6,7 +6,7 @@ import { HomePage } from './HomePage'
 
 // The marketplace preview isn't what these tests are about; an empty list keeps it quiet.
 vi.mock('@/features/marketplace/hooks/useHarvests', () => ({
-  useHarvests: () => ({ data: [], isLoading: false, isError: false }),
+  useLatestHarvests: () => ({ data: [], isLoading: false, isError: false }),
 }))
 
 function renderHome() {

@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import * as harvestsApi from '../api/harvestsApi'
 import type {
   CreateHarvestListingRequest,
@@ -17,6 +17,39 @@ export function useHarvests(filters: HarvestFilters = {}) {
   return useQuery({
     queryKey: harvestsKey(filters),
     queryFn: () => harvestsApi.getHarvests(filters),
+  })
+}
+
+export const MARKETPLACE_PAGE_SIZE = 24
+
+/**
+ * One page of the marketplace. Keeps showing the current page while the next one loads, and
+ * sits under ['harvests'] so creating or editing a listing refreshes it too.
+ */
+export function useHarvestPage(
+  filters: HarvestFilters,
+  page: number,
+  pageSize = MARKETPLACE_PAGE_SIZE,
+) {
+  return useQuery({
+    queryKey: ['harvests', 'page', filters, page, pageSize] as const,
+    queryFn: () => harvestsApi.getHarvestPage(filters, page, pageSize),
+    placeholderData: keepPreviousData,
+  })
+}
+
+/** How many of the newest listings the home page shows at most (price board and preview). */
+export const LATEST_HARVESTS_COUNT = 6
+
+/**
+ * The newest Active listings for the home page. Every caller shares this one query key, so the
+ * price board and the marketplace preview make a single small request between them.
+ */
+export function useLatestHarvests() {
+  return useQuery({
+    queryKey: ['harvests', 'latest', LATEST_HARVESTS_COUNT] as const,
+    queryFn: () => harvestsApi.getHarvestPage({ sort: 'newest' }, 1, LATEST_HARVESTS_COUNT),
+    select: (page) => page.items,
   })
 }
 
