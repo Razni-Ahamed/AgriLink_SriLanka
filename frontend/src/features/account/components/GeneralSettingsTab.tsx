@@ -6,11 +6,12 @@ import { ThemeToggle } from '@/components/ui/ThemeToggle'
 import type { UserProfileResponse } from '@/auth/api'
 import { ProfileEditForm } from './ProfileEditForm'
 import { ProfileSummary } from './ProfileSummary'
+import { SmsAlertsSetting } from './SmsAlertsSetting'
 
 /**
  * Read-only by default, with one "Edit profile" button that turns just the editable fields into
- * inputs — rather than a separate "Update X" button per field. The light/dark and animation
- * settings live here too, so the signed-in header keeps only what people reach for often.
+ * inputs — rather than a separate "Update X" button per field. The light/dark, animation and
+ * SMS alert settings live here too, so the signed-in header keeps only what people reach for often.
  */
 export function GeneralSettingsTab({ user }: { user: UserProfileResponse }) {
   const { t } = useTranslation(['auth', 'common'])
@@ -40,6 +41,7 @@ export function GeneralSettingsTab({ user }: { user: UserProfileResponse }) {
           </div>
           <MotionToggle />
         </div>
+        <SmsAlertsSetting />
       </div>
     </div>
   )

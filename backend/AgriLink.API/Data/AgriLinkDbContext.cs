@@ -78,6 +78,7 @@ public class AgriLinkDbContext : IdentityDbContext<ApplicationUser, IdentityRole
             entity.Property(u => u.DisplayName).HasMaxLength(ProfileFieldLimits.DisplayName);
             entity.Property(u => u.ProfilePhotoUrl).HasMaxLength(ProfileFieldLimits.ProfilePhotoUrl);
             entity.Property(u => u.ProfilePhotoKey).HasMaxLength(ProfileFieldLimits.ProfilePhotoKey);
+            entity.Property(u => u.SmsLanguage).HasMaxLength(5).HasDefaultValue("en");
 
             // Identity only checks "is this email taken?" before inserting, so two sign-ups sent at
             // the same moment could both pass and share one email — after which every lookup by

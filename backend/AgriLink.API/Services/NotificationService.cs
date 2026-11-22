@@ -1,15 +1,18 @@
 using AgriLink.API.Data;
 using AgriLink.API.Models;
+using AgriLink.API.Services.Sms;
 
 namespace AgriLink.API.Services;
 
 public class NotificationService : INotificationService
 {
     private readonly AgriLinkDbContext _db;
+    private readonly ISmsAlertQueue? _sms;
 
-    public NotificationService(AgriLinkDbContext db)
+    public NotificationService(AgriLinkDbContext db, ISmsAlertQueue? sms = null)
     {
         _db = db;
+        _sms = sms;
     }
 
     public async Task NotifyAsync(int userId, string title, string message)
@@ -27,4 +30,6 @@ public class NotificationService : INotificationService
             Message = message,
         });
     }
+
+    public void QueueSms(int userId, SmsAlert alert) => _sms?.Enqueue(userId, alert);
 }

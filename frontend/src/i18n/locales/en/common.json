@@ -356,5 +356,14 @@
     "Ratnapura": "Ratnapura",
     "Trincomalee": "Trincomalee",
     "Vavuniya": "Vavuniya"
+  },
+  "smsAlerts": {
+    "label": "SMS alerts",
+    "hint": "Get a text at {{phone}} for new purchase requests, confirmed orders and officer replies.",
+    "needsMobile": "Add a mobile number starting with 07 under Security settings to get text alerts.",
+    "on": "On",
+    "off": "Off",
+    "languageLabel": "SMS language",
+    "error": "Couldn't save your SMS alert setting. Please try again."
   }
 }
