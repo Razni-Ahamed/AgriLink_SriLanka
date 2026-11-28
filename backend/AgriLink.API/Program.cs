@@ -26,6 +26,9 @@ args = args.Where(a => !string.Equals(a, StartupDatabaseTasks.MigrateOnlyArgumen
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Don't advertise the server implementation/version in every response.
+builder.WebHost.ConfigureKestrel(options => options.AddServerHeader = false);
+
 const string FrontendCorsPolicy = "FrontendCorsPolicy";
 
 // ----- Database -----
@@ -353,6 +356,27 @@ if (useForwardedHeaders)
 }
 
 app.UseExceptionHandler();
+
+// Baseline security response headers for every endpoint (the API also serves Swagger UI and, in
+// development, profile-photo images). A strict Content-Security-Policy is intentionally left to the
+// frontend, whose pages it protects; the API returns JSON, images and the Swagger UI only.
+// HSTS is added here rather than via UseHsts() so it survives App Service terminating TLS at its
+// front end (the request reaches Kestrel over HTTP); browsers ignore the header on plain HTTP, and
+// it is skipped in development so a local http:// run is unaffected.
+var sendHsts = !app.Environment.IsDevelopment();
+app.Use(async (context, next) =>
+{
+    var headers = context.Response.Headers;
+    headers["X-Content-Type-Options"] = "nosniff";
+    headers["X-Frame-Options"] = "DENY";
+    headers["Referrer-Policy"] = "no-referrer";
+    headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=(), payment=(), usb=()";
+    if (sendHsts)
+    {
+        headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains";
+    }
+    await next();
+});
 
 // Reads only. The responses that hand out a token (login, password change) are all writes, and a
 // token next to text the caller sent is the mix compression side channels (BREACH) need; write
